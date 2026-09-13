@@ -64,8 +64,8 @@ class FlagTests(unittest.TestCase):
 
     def test_hand_reach_skips_non_side(self):
         self.assertIn("hand_reach", flags_from_values("forehand", view="side", hand_reaches=True))
+        self.assertIn("hand_reach", flags_from_values("forehand", view="oblique", hand_reaches=True))
         self.assertNotIn("hand_reach", flags_from_values("forehand", view="back", hand_reaches=True))
-        self.assertNotIn("hand_reach", flags_from_values("forehand", view="oblique", hand_reaches=True))
 
 
 class FindingsTests(unittest.TestCase):
@@ -96,23 +96,20 @@ class FindingsTests(unittest.TestCase):
         self.assertLess(written["scores"]["击球效果"], base["scores"]["击球效果"])
         self.assertLess(written["scores"]["动力链"], base["scores"]["动力链"])
 
-    def test_non_side_does_not_name_technique_errors(self):
+    def test_back_view_still_writes_coaching(self):
         written = score_and_write(
             "forehand",
             {
                 "n_swings": 8,
-                "cog_ratio": 0.5,
-                "flag_rates": {"wipe_glass": 0.5, "arm_only": 0.5},
-                "slot_drop": 0.02,
-                "body_turn": 0.01,
+                "cog_ratio": 0.62,
+                "flag_rates": {},
             },
             view="back",
         )
-        text = " ".join(written["problems"] + written["drills"] + written["strengths"])
-        self.assertFalse(written["evaluable"])
-        self.assertIn("正侧面", text)
-        self.assertNotIn("擦玻璃", text)
-        self.assertNotIn("拍凳子", text)
+        blob = " ".join(written["problems"] + written["drills"] + written["strengths"])
+        self.assertIn("重心", blob)
+        self.assertNotIn("不下判断", blob)
+        self.assertNotIn("评价范围", blob)
 
     def test_side_low_lift_does_not_call_it_slice(self):
         written = score_and_write(
@@ -121,9 +118,8 @@ class FindingsTests(unittest.TestCase):
             view="side",
         )
         blob = " ".join(written["problems"] + written["drills"] + written["strengths"])
-        self.assertTrue(written["evaluable"])
         self.assertNotIn("正手切削", blob)
-        self.assertNotIn("单独按切削练", blob)
+        self.assertIn("轨迹偏平", blob)
 
 
 class PromptTests(unittest.TestCase):
@@ -133,10 +129,10 @@ class PromptTests(unittest.TestCase):
         self.assertIn("擦玻璃", text)
         self.assertIn("左肩", text)
         self.assertIn("不要编 6:00", text)
-        self.assertIn("只评正侧面", text)
-        self.assertIn("不要判断切削、截击", text)
+        self.assertIn("底线正手", text)
         self.assertNotIn("截击正手", text)
         self.assertNotIn("高压：", text)
+        self.assertNotIn("只评正侧面", text)
 
     def test_lefty_swaps_front_shoulder(self):
         text = prompt_knowledge(["forehand"], "left")
@@ -178,7 +174,6 @@ class PromptTests(unittest.TestCase):
         }
         prompt = _build_prompt(report, ["底线正手 挥拍#1 引拍 t=1.2"])
         self.assertIn("拍凳子", prompt)
-        self.assertIn("不要把任何一拍写成切削", prompt)
         self.assertIn("rule_hints", prompt)
         self.assertIn("wipe_glass", prompt)
         slim = _slim_report(report)
@@ -239,11 +234,11 @@ class ViewTests(unittest.TestCase):
         self.assertEqual(infer_view(xy, conf), "side")
         self.assertTrue(view_is_side("side"))
 
-    def test_three_quarter_is_oblique_not_evaluated(self):
+    def test_three_quarter_is_oblique_still_coached(self):
         xy, conf = self._frames(36)
         self.assertEqual(infer_view(xy, conf), "oblique")
-        self.assertEqual(view_label("oblique"), "斜切")
-        self.assertFalse(view_is_side("oblique"))
+        self.assertEqual(view_label("oblique"), "侧面")
+        self.assertTrue(view_is_side("oblique"))
 
     def test_facing_camera_is_back(self):
         xy, conf = self._frames(55)

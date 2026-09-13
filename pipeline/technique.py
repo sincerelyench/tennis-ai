@@ -78,7 +78,7 @@ def flags_from_values(
     """Conservative proxies. Missing numbers do not vote yes. Side-view groundstrokes only."""
     kind = normalize_kind(kind)
     flags: list[str] = []
-    side = view == "side"
+    side = view in ("side", "oblique")
     ground = kind in ("forehand", "backhand")
 
     if side and kind == "forehand" and slot_drop is not None and takeback_height is not None:
@@ -267,10 +267,8 @@ def _card_backhand(w: dict[str, str]) -> str:
 
 
 def _scope() -> str:
-    return """【这次只评什么】
-只评正侧面的底线正手和底线反手。
-不要判断切削、截击、发球、高压。画面像这些动作，或机位不是正侧面（背面、斜切、正面），写「机位/动作不适合评价」，不要硬套底线抽球，也不要改用那些技术的清单硬评。
-人越大、越完整入画越好。"""
+    return """写给练球的人看。只点评底线正手和底线反手。
+看不清的细节直接跳过，不要在报告里解释评价范围或拍摄规范，也不要点名切削、截击、发球、高压。"""
 
 
 def _observability() -> str:

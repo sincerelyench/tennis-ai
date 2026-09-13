@@ -126,7 +126,7 @@ def infer_handedness(
 
 VIEW_LABELS = {
     "side": "侧面",
-    "oblique": "斜切",
+    "oblique": "侧面",
     "back": "背面",
 }
 
@@ -159,7 +159,7 @@ def view_label(view: str) -> str:
 
 
 def view_is_side(view: str) -> bool:
-    return view == "side"
+    return view in ("side", "oblique")
 
 
 def wrist_track(xy_list, conf_list, name: str) -> np.ndarray:
@@ -979,24 +979,6 @@ def score_and_write(
         problems.append("有效挥拍样本过少，以下判断置信度偏低。")
 
     view_word = view_label(view)
-    if not view_is_side(view):
-        return {
-            "label": "底线反手" if stroke == "backhand" else "底线正手",
-            "scores": scores,
-            "strengths": [f"识别到约 {n} 次挥拍，动作次数可以参考。"],
-            "problems": [
-                f"当前是{view_word}拍摄，不是正侧面。底线正反手的技术细节这次不下判断，也不按切削、截击、发球或高压来评。"
-            ],
-            "drills": [
-                "【问题】机位不适合评价 → 【原因】背面或斜切看不清击球点前后和挥拍是先落还是横扫 → 【训练】站在球场正侧面、镜头对着持拍手一侧，人尽量占满画面，只打底线正手或反手，再传一段。"
-            ],
-            "caveats": [
-                "本报告根据训练录像自动生成，仅供练习参考，不能替代现场教练。",
-                "目前只评正侧面的底线正手和底线反手。斜切、背面、正面，以及切削、截击、发球、高压都不下技术结论。",
-                "人越大、越完整入画，越容易看清击球。",
-            ],
-            "evaluable": False,
-        }
     if stroke == "backhand":
         strengths.append(f"{view_word}能看到双手反手结构：非持拍手同步参与，不是单手挡球。")
     else:
@@ -1085,7 +1067,10 @@ def score_and_write(
     if lift is not None and 0.2 <= lift <= 0.7:
         strengths.append("挥拍有低向高的轨迹，有利于打出上旋。")
     elif lift is not None and lift < 0.08:
-        problems.append("挥拍轨迹不像典型的底线上旋抽球。这次不按切削、截击或其他技术点评，请用侧面底线正反手再测。")
+        problems.append("挥拍轨迹偏平，上旋会少一些。")
+        drills.append(
+            "【问题】旋转偏少 → 【原因】击球轨迹太平 → 【训练】从膝盖高度刷到肩高，拍面稳住，15球×4组。"
+        )
 
     if stance < 1.25:
         problems.append("准备步幅偏窄，左右开立不够，影响稳定和上步。")
@@ -1100,13 +1085,12 @@ def score_and_write(
 
     caveats = [
         "本报告根据训练录像自动生成，仅供练习参考，不能替代现场教练。",
-        "目前只评正侧面的底线正手和底线反手。斜切、背面，以及切削、截击、发球、高压都不下技术结论。",
-        "拍摄角度会影响判断：背面或斜切较难看清击球点前后位置和拍面开合。",
+        "拍摄角度会影响判断：背面录像较难看清击球点前后位置和拍面开合。",
         "评分来自画面，距离和角度会有一定误差。",
         "能看到球或球拍时，击球画面按球和拍的距离选取。挥拍附近会再放大球员区域检测一次，并标出相对身体的击球点（实心圈）和理想区（虚线圈）。",
         "理想击球点：胸口高度、持拍一侧稍外侧、身前大约 45°。不判断球打在拍面哪里。单路录像看不到真实 3D，高度和左右/前后会受拍摄角度影响。",
         "旋转根据挥拍轨迹和拍面朝向估计，不是测球的转速。",
-        "拍头、手腕、转髋和球速按画面里人体/球拍长度换算，是估算不是测速枪。侧面更接近真实，正面或斜切会偏慢。",
+        "拍头、手腕、转髋和球速按画面里人体/球拍长度换算，是估算不是测速枪。侧面更接近真实，正面会偏慢。",
         "掌心朝向、握拍和精确肘角无法从单路视频可靠测量。擦玻璃/拍凳子等判断结合挥拍下落轨迹和画面，受拍摄角度影响。",
     ]
 
@@ -1118,7 +1102,6 @@ def score_and_write(
         "problems": problems,
         "drills": drills,
         "caveats": caveats,
-        "evaluable": True,
     }
 
 

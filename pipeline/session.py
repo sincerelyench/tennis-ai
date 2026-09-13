@@ -458,7 +458,7 @@ def analyze_video(
     xy_list, conf_list = _fix_backview_laterality(xy_list, conf_list, view)
     handed = infer_handedness(xy_list, conf_list, t_arr, fps)
     takeback_mode = "distance"
-    enable_late = view == "side"
+    enable_late = view_is_side(view)
 
     _emit(progress, step=3, step_name="找出挥拍", progress=78, message="正在找出每一次挥拍…")
 
@@ -753,7 +753,6 @@ def analyze_video(
         "source_name": video_path.name,
         "view": view,
         "view_label": view_label(view),
-        "view_evaluable": view_is_side(view),
         "handedness": handed,
         "handedness_label": "右手持拍" if handed == "right" else "左手持拍",
         "duration_s": round(float(t_arr[-1]), 2),
@@ -801,7 +800,7 @@ def analyze_video(
         ],
     }
 
-    if view_is_side(view) and clips:
+    if clips:
         _emit(
             progress,
             step=5,
@@ -812,20 +811,7 @@ def analyze_video(
         report = enrich_with_cursor(report, kf_dir, progress=progress)
     else:
         report["coach"] = {"status": "skipped"}
-        if not view_is_side(view):
-            word = view_label(view)
-            report["summary"] = (
-                f"这段录像是{word}拍摄。目前只评正侧面的底线正手和底线反手，"
-                "切削、截击、发球、高压都不下判断。请换正侧面、人尽量大再拍一段。"
-            )
-            report["focus"] = "用正侧面拍底线正反手，人尽量占满画面"
-            report["improvements"] = [
-                "【问题】机位不是正侧面 → 【原因】看不清击球点前后和挥拍轨迹 → 【训练】站在球场侧面、镜头对着持拍手一侧，人占画面一半以上，只打正手或反手。",
-            ]
-            skip_msg = "机位不适合细评，跳过教练点评…"
-        else:
-            skip_msg = "没有完整挥拍，跳过教练点评…"
-        _emit(progress, step=5, step_name="教练点评", progress=96, message=skip_msg)
+        _emit(progress, step=5, step_name="教练点评", progress=96, message="没有完整挥拍，跳过教练点评…")
 
     _emit(progress, step=5, step_name="教练点评", progress=96, message="正在整理报告…")
     (out_dir / "report.json").write_text(
