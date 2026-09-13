@@ -30,6 +30,8 @@ from pipeline.analyze import (
     score_and_write,
     speed_from_xy,
     summarize,
+    view_is_side,
+    view_label,
     wrist_track,
 )
 from pipeline.coach import enrich_with_cursor
@@ -625,18 +627,7 @@ def analyze_video(
             swing_payload.append(payload)
 
         if stroke == "forehand":
-            grouped = [
-                (
-                    "forehand",
-                    "forehand",
-                    [(sw, pl) for sw, pl in zip(swings, swing_payload) if pl.get("shot_kind") != "slice"],
-                ),
-                (
-                    "forehand_slice",
-                    "forehand_slice",
-                    [(sw, pl) for sw, pl in zip(swings, swing_payload) if pl.get("shot_kind") == "slice"],
-                ),
-            ]
+            grouped = [("forehand", "forehand", list(zip(swings, swing_payload)))]
         else:
             grouped = [("backhand", "backhand", list(zip(swings, swing_payload)))]
 
@@ -761,7 +752,8 @@ def analyze_video(
         "app_version": "2.0",
         "source_name": video_path.name,
         "view": view,
-        "view_label": "背面" if view == "back" else "侧面",
+        "view_label": view_label(view),
+        "view_evaluable": view_is_side(view),
         "handedness": handed,
         "handedness_label": "右手持拍" if handed == "right" else "左手持拍",
         "duration_s": round(float(t_arr[-1]), 2),
@@ -809,14 +801,31 @@ def analyze_video(
         ],
     }
 
-    _emit(
-        progress,
-        step=5,
-        step_name="教练点评",
-        progress=88,
-        message="正在写练习建议，大约还要 2 分钟…",
-    )
-    report = enrich_with_cursor(report, kf_dir, progress=progress)
+    if view_is_side(view) and clips:
+        _emit(
+            progress,
+            step=5,
+            step_name="教练点评",
+            progress=88,
+            message="正在写练习建议，大约还要 2 分钟…",
+        )
+        report = enrich_with_cursor(report, kf_dir, progress=progress)
+    else:
+        report["coach"] = {"status": "skipped"}
+        if not view_is_side(view):
+            word = view_label(view)
+            report["summary"] = (
+                f"这段录像是{word}拍摄。目前只评正侧面的底线正手和底线反手，"
+                "切削、截击、发球、高压都不下判断。请换正侧面、人尽量大再拍一段。"
+            )
+            report["focus"] = "用正侧面拍底线正反手，人尽量占满画面"
+            report["improvements"] = [
+                "【问题】机位不是正侧面 → 【原因】看不清击球点前后和挥拍轨迹 → 【训练】站在球场侧面、镜头对着持拍手一侧，人占画面一半以上，只打正手或反手。",
+            ]
+            skip_msg = "机位不适合细评，跳过教练点评…"
+        else:
+            skip_msg = "没有完整挥拍，跳过教练点评…"
+        _emit(progress, step=5, step_name="教练点评", progress=96, message=skip_msg)
 
     _emit(progress, step=5, step_name="教练点评", progress=96, message="正在整理报告…")
     (out_dir / "report.json").write_text(

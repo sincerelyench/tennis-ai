@@ -124,8 +124,15 @@ def infer_handedness(
     return "right" if votes["right"] >= votes["left"] else "left"
 
 
+VIEW_LABELS = {
+    "side": "侧面",
+    "oblique": "斜切",
+    "back": "背面",
+}
+
+
 def infer_view(xy_list: list[np.ndarray], conf_list: list[np.ndarray]) -> str:
-    """back ≈ facing camera/away; side ≈ profile. Uses shoulder width / torso height."""
+    """True profile vs 3/4 vs facing/away. Uses shoulder width / torso height."""
     ratios = []
     for xy, conf in zip(xy_list, conf_list):
         ls, rs = _pt(xy, conf, "l_shoulder"), _pt(xy, conf, "r_shoulder")
@@ -139,7 +146,20 @@ def infer_view(xy_list: list[np.ndarray], conf_list: list[np.ndarray]) -> str:
             ratios.append(width / height)
     if not ratios:
         return "back"
-    return "back" if float(np.median(ratios)) >= 0.36 else "side"
+    med = float(np.median(ratios))
+    if med >= 0.42:
+        return "back"
+    if med <= 0.32:
+        return "side"
+    return "oblique"
+
+
+def view_label(view: str) -> str:
+    return VIEW_LABELS.get(view, "侧面")
+
+
+def view_is_side(view: str) -> bool:
+    return view == "side"
 
 
 def wrist_track(xy_list, conf_list, name: str) -> np.ndarray:
@@ -196,7 +216,7 @@ def classify_swing(
     r_xy = wrist_track(xy_list[lo:hi], conf_list[lo:hi], "r_wrist")
     l_s = float(np.mean(speed_from_xy(l_xy, ts[lo:hi])))
     r_s = float(np.mean(speed_from_xy(r_xy, ts[lo:hi])))
-    # 正手切削时非持拍手也会摆动，阈值过低会被误判成反手。
+    # 非持拍手也会跟着摆，阈值过低会把正手误判成反手。
     if handed == "right":
         return "backhand" if l_s > r_s * 1.05 and l_s > 55 else "forehand"
     return "backhand" if r_s > l_s * 1.05 and r_s > 55 else "forehand"
@@ -608,9 +628,6 @@ def measure_swings(
         if stroke == "backhand":
             shot_kind = "backhand"
             flag_kind = "backhand"
-        elif lift_v is not None and lift_v < 0.08:
-            shot_kind = "slice"
-            flag_kind = "forehand_slice"
         else:
             shot_kind = "topspin"
             flag_kind = "forehand"
@@ -961,7 +978,25 @@ def score_and_write(
     else:
         problems.append("有效挥拍样本过少，以下判断置信度偏低。")
 
-    view_word = "背面" if view == "back" else "侧面"
+    view_word = view_label(view)
+    if not view_is_side(view):
+        return {
+            "label": "底线反手" if stroke == "backhand" else "底线正手",
+            "scores": scores,
+            "strengths": [f"识别到约 {n} 次挥拍，动作次数可以参考。"],
+            "problems": [
+                f"当前是{view_word}拍摄，不是正侧面。底线正反手的技术细节这次不下判断，也不按切削、截击、发球或高压来评。"
+            ],
+            "drills": [
+                "【问题】机位不适合评价 → 【原因】背面或斜切看不清击球点前后和挥拍是先落还是横扫 → 【训练】站在球场正侧面、镜头对着持拍手一侧，人尽量占满画面，只打底线正手或反手，再传一段。"
+            ],
+            "caveats": [
+                "本报告根据训练录像自动生成，仅供练习参考，不能替代现场教练。",
+                "目前只评正侧面的底线正手和底线反手。斜切、背面、正面，以及切削、截击、发球、高压都不下技术结论。",
+                "人越大、越完整入画，越容易看清击球。",
+            ],
+            "evaluable": False,
+        }
     if stroke == "backhand":
         strengths.append(f"{view_word}能看到双手反手结构：非持拍手同步参与，不是单手挡球。")
     else:
@@ -1047,20 +1082,10 @@ def score_and_write(
     if ball_out is not None and ball_out >= 25:
         strengths.append(f"出球大约 {ball_out:.0f} km/h（画面估算）。")
 
-    if stroke == "forehand_slice":
-        strengths.append("这是正手切削，不是反手；拍头走下切路线。")
-        if lift is not None and lift > 0.12:
-            problems.append("名义上是切削，但轨迹还在往上刷，削不薄、球容易浮。")
-            drills.append(
-                "【问题】切削偏浮 → 【原因】还在用上旋的低向高刷 → 【训练】接触点在身侧前方，拍头由高向低送，15 球擦网不过就算过关。"
-            )
-    elif lift is not None and lift < 0.08:
-        problems.append("挥拍轨迹太平、偏向下切，旋转会偏少。若这是切削，应单独按切削练，不要和上旋正手混在一起评价。")
-        drills.append(
-            "【问题】旋转不足 → 【原因】击球轨迹没有低向高刷 → 【训练】从膝盖高度刷到肩高，强调拍面稳定、轨迹向上，15球×4组。"
-        )
-    elif lift is not None and 0.2 <= lift <= 0.7:
+    if lift is not None and 0.2 <= lift <= 0.7:
         strengths.append("挥拍有低向高的轨迹，有利于打出上旋。")
+    elif lift is not None and lift < 0.08:
+        problems.append("挥拍轨迹不像典型的底线上旋抽球。这次不按切削、截击或其他技术点评，请用侧面底线正反手再测。")
 
     if stance < 1.25:
         problems.append("准备步幅偏窄，左右开立不够，影响稳定和上步。")
@@ -1075,7 +1100,8 @@ def score_and_write(
 
     caveats = [
         "本报告根据训练录像自动生成，仅供练习参考，不能替代现场教练。",
-        "拍摄角度会影响判断：背面录像较难看清击球点前后位置和拍面开合。",
+        "目前只评正侧面的底线正手和底线反手。斜切、背面，以及切削、截击、发球、高压都不下技术结论。",
+        "拍摄角度会影响判断：背面或斜切较难看清击球点前后位置和拍面开合。",
         "评分来自画面，距离和角度会有一定误差。",
         "能看到球或球拍时，击球画面按球和拍的距离选取。挥拍附近会再放大球员区域检测一次，并标出相对身体的击球点（实心圈）和理想区（虚线圈）。",
         "理想击球点：胸口高度、持拍一侧稍外侧、身前大约 45°。不判断球打在拍面哪里。单路录像看不到真实 3D，高度和左右/前后会受拍摄角度影响。",
@@ -1084,12 +1110,7 @@ def score_and_write(
         "掌心朝向、握拍和精确肘角无法从单路视频可靠测量。擦玻璃/拍凳子等判断结合挥拍下落轨迹和画面，受拍摄角度影响。",
     ]
 
-    if stroke == "forehand_slice":
-        label = "正手切削"
-    elif stroke == "backhand":
-        label = "底线反手"
-    else:
-        label = "底线正手"
+    label = "底线反手" if stroke == "backhand" else "底线正手"
     return {
         "label": label,
         "scores": scores,
@@ -1097,6 +1118,7 @@ def score_and_write(
         "problems": problems,
         "drills": drills,
         "caveats": caveats,
+        "evaluable": True,
     }
 
 

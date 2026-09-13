@@ -75,53 +75,55 @@ def flags_from_values(
     head_above_wrist: float | None = None,
     hand_reaches: bool = False,
 ) -> list[str]:
-    """Conservative proxies. Missing numbers do not vote yes."""
+    """Conservative proxies. Missing numbers do not vote yes. Side-view groundstrokes only."""
     kind = normalize_kind(kind)
     flags: list[str] = []
-    ground_topspin = kind == "forehand"
+    side = view == "side"
+    ground = kind in ("forehand", "backhand")
 
-    if view == "side" and ground_topspin and slot_drop is not None and takeback_height is not None:
+    if side and kind == "forehand" and slot_drop is not None and takeback_height is not None:
         # 拍凳子：引拍有高度，再落到腰。擦玻璃：有高度却横扫不落。
         if takeback_height >= 0.12 and slot_drop < 0.05:
             flags.append("wipe_glass")
 
-    if view == "side" and wrist_back is not None and body_turn is not None:
+    if side and ground and wrist_back is not None and body_turn is not None:
         if wrist_back >= 0.16 and body_turn < 0.04:
             flags.append("arm_only")
 
-    if view == "side" and weight_shift is not None and weight_shift < 0.015:
+    if side and ground and weight_shift is not None and weight_shift < 0.015:
         flags.append("no_weight_shift")
 
-    if hand_reaches:
+    if side and ground and hand_reaches:
         flags.append("hand_reach")
 
-    if takeback_dt is not None and takeback_dt < 0.10:
+    if side and ground and takeback_dt is not None and takeback_dt < 0.10:
         flags.append("late_takeback")
 
-    if view == "side" and torso_lean is not None and torso_lean < -0.08:
+    if side and ground and torso_lean is not None and torso_lean < -0.08:
         flags.append("lean_back")
 
-    if view == "side" and follow_up is not None and (follow_forward is None or follow_forward < 0.06) and follow_up > 0.22:
+    if side and ground and follow_up is not None and (follow_forward is None or follow_forward < 0.06) and follow_up > 0.22:
         flags.append("follow_vertical")
 
-    if kind == "backhand" and follow_up is not None and follow_up > 0.35:
+    if side and kind == "backhand" and follow_up is not None and follow_up > 0.35:
         flags.append("follow_too_high")
 
-    if kind in ("backhand", "forehand_slice", "backhand_slice") and head_above_wrist is not None:
+    if side and kind == "backhand" and head_above_wrist is not None:
         if head_above_wrist < -0.02:
             flags.append("head_below_wrist")
 
-    off = 0
-    for phase, deg in (
-        ("takeback", elbow_takeback),
-        ("contact", elbow_contact),
-        ("follow", elbow_follow),
-    ):
-        ok = elbow_in_range(kind, phase, deg, slack=22.0)
-        if ok is False:
-            off += 1
-    if off >= 2:
-        flags.append("elbow_range")
+    if side and ground:
+        off = 0
+        for phase, deg in (
+            ("takeback", elbow_takeback),
+            ("contact", elbow_contact),
+            ("follow", elbow_follow),
+        ):
+            ok = elbow_in_range(kind, phase, deg, slack=22.0)
+            if ok is False:
+                off += 1
+        if off >= 2:
+            flags.append("elbow_range")
 
     return flags
 
@@ -201,9 +203,9 @@ def extra_findings(stroke: str, summary: dict) -> tuple[list[str], list[str], li
         )
 
     if rate("head_below_wrist") >= 0.35:
-        problems.append("引拍时拍头低于手腕，拍面不好控制，截击或切削会发飘。")
+        problems.append("引拍时拍头低于手腕，拍面不好控制，球容易发飘。")
         drills.append(
-            "【问题】拍头掉下去 → 【原因】手腕松、引拍用手臂去捞 → 【训练】口令「拍头高于手腕」，对墙轻削 20 球。"
+            "【问题】拍头掉下去 → 【原因】手腕松、引拍用手臂去捞 → 【训练】口令「拍头高于手腕」，对墙轻打 20 球。"
         )
 
     elbow = summary.get("elbow_contact_deg")
@@ -264,24 +266,11 @@ def _card_backhand(w: dict[str, str]) -> str:
 肘角参考：双手引拍 120–140° / 击球 130–150° / 随挥 100–130°；单反各段大约再大 20°。"""
 
 
-def _card_slice(w: dict[str, str], backhand: bool) -> str:
-    if backhand:
-        return f"""【反手切削】
-大陆式，关闭式站位。引拍直线向后上方（不是 C 字），拍头朝天、拍面打开。非持拍手扶拍喉直到击球前。
-击球点左前方、腰到胸之间；拍面约 45–50°（比正手削更开）；向前推送多于向下劈砍。
-随挥到右膝外侧、拍面朝下，随挥后保持侧身。"""
-    return f"""【正手切削】
-大陆式（握菜刀）。引拍举到右肩上方齐耳、拍头朝天，身侧画 C 字。
-击球点右前方约腰高；拍面约 45°，手腕锁死；从右肩向左膝前方陡峭劈砍。随挥必须完整，收到左膝外侧。
-不要和上旋正手混评：切削就是高向低，不是低向高刷。"""
-
-
-def _appendix() -> str:
-    return """【若画面明显不是底线抽球，改用下面要领，不要硬套正手】
-截击正手：大陆式，引拍极小，拍头始终高于手腕，击球点更靠前（右前方 45–60cm），异侧脚跨出成弓步，短促推压 20–30cm，随挥不超过身前一尺。球快借力，球慢迎击。
-截击反手：引拍比正手更小，拍面更关闭（约 75–80°），肘微屈不要伸直，短促切砍；高球用磕挡。
-发球：侧身时前肩对网。平击打 12 点、侧旋摩擦 2 点、侧上旋提拉 10 点。二发以侧上旋为主。
-高压：立刻侧身，非持拍手全程指球，挠背引拍，在头上偏右前最高点打；绝不仰头后退。下网多半击球点太低，出界多半翻腕或后仰。"""
+def _scope() -> str:
+    return """【这次只评什么】
+只评正侧面的底线正手和底线反手。
+不要判断切削、截击、发球、高压。画面像这些动作，或机位不是正侧面（背面、斜切、正面），写「机位/动作不适合评价」，不要硬套底线抽球，也不要改用那些技术的清单硬评。
+人越大、越完整入画越好。"""
 
 
 def _observability() -> str:
@@ -295,15 +284,10 @@ slot_drop、body_turn、weight_shift、tech_flags 是 2D 旁证，必须和附�
 def prompt_knowledge(clip_ids: list[str], handed: str = "right") -> str:
     w = _side_words(handed if handed in ("left", "right") else "right")
     wanted = {normalize_kind(i) for i in clip_ids if i}
-    parts: list[str] = []
+    parts: list[str] = [_scope()]
     if "forehand" in wanted or not wanted:
         parts.append(_card_forehand(w))
     if "backhand" in wanted:
         parts.append(_card_backhand(w))
-    if "forehand_slice" in wanted:
-        parts.append(_card_slice(w, backhand=False))
-    if "backhand_slice" in wanted:
-        parts.append(_card_slice(w, backhand=True))
-    parts.append(_appendix())
     parts.append(_observability())
     return "\n\n".join(parts)

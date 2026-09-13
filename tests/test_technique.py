@@ -6,8 +6,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from pipeline.analyze import score_and_write
+import numpy as np
+
+from pipeline.analyze import infer_view, score_and_write, view_is_side, view_label
 from pipeline.coach import _build_prompt, _pick_keyframes, _slim_report
+from pipeline.pose import KPT
 from pipeline.technique import extra_findings, flags_from_values, prompt_knowledge
 
 
@@ -59,6 +62,11 @@ class FlagTests(unittest.TestCase):
         self.assertNotIn("wipe_glass", back)
         self.assertNotIn("arm_only", back)
 
+    def test_hand_reach_skips_non_side(self):
+        self.assertIn("hand_reach", flags_from_values("forehand", view="side", hand_reaches=True))
+        self.assertNotIn("hand_reach", flags_from_values("forehand", view="back", hand_reaches=True))
+        self.assertNotIn("hand_reach", flags_from_values("forehand", view="oblique", hand_reaches=True))
+
 
 class FindingsTests(unittest.TestCase):
     def test_extra_findings_name_wipe_glass_drill(self):
@@ -88,6 +96,35 @@ class FindingsTests(unittest.TestCase):
         self.assertLess(written["scores"]["击球效果"], base["scores"]["击球效果"])
         self.assertLess(written["scores"]["动力链"], base["scores"]["动力链"])
 
+    def test_non_side_does_not_name_technique_errors(self):
+        written = score_and_write(
+            "forehand",
+            {
+                "n_swings": 8,
+                "cog_ratio": 0.5,
+                "flag_rates": {"wipe_glass": 0.5, "arm_only": 0.5},
+                "slot_drop": 0.02,
+                "body_turn": 0.01,
+            },
+            view="back",
+        )
+        text = " ".join(written["problems"] + written["drills"] + written["strengths"])
+        self.assertFalse(written["evaluable"])
+        self.assertIn("正侧面", text)
+        self.assertNotIn("擦玻璃", text)
+        self.assertNotIn("拍凳子", text)
+
+    def test_side_low_lift_does_not_call_it_slice(self):
+        written = score_and_write(
+            "forehand",
+            {"n_swings": 6, "cog_ratio": 0.5, "path_lift": -0.2, "flag_rates": {}},
+            view="side",
+        )
+        blob = " ".join(written["problems"] + written["drills"] + written["strengths"])
+        self.assertTrue(written["evaluable"])
+        self.assertNotIn("正手切削", blob)
+        self.assertNotIn("单独按切削练", blob)
+
 
 class PromptTests(unittest.TestCase):
     def test_knowledge_covers_forehand_and_limits(self):
@@ -96,7 +133,10 @@ class PromptTests(unittest.TestCase):
         self.assertIn("擦玻璃", text)
         self.assertIn("左肩", text)
         self.assertIn("不要编 6:00", text)
-        self.assertIn("截击", text)
+        self.assertIn("只评正侧面", text)
+        self.assertIn("不要判断切削、截击", text)
+        self.assertNotIn("截击正手", text)
+        self.assertNotIn("高压：", text)
 
     def test_lefty_swaps_front_shoulder(self):
         text = prompt_knowledge(["forehand"], "left")
@@ -138,6 +178,7 @@ class PromptTests(unittest.TestCase):
         }
         prompt = _build_prompt(report, ["底线正手 挥拍#1 引拍 t=1.2"])
         self.assertIn("拍凳子", prompt)
+        self.assertIn("不要把任何一拍写成切削", prompt)
         self.assertIn("rule_hints", prompt)
         self.assertIn("wipe_glass", prompt)
         slim = _slim_report(report)
@@ -177,6 +218,37 @@ class PromptTests(unittest.TestCase):
             self.assertTrue(any("引拍" in lab for lab in labels))
             self.assertTrue(any("随挥" in lab for lab in labels))
             self.assertTrue(any("准备" in lab for lab in labels))
+
+
+class ViewTests(unittest.TestCase):
+    def _frames(self, shoulder_width: float, torso=100.0, n=5):
+        xy_list, conf_list = [], []
+        for _ in range(n):
+            xy = np.zeros((17, 2), dtype=np.float64)
+            conf = np.ones(17, dtype=np.float64)
+            xy[KPT["l_shoulder"]] = [0.0, 0.0]
+            xy[KPT["r_shoulder"]] = [shoulder_width, 0.0]
+            xy[KPT["l_hip"]] = [shoulder_width / 2, torso]
+            xy[KPT["r_hip"]] = [shoulder_width / 2, torso]
+            xy_list.append(xy)
+            conf_list.append(conf)
+        return xy_list, conf_list
+
+    def test_true_profile_is_side(self):
+        xy, conf = self._frames(20)
+        self.assertEqual(infer_view(xy, conf), "side")
+        self.assertTrue(view_is_side("side"))
+
+    def test_three_quarter_is_oblique_not_evaluated(self):
+        xy, conf = self._frames(36)
+        self.assertEqual(infer_view(xy, conf), "oblique")
+        self.assertEqual(view_label("oblique"), "斜切")
+        self.assertFalse(view_is_side("oblique"))
+
+    def test_facing_camera_is_back(self):
+        xy, conf = self._frames(55)
+        self.assertEqual(infer_view(xy, conf), "back")
+        self.assertEqual(view_label("back"), "背面")
 
 
 if __name__ == "__main__":

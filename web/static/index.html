@@ -297,7 +297,7 @@
       <div>
         <div class="brand">网球测评 <span class="ver">2.0</span></div>
         <h1>上传视频，生成挥拍测评报告</h1>
-        <p class="sub">围绕重心、击球点、动力链和击球效果，找出每一次挥拍，给出评分和练习建议。</p>
+        <p class="sub">围绕重心、击球点、动力链和击球效果，找出每一次底线正反手，给出评分和练习建议。</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
         <button class="ghost" id="hist-btn" type="button">历史报告</button>
@@ -308,7 +308,7 @@
     <section id="upload" class="no-print">
       <div class="drop" id="drop">
         <h2>把训练视频拖到这里</h2>
-        <p class="sub" style="margin:0 auto">建议侧面拍摄，人尽量完整入画，这样更容易看清击球。自己上传请用 1 分钟左右的录像，我们会按整段分析。</p>
+        <p class="sub" style="margin:0 auto">只评正侧面的底线正手和反手。请侧面拍摄，人尽量大、完整入画。切削、截击、发球、高压这次不评价。自己上传请用 1 分钟左右的录像，我们会按整段分析。</p>
         <div class="row">
           <select id="stroke">
             <option value="auto" selected>自动识别正反手</option>
@@ -630,7 +630,7 @@
       }).join("");
       return `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${marks}
         <path d="${d}" fill="none" stroke="#1f4a38" stroke-width="1.8"/></svg>
-        <div class="note">绿线为正手上旋，金线为切削或反手</div>`;
+        <div class="note">绿线为正手，金线为反手</div>`;
     }
 
     function fmtKmh(v) {
@@ -717,11 +717,9 @@
           const name = { ready: "准备", takeback: "引拍", contact: "击球", follow: "随挥" }[k];
           return `<figure><img src="${p.image}" alt="${name}"/><figcaption>${name} · ${p.t.toFixed(2)}s</figcaption></figure>`;
         }).join("");
-        const kind = s.shot_kind === "slice"
-          ? `<span class="pill">正手切削</span>`
-          : s.shot_kind === "backhand"
+        const kind = s.shot_kind === "backhand"
             ? `<span class="pill">反手</span>`
-            : `<span class="pill">上旋正手</span>`;
+            : `<span class="pill">正手</span>`;
         return `<article class="swing">
           <div class="barline"><span>挥拍 ${s.index} · ${s.contact_t.toFixed(1)} 秒</span>${kind}${seen}${contactPill(s)}${speedPills(s)}${flagPills(s)}</div>
           <div class="phases">${figs}</div>
@@ -784,6 +782,7 @@
               <div class="kicker">挥拍测评报告 · 2.0</div>
               <h1>${esc(data.title)}</h1>
               <p class="meta">${esc(data.source_name)} · ${data.view_label}拍摄 · ${data.handedness_label} · ${data.duration_s} 秒</p>
+              ${data.view_evaluable === false ? `<p class="focus" style="margin:10px 0 0">当前不是正侧面，技术细节先不下判断。请侧面拍摄底线正反手再测。</p>` : ""}
               <p class="meta">识别到挥拍 ${o.n_swings} 次 · 生成于 ${esc(data.generated_at)}${data.tracking && data.tracking.contact_from_ball ? " · 部分击球已按球和拍定位" : ""}</p>
               ${data.summary ? `<p style="margin:12px 0 0">${esc(data.summary)}</p>` : ""}
               ${data.focus ? `<p class="focus" style="margin:10px 0 0;font-weight:650">先抓：${esc(data.focus)}</p>` : ""}

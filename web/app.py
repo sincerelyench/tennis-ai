@@ -33,7 +33,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 SAMPLE_CANDIDATES = [
     ROOT / "samples" / "demo.mp4",
 ]
-SAMPLE_CACHE_VERSION = "2.5-speeds"
+SAMPLE_CACHE_VERSION = "2.6-side-fhbh"
 
 JOBS_DIR.mkdir(parents=True, exist_ok=True)
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
