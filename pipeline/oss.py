@@ -153,6 +153,9 @@ def refresh_report_urls(report: dict) -> dict:
             report[url_field] = sign_url(str(oss_key))
     for clip in report.get("clips") or []:
         for swing in clip.get("swings") or []:
+            video_key = swing.get("video_oss_key")
+            if video_key:
+                swing["video"] = sign_url(str(video_key))
             for phase in (swing.get("phases") or {}).values():
                 if isinstance(phase, dict) and phase.get("oss_key"):
                     phase["image"] = sign_url(str(phase["oss_key"]))

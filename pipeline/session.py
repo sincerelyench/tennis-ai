@@ -157,6 +157,74 @@ def _encode_h264(src: Path, dst: Path) -> None:
         raise RuntimeError("视频处理失败，请稍后重试") from exc
 
 
+def _cut_clip(src: Path, dst: Path, t0: float, t1: float) -> None:
+    start = max(0.0, float(t0))
+    dur = max(0.45, float(t1) - start)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-ss",
+                f"{start:.3f}",
+                "-i",
+                str(src),
+                "-t",
+                f"{dur:.3f}",
+                "-an",
+                "-c:v",
+                "libx264",
+                "-pix_fmt",
+                "yuv420p",
+                "-crf",
+                "23",
+                "-preset",
+                "veryfast",
+                "-movflags",
+                "+faststart",
+                str(dst),
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError("视频处理失败，请稍后重试") from exc
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError("视频处理失败，请稍后重试") from exc
+
+
+def _attach_swing_videos(job_id: str, overlay_path: Path, clips: list, fps: float, out_dir: Path) -> None:
+    if not overlay_path.is_file() or not clips:
+        return
+    clips_dir = out_dir / "clips"
+    clips_dir.mkdir(parents=True, exist_ok=True)
+    fps = float(fps) if fps and fps > 1 else 25.0
+    for clip in clips:
+        stroke = str(clip.get("id") or clip.get("stroke") or "swing")
+        for item in clip.get("swings") or []:
+            start_i = item.get("clip_start_i")
+            end_i = item.get("clip_end_i")
+            if start_i is None or end_i is None:
+                continue
+            t0 = float(start_i) / fps
+            t1 = (float(end_i) + 1.0) / fps
+            fname = f"{stroke}_s{int(item.get('index') or 0):02d}.mp4"
+            abs_path = clips_dir / fname
+            try:
+                _cut_clip(overlay_path, abs_path, t0, t1)
+                if not abs_path.is_file() or abs_path.stat().st_size < 800:
+                    continue
+                published = _publish(job_id, f"clips/{fname}", abs_path)
+            except (RuntimeError, OSError):
+                continue
+            item["video"] = published["url"]
+            item["video_oss_key"] = published["key"]
+            item["clip_t0"] = round(t0, 3)
+            item["clip_t1"] = round(t1, 3)
+
+
 def _draw_hud(frame: np.ndarray, t: float, ok: bool, _done: int, _total: int) -> np.ndarray:
     out = frame.copy()
     h, w = out.shape[:2]
@@ -334,7 +402,7 @@ def analyze_video(
     out_dir: Path,
     *,
     max_seconds: float = 0.0,
-    stroke_mode: str = "auto",
+    stroke_mode: str = "forehand",
     title: str | None = None,
     estimator: PoseEstimator | None = None,
     progress: ProgressCb | None = None,
@@ -621,6 +689,8 @@ def analyze_video(
                 "flag_notes": flag_notes(sw.tech_flags or []),
                 "speeds": sw.speeds,
                 "phases": phases,
+                "clip_start_i": int(sw.clip_start_i),
+                "clip_end_i": int(sw.clip_end_i),
             }
             if sw.hit_point is not None:
                 payload["hit_point"] = sw.hit_point.as_dict()
@@ -716,6 +786,8 @@ def analyze_video(
         obj_list,
         contact_hits,
     )
+    _emit(progress, step=4, step_name="整理数据", progress=87, message="正在剪出每一次完整挥拍…")
+    _attach_swing_videos(job_id, overlay_path, clips, fps, out_dir)
 
     grade, grade_label = grade_from_score(int(overall_scores["综合"]))
 
@@ -829,7 +901,7 @@ def main():
     parser.add_argument("video", type=Path)
     parser.add_argument("-o", "--out", type=Path, default=ROOT / "outputs" / "session")
     parser.add_argument("--max-seconds", type=float, default=0)
-    parser.add_argument("--stroke", choices=["auto", "forehand", "backhand"], default="auto")
+    parser.add_argument("--stroke", choices=["auto", "forehand", "backhand"], default="forehand")
     args = parser.parse_args()
 
     def cb(d):

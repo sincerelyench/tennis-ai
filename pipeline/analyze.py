@@ -222,6 +222,36 @@ def classify_swing(
     return "backhand" if r_s > l_s * 1.05 and r_s > 55 else "forehand"
 
 
+def swing_clip_span(
+    ready_i: int,
+    takeback_i: int,
+    contact_i: int,
+    follow_i: int,
+    n: int,
+    fps: float,
+) -> tuple[int, int]:
+    """Inclusive frame range covering one complete swing, with a little padding."""
+    n = max(int(n), 1)
+    fps = float(fps) if fps and fps > 1 else 25.0
+    pad_pre = max(2, int(round(0.18 * fps)))
+    pad_post = max(3, int(round(0.28 * fps)))
+    start = min(int(ready_i), int(takeback_i), int(contact_i))
+    end = max(int(follow_i), int(contact_i))
+    start = max(0, start - pad_pre)
+    end = min(n - 1, end + pad_post)
+    if end < start:
+        start = max(0, int(contact_i) - pad_pre)
+        end = min(n - 1, int(contact_i) + pad_post)
+    min_len = max(10, int(round(0.85 * fps)))
+    span = end - start + 1
+    if span < min_len:
+        extra = min_len - span
+        start = max(0, start - extra // 2)
+        end = min(n - 1, start + min_len - 1)
+        start = max(0, end - min_len + 1)
+    return start, end
+
+
 def build_series(
     ts: np.ndarray,
     side_xy: list[np.ndarray],
@@ -381,6 +411,8 @@ class SwingMetrics:
     head_above_wrist: float | None = None
     takeback_dt: float | None = None
     tech_flags: list[str] = field(default_factory=list)
+    clip_start_i: int = 0
+    clip_end_i: int = 0
 
 
 def _arr_at(arr: np.ndarray | None, i: int) -> np.ndarray | None:
@@ -482,6 +514,7 @@ def measure_swings(
             takeback_i = pre + int(np.nanargmax(np.nan_to_num(tb_slice, nan=-1e9)))
         else:
             takeback_i = max(0, p - int(0.22 * fps))
+        clip_start_i, clip_end_i = swing_clip_span(ready, takeback_i, p, follow, n, fps)
 
         torso = _val_at(series.torso_len, p, pre, follow, "median")
         if torso is None or torso < 1:
@@ -746,6 +779,8 @@ def measure_swings(
                 head_above_wrist=_r3(head_above_wrist),
                 takeback_dt=None if takeback_dt is None else round(takeback_dt, 3),
                 tech_flags=tech_flags,
+                clip_start_i=clip_start_i,
+                clip_end_i=clip_end_i,
             )
         )
     return out

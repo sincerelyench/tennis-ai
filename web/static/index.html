@@ -256,10 +256,29 @@
       display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 8px 12px; font-size: 12px; color: var(--ink-muted);
       border-bottom: 1px solid #eee6d8;
     }
+    .stroke-pick {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 8px 6px 14px; border-radius: 999px;
+      border: 1px solid var(--line); background: var(--panel);
+    }
+    .stroke-pick span { font-size: 13px; color: var(--muted); white-space: nowrap; }
+    .stroke-pick select { border: 0; background: transparent; padding: 6px 10px 6px 0; }
     .phases { display: grid; grid-template-columns: repeat(4, 1fr); }
     .phases figure { margin: 0; }
     .phases img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: #111; }
     .phases figcaption { font-size: 11px; color: var(--ink-muted); padding: 6px 8px 10px; }
+    .swing.issue { border-color: #e8b4b4; }
+    .swing.issue .barline { background: #faf2f0; }
+    .swing-media {
+      display: grid; grid-template-columns: 1.45fr .55fr; background: #111;
+    }
+    .swing-media.solo { grid-template-columns: 1fr; }
+    .swing-play { min-width: 0; }
+    video.swing-clip { width: 100%; max-height: 320px; display: block; background: #000; }
+    .clip-cap { margin: 0; padding: 6px 10px 8px; font-size: 11px; color: #c8d4c8; background: #111; }
+    .contact-still { margin: 0; background: #111; }
+    .contact-still img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: #111; }
+    .contact-still figcaption { font-size: 11px; color: #c8d4c8; padding: 6px 8px 10px; }
     .pill { font-size: 11px; border: 1px solid #d9d0c0; border-radius: 999px; padding: 2px 8px; }
     .pill.bad { color: #a33; border-color: #e8b4b4; }
     .pill.ok { color: #1f4a38; border-color: #b7d4c4; }
@@ -272,14 +291,14 @@
     .hidden { display: none !important; }
     video.overlay { width: 100%; border-radius: 12px; background: #000; max-height: 360px; }
     @media (max-width: 860px) {
-      .cover, .scores, .grid2, .live, .steps, .phases, .pillars, .axis-grid, .speed-grid { grid-template-columns: 1fr 1fr; }
+      .cover, .scores, .grid2, .live, .steps, .phases, .pillars, .axis-grid, .speed-grid, .swing-media { grid-template-columns: 1fr 1fr; }
       .paper { padding: 22px 16px 32px; }
       header.hero { flex-direction: column; align-items: flex-start; }
       .hist-grid { grid-template-columns: 1fr 1fr; }
       .steps { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 560px) {
-      .pillars, .axis-grid, .phases, .speed-grid, .hist-grid { grid-template-columns: 1fr; }
+      .pillars, .axis-grid, .phases, .speed-grid, .hist-grid, .swing-media { grid-template-columns: 1fr; }
     }
     @media print {
       body { background: white; }
@@ -308,20 +327,23 @@
     <section id="upload" class="no-print">
       <div class="drop" id="drop">
         <h2>把训练视频拖到这里</h2>
-        <p class="sub" style="margin:0 auto">建议侧面拍摄，人尽量完整入画，这样更容易看清击球。自己上传请用 1 分钟左右的录像，我们会按整段分析。</p>
+        <p class="sub" style="margin:0 auto">建议侧面拍摄，人尽量完整入画，这样更容易看清击球。先告诉系统这段是正手还是反手，再上传 1 分钟左右的录像。</p>
         <div class="row">
-          <select id="stroke">
-            <option value="auto" selected>自动识别正反手</option>
-            <option value="forehand">只按正手</option>
-            <option value="backhand">只按反手</option>
-          </select>
+          <label class="stroke-pick">
+            <span>这段录像是</span>
+            <select id="stroke">
+              <option value="forehand" selected>正手</option>
+              <option value="backhand">反手</option>
+              <option value="auto">自动识别（容易误判）</option>
+            </select>
+          </label>
           <button class="btn" id="pick" type="button">选择文件</button>
           <button class="btn primary" id="sample" type="button">分析 1 分钟样例</button>
           <button class="btn" id="sample-refresh" type="button">重新跑样例</button>
         </div>
         <p class="hint" id="busy" hidden></p>
         <input id="file" type="file" accept="video/mp4,video/quicktime,video/webm" hidden />
-        <p class="hint">支持 mp4 / mov / webm。样例是侧面训练录像，会分析前 60 秒。平常点「分析样例」会打开上次结果；改了算法后点「重新跑样例」，大约要 6 分钟。</p>
+        <p class="hint">支持 mp4 / mov / webm。请先选正手或反手，系统按你选的来评，不再自己猜。样例是侧面训练录像，会分析前 60 秒。平常点「分析样例」会打开上次结果；改了算法后点「重新跑样例」，大约要 6 分钟。</p>
         <div class="pillars">
           <div class="pillar"><b>重心</b>越稳越好，尽量保持低重心</div>
           <div class="pillar"><b>击球点</b>胸口高度、持拍侧稍外、身前约 45°</div>
@@ -706,23 +728,48 @@
       return `<div class="hit-meta">${pills.join("")}</div>`;
     }
 
-    function renderClip(clip) {
+    function renderClip(clip, strokeMode) {
       const a = clip.analysis;
       const swings = clip.swings.map((s) => {
+        const phases = s.phases || {};
         const seen = (s.contact_source === "ball_racket" || s.contact_source === "ball_wrist" || (s.hit_point && s.hit_point.source === "ball"))
           ? `<span class="pill ok">已看到球</span>`
           : "";
-        const figs = ["ready", "takeback", "contact", "follow"].map((k) => {
-          const p = s.phases[k];
-          const name = { ready: "准备", takeback: "引拍", contact: "击球", follow: "随挥" }[k];
-          return `<figure><img src="${p.image}" alt="${name}"/><figcaption>${name} · ${p.t.toFixed(2)}s</figcaption></figure>`;
-        }).join("");
-        const kind = s.shot_kind === "backhand"
-            ? `<span class="pill">反手</span>`
-            : `<span class="pill">正手</span>`;
-        return `<article class="swing">
-          <div class="barline"><span>挥拍 ${s.index} · ${s.contact_t.toFixed(1)} 秒</span>${kind}${seen}${contactPill(s)}${speedPills(s)}${flagPills(s)}</div>
-          <div class="phases">${figs}</div>
+        const issue = (s.flag_notes && s.flag_notes.length) || s.late_contact || (s.hit_point && s.hit_point.ok === false);
+        const issuePill = issue ? `<span class="pill bad">这一拍有问题</span>` : "";
+        const contact = phases.contact;
+        const contactFig = contact && contact.image
+          ? `<figure class="contact-still"><img src="${contact.image}" alt="击球"/><figcaption>击球定格${contact.t != null ? " · " + Number(contact.t).toFixed(2) + "s" : ""}</figcaption></figure>`
+          : "";
+        let media = "";
+        if (s.video) {
+          const t0 = s.clip_t0 != null ? Number(s.clip_t0).toFixed(1) : "";
+          const t1 = s.clip_t1 != null ? Number(s.clip_t1).toFixed(1) : "";
+          const span = t0 && t1 ? ` · ${t0}–${t1} 秒` : "";
+          const poster = contact && contact.image ? ` poster="${contact.image}"` : "";
+          media = `<div class="swing-media${contactFig ? "" : " solo"}">
+            <div class="swing-play">
+              <video class="swing-clip" src="${s.video}"${poster} controls playsinline muted loop></video>
+              <p class="clip-cap">完整挥拍${span}</p>
+            </div>
+            ${contactFig}
+          </div>`;
+        } else {
+          const figs = ["ready", "takeback", "contact", "follow"].map((k) => {
+            const p = phases[k];
+            if (!p || !p.image) return "";
+            const name = { ready: "准备", takeback: "引拍", contact: "击球", follow: "随挥" }[k];
+            const t = p.t != null ? " · " + Number(p.t).toFixed(2) + "s" : "";
+            return `<figure><img src="${p.image}" alt="${name}"/><figcaption>${name}${t}</figcaption></figure>`;
+          }).join("");
+          media = `<div class="phases">${figs}</div>`;
+        }
+        const kind = strokeMode === "auto"
+          ? (s.shot_kind === "backhand" ? `<span class="pill">反手</span>` : `<span class="pill">正手</span>`)
+          : "";
+        return `<article class="swing${issue ? " issue" : ""}">
+          <div class="barline"><span>挥拍 ${s.index} · ${s.contact_t.toFixed(1)} 秒</span>${issuePill}${kind}${seen}${contactPill(s)}${speedPills(s)}${flagPills(s)}</div>
+          ${media}
           ${hitNotes(s)}
         </article>`;
       }).join("");
@@ -745,7 +792,7 @@
           <ul>${a.drills.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
         </div>
         <div class="swings">${swings}</div>
-        <p class="legend">击球画面里：<b>实心十字</b>是相对身体的击球点，<i>虚线圈</i>是理想区（胸口高度、持拍侧稍外、身前约 45°）。不判断球打在拍面哪里。</p>`;
+        <p class="legend">下面每拍是完整挥拍回放。击球定格里：<b>实心十字</b>是相对身体的击球点，<i>虚线圈</i>是理想区（胸口高度、持拍侧稍外、身前约 45°）。不判断球打在拍面哪里。</p>`;
     }
 
     function showReport(data, jobId) {
@@ -768,6 +815,13 @@
         const v = sc[k] || 0;
         return `<div class="bar"><span>${k}</span><div class="track"><i style="width:${(100*v/max).toFixed(1)}%"></i></div><b>${v}</b></div>`;
       }).join("");
+      const modeNote = data.stroke_mode === "backhand"
+        ? " · 按反手分析"
+        : data.stroke_mode === "forehand"
+          ? " · 按正手分析"
+          : data.stroke_mode === "auto"
+            ? " · 自动识别正反手"
+            : "";
       const pct = Math.min(100, o.score);
       let cur = 0;
       reportEl.innerHTML = `
@@ -782,7 +836,7 @@
               <div class="kicker">挥拍测评报告 · 2.0</div>
               <h1>${esc(data.title)}</h1>
               <p class="meta">${esc(data.source_name)} · ${data.view_label}拍摄 · ${data.handedness_label} · ${data.duration_s} 秒</p>
-              <p class="meta">识别到挥拍 ${o.n_swings} 次 · 生成于 ${esc(data.generated_at)}${data.tracking && data.tracking.contact_from_ball ? " · 部分击球已按球和拍定位" : ""}</p>
+              <p class="meta">识别到挥拍 ${o.n_swings} 次${modeNote} · 生成于 ${esc(data.generated_at)}${data.tracking && data.tracking.contact_from_ball ? " · 部分击球已按球和拍定位" : ""}</p>
               ${data.summary ? `<p style="margin:12px 0 0">${esc(data.summary)}</p>` : ""}
               ${data.focus ? `<p class="focus" style="margin:10px 0 0;font-weight:650">先抓：${esc(data.focus)}</p>` : ""}
               ${data.overlay_video ? `<video class="overlay" src="${data.overlay_video}" controls playsinline style="margin-top:16px"></video>` : ""}
@@ -826,7 +880,7 @@
           clipBox.innerHTML = "<p>没有识别到完整挥拍。</p>";
           return;
         }
-        clipBox.innerHTML = renderClip(clips[cur]);
+        clipBox.innerHTML = renderClip(clips[cur], data.stroke_mode);
         reportEl.querySelectorAll(".tab").forEach((b) => {
           b.classList.toggle("on", +b.dataset.i === cur);
           b.onclick = () => { cur = +b.dataset.i; paint(); };

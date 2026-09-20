@@ -5,11 +5,13 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 
-from pipeline.analyze import infer_view, score_and_write, view_is_side, view_label
+from pipeline.analyze import infer_view, score_and_write, swing_clip_span, view_is_side, view_label
 from pipeline.coach import _build_prompt, _pick_keyframes, _slim_report
+from pipeline.oss import refresh_report_urls
 from pipeline.pose import KPT
 from pipeline.technique import extra_findings, flags_from_values, prompt_knowledge
 
@@ -244,6 +246,48 @@ class ViewTests(unittest.TestCase):
         xy, conf = self._frames(55)
         self.assertEqual(infer_view(xy, conf), "back")
         self.assertEqual(view_label("back"), "背面")
+
+
+class SwingClipSpanTests(unittest.TestCase):
+    def test_pads_ready_to_follow(self):
+        start, end = swing_clip_span(ready_i=10, takeback_i=14, contact_i=20, follow_i=27, n=80, fps=25)
+        self.assertLessEqual(start, 10)
+        self.assertGreaterEqual(end, 27)
+        self.assertGreaterEqual(end - start + 1, 21)
+
+    def test_expands_short_window(self):
+        start, end = swing_clip_span(ready_i=40, takeback_i=40, contact_i=40, follow_i=41, n=80, fps=25)
+        self.assertGreaterEqual(end - start + 1, 21)
+        self.assertGreaterEqual(start, 0)
+        self.assertLess(end, 80)
+
+    def test_stays_inside_video(self):
+        start, end = swing_clip_span(ready_i=0, takeback_i=1, contact_i=2, follow_i=3, n=12, fps=25)
+        self.assertEqual(start, 0)
+        self.assertEqual(end, 11)
+
+
+class ReportUrlRefreshTests(unittest.TestCase):
+    def test_resigns_swing_video_and_phase_images(self):
+        report = {
+            "clips": [
+                {
+                    "swings": [
+                        {
+                            "video_oss_key": "clips/forehand_s01.mp4",
+                            "phases": {"contact": {"oss_key": "keyframes/c.jpg"}},
+                        }
+                    ]
+                }
+            ]
+        }
+        with mock.patch("pipeline.oss.configured", return_value=True), mock.patch(
+            "pipeline.oss.sign_url", side_effect=lambda key: "https://cdn/" + key
+        ):
+            out = refresh_report_urls(report)
+        swing = out["clips"][0]["swings"][0]
+        self.assertEqual(swing["video"], "https://cdn/clips/forehand_s01.mp4")
+        self.assertEqual(swing["phases"]["contact"]["image"], "https://cdn/keyframes/c.jpg")
 
 
 if __name__ == "__main__":

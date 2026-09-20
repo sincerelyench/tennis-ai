@@ -240,7 +240,7 @@ def _recover_jobs() -> None:
         if job.get("status") == "done":
             archive_report(job_dir, REPORTS_DIR)
         if job.get("is_sample") and job.get("status") == "done" and sample is not None:
-            _save_sample_cache(job_id, sample, str(job.get("stroke_mode") or "auto"))
+            _save_sample_cache(job_id, sample, str(job.get("stroke_mode") or "forehand"))
 
 
 def _run_job(job_id: str) -> None:
@@ -280,7 +280,7 @@ def _run_job(job_id: str) -> None:
         if job.get("is_sample"):
             src = _sample_path()
             if src is not None:
-                _save_sample_cache(job_id, src, str(job.get("stroke_mode") or "auto"))
+                _save_sample_cache(job_id, src, str(job.get("stroke_mode") or "forehand"))
     except Exception as exc:
         user_msg = str(exc) if isinstance(exc, RuntimeError) else "分析失败，请稍后重试"
         _set(
@@ -363,11 +363,11 @@ async def analyze(
     sample: str = Form(default="0"),
     refresh: str = Form(default="0"),
     max_seconds: float = Form(default=0),
-    stroke: str = Form(default="auto"),
+    stroke: str = Form(default="forehand"),
     title: str = Form(default="网球挥拍测评报告 2.0"),
 ):
     if stroke not in ("auto", "forehand", "backhand"):
-        stroke = "auto"
+        stroke = "forehand"
 
     use_sample = sample in ("1", "true", "yes")
     force_refresh = refresh in ("1", "true", "yes")
