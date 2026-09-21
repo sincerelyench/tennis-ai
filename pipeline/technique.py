@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from collections import Counter
 
+from pipeline.level import issue_text, parse_level, prompt_level_block
+
 # 2D 投影会偏，只把明显越界当旁证。
 ELBOW_RANGES = {
     "forehand": {"takeback": (130, 150), "contact": (140, 160), "follow": (100, 120)},
@@ -140,9 +142,22 @@ def flag_notes(flags: list[str]) -> list[str]:
     return [FLAG_SHORT[f] for f in flags if f in FLAG_SHORT]
 
 
-def extra_findings(stroke: str, summary: dict) -> tuple[list[str], list[str], list[str]]:
+def _push_issue(problems: list[str], drills: list[str], issue: str, level, **kwargs) -> None:
+    problem, drill = issue_text(issue, level, **kwargs)
+    if problem:
+        problems.append(problem)
+    if drill:
+        drills.append(drill)
+
+
+def extra_findings(
+    stroke: str,
+    summary: dict,
+    player_level: str = "3.0",
+) -> tuple[list[str], list[str], list[str]]:
     """Stroke-specific lines for the rule layer (also passed to the LLM as hints)."""
     kind = normalize_kind(stroke)
+    level = parse_level(player_level)
     rates = summary.get("flag_rates") or {}
     strengths: list[str] = []
     problems: list[str] = []
@@ -153,60 +168,34 @@ def extra_findings(stroke: str, summary: dict) -> tuple[list[str], list[str], li
 
     if kind == "forehand":
         if rate("wipe_glass") >= 0.3:
-            problems.append(
-                "引拍结束后球拍没有先由高往低落到腰（拍凳子），更像横着擦玻璃：拍面容易朝侧面，球往天上飞。"
-            )
-            drills.append(
-                "【问题】擦玻璃 → 【原因】拉拍完成后掌心/拍面朝侧面，挥拍横扫而不是落入击球槽 → 【训练】口令「拍凳子」：引拍结束先由高往低拍到腰，再向前刷；对墙 20 球，出球过网不过肩算过关。"
-            )
+            _push_issue(problems, drills, "wipe_glass", level)
         elif (summary.get("slot_drop") or 0) >= 0.08:
             strengths.append("引拍后能看到由高往低落入击球槽，不是横着擦玻璃。")
 
     if rate("arm_only") >= 0.3:
-        problems.append("拉拍主要是持拍手在动，身体没有跟着转，力量脱节、也不容易打准。")
-        drills.append(
-            "【问题】只动手不转体 → 【原因】手臂主动拉拍，肩髋还对着球网 → 【训练】口令「前肩对球」：球过网就转体，手臂跟着身体走；镜子前慢动作 15 次×3 组，肩先动、手后到。"
-        )
+        _push_issue(problems, drills, "arm_only", level)
     elif (summary.get("body_turn") or 0) >= 0.08:
         strengths.append("引拍能看到转体，不是只甩胳膊。")
 
     if rate("no_weight_shift") >= 0.35:
-        problems.append("击球时重心几乎没向前转移，像原地发力，球打不深。")
-        drills.append(
-            "【问题】重心不前移 → 【原因】后脚还压着、人没送出去 → 【训练】击球瞬间前脚踩实、肚脐跟着球走；自抛自打 15 球×3 组，落点要过发球线。"
-        )
+        _push_issue(problems, drills, "no_weight_shift", level)
     elif (summary.get("weight_shift") or 0) >= 0.05:
         strengths.append("击球时髋能向前送，不是钉在原地。")
 
     if rate("late_takeback") >= 0.35:
-        problems.append("引拍完成偏晚，球已经挤上来，只能捞一下。")
-        drills.append(
-            "【问题】引拍过晚 → 【原因】等球弹起来才拉拍 → 【训练】对方球拍触球或球过网就必须完成引拍；喂球 20 个，引拍晚的那拍作废。"
-        )
+        _push_issue(problems, drills, "late_takeback", level)
 
     if rate("lean_back") >= 0.3:
-        problems.append("击球时身体后仰，击球点容易偏高，球发虚。")
-        drills.append(
-            "【问题】击球后仰 → 【原因】人没到位或等球弹太高 → 【训练】提前分腿垫步，胸口对着来球；15 球要求鼻子不后于腰带。"
-        )
+        _push_issue(problems, drills, "lean_back", level)
 
     if rate("follow_vertical") >= 0.3:
-        problems.append("随挥往正上方拎，而不是向前上方收。这样拍面不稳定，也转不出前冲上旋。")
-        drills.append(
-            "【问题】垂直收拍 → 【原因】击球后手臂上拎、没有内旋送出去 → 【训练】口令「收到对侧肩」：右手选手收到左肩前；随挥要看到手掌朝外，12 球×3 组。"
-        )
+        _push_issue(problems, drills, "follow_vertical", level)
 
     if kind == "backhand" and rate("follow_too_high") >= 0.3:
-        problems.append("双手反拍随挥收得过高，拍头容易翻，球不稳定。")
-        drills.append(
-            "【问题】反手收拍过高 → 【原因】上侧手往上拎 → 【训练】随挥停在肩高附近，非持拍手接住拍颈制动，15 球×3 组。"
-        )
+        _push_issue(problems, drills, "follow_too_high", level)
 
     if rate("head_below_wrist") >= 0.35:
-        problems.append("引拍时拍头低于手腕，拍面不好控制，球容易发飘。")
-        drills.append(
-            "【问题】拍头掉下去 → 【原因】手腕松、引拍用手臂去捞 → 【训练】口令「拍头高于手腕」，对墙轻打 20 球。"
-        )
+        _push_issue(problems, drills, "head_below_wrist", level)
 
     elbow = summary.get("elbow_contact_deg")
     spec = ELBOW_RANGES.get(kind) or ELBOW_RANGES["forehand"]
@@ -279,10 +268,10 @@ slot_drop、body_turn、weight_shift、tech_flags 是 2D 旁证，必须和附�
 背景杂乱时只认骨架和球拍框，不要把旁边的人当球员。"""
 
 
-def prompt_knowledge(clip_ids: list[str], handed: str = "right") -> str:
+def prompt_knowledge(clip_ids: list[str], handed: str = "right", player_level: str = "3.0") -> str:
     w = _side_words(handed if handed in ("left", "right") else "right")
     wanted = {normalize_kind(i) for i in clip_ids if i}
-    parts: list[str] = [_scope()]
+    parts: list[str] = [prompt_level_block(player_level), _scope()]
     if "forehand" in wanted or not wanted:
         parts.append(_card_forehand(w))
     if "backhand" in wanted:

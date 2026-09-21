@@ -178,6 +178,7 @@ class PromptTests(unittest.TestCase):
         self.assertIn("拍凳子", prompt)
         self.assertIn("rule_hints", prompt)
         self.assertIn("wipe_glass", prompt)
+        self.assertIn("3.0 进阶初级", prompt)
         slim = _slim_report(report)
         self.assertEqual(slim["clips"][0]["rule_hints"]["problems"][0][:3], "擦玻璃")
         self.assertEqual(slim["clips"][0]["swings"][0]["tech_flags"], ["wipe_glass"])

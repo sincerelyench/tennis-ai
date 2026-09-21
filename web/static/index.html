@@ -316,7 +316,7 @@
       <div>
         <div class="brand">网球测评 <span class="ver">2.0</span></div>
         <h1>上传视频，生成挥拍测评报告</h1>
-        <p class="sub">围绕重心、击球点、动力链和击球效果，找出每一次挥拍，给出评分和练习建议。</p>
+        <p class="sub">先选自己的水平，再上传录像。同样是击球点偏晚，2.0 和 5.0 的原因完全不同，建议会按你选的等级来写。</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
         <button class="ghost" id="hist-btn" type="button">历史报告</button>
@@ -327,8 +327,20 @@
     <section id="upload" class="no-print">
       <div class="drop" id="drop">
         <h2>把训练视频拖到这里</h2>
-        <p class="sub" style="margin:0 auto">建议侧面拍摄，人尽量完整入画，这样更容易看清击球。先告诉系统这段是正手还是反手，再上传 1 分钟左右的录像。</p>
+        <p class="sub" style="margin:0 auto">建议侧面拍摄，人尽量完整入画。先选自己的水平和这段是正手还是反手，再上传 1 分钟左右的录像。</p>
         <div class="row">
+          <label class="stroke-pick">
+            <span>我的水平</span>
+            <select id="level">
+              <option value="2.0">2.0 入门 · 刚能打到球</option>
+              <option value="2.5">2.5 初级 · 能对打几拍</option>
+              <option value="3.0" selected>3.0 进阶初级 · 能稳定对拉</option>
+              <option value="3.5">3.5 中级 · 能变线进攻</option>
+              <option value="4.0">4.0 中高级 · 比赛有套路</option>
+              <option value="4.5">4.5 高级 · 能主动变化</option>
+              <option value="5.0">5.0 准专业 · 接近竞技</option>
+            </select>
+          </label>
           <label class="stroke-pick">
             <span>这段录像是</span>
             <select id="stroke">
@@ -343,7 +355,7 @@
         </div>
         <p class="hint" id="busy" hidden></p>
         <input id="file" type="file" accept="video/mp4,video/quicktime,video/webm" hidden />
-        <p class="hint">支持 mp4 / mov / webm。请先选正手或反手，系统按你选的来评，不再自己猜。样例是侧面训练录像，会分析前 60 秒。平常点「分析样例」会打开上次结果；改了算法后点「重新跑样例」，大约要 6 分钟。</p>
+        <p class="hint">支持 mp4 / mov / webm。水平按 NTRP，选最接近自己的一档：2.0 刚能碰到球，3.0 能稳定对拉，5.0 接近竞技。选错等级，建议会不准。请先选正手或反手，系统按你选的来评。样例会分析前 60 秒；平常点「分析样例」会打开上次同等级结果，改算法后点「重新跑样例」，大约要 6 分钟。</p>
         <div class="pillars">
           <div class="pillar"><b>重心</b>越稳越好，尽量保持低重心</div>
           <div class="pillar"><b>击球点</b>胸口高度、持拍侧稍外、身前约 45°</div>
@@ -390,6 +402,7 @@
       ["教练点评", "生成练习建议", "约 2 分钟，最慢"],
     ];
     const JOB_KEY = "tennis-ai-active-job";
+    const LEVEL_KEY = "tennis-ai-player-level";
     const AXES = [
       ["重心", 25],
       ["击球点", 20],
@@ -416,6 +429,23 @@
     function clearJob() {
       try { localStorage.removeItem(JOB_KEY); } catch (e) {}
     }
+
+    function currentLevel() {
+      const el = $("level");
+      return el && el.value ? el.value : "3.0";
+    }
+    function restoreLevel() {
+      const el = $("level");
+      if (!el) return;
+      try {
+        const saved = localStorage.getItem(LEVEL_KEY);
+        if (saved && el.querySelector('option[value="' + saved + '"]')) el.value = saved;
+      } catch (e) {}
+      el.onchange = () => {
+        try { localStorage.setItem(LEVEL_KEY, el.value); } catch (e) {}
+      };
+    }
+    restoreLevel();
 
     $("pick").onclick = () => file.click();
     $("again").onclick = () => goHome();
@@ -460,7 +490,12 @@
         box.innerHTML = items.map((it) => {
           const score = it.score == null ? "—" : it.score;
           const grade = [it.grade, it.grade_label].filter(Boolean).join(" · ");
-          const bits = [it.view_label, it.handedness_label, it.n_swings != null ? it.n_swings + " 拍" : ""].filter(Boolean);
+          const bits = [
+            it.player_level_label || it.player_level || "",
+            it.view_label,
+            it.handedness_label,
+            it.n_swings != null ? it.n_swings + " 拍" : "",
+          ].filter(Boolean);
           const img = it.has_preview
             ? `<img class="thumb" src="api/jobs/${encodeURIComponent(it.id)}/preview" alt="" />`
             : `<div class="thumb"></div>`;
@@ -512,6 +547,7 @@
     async function startUpload(f, sample=false, refresh=false) {
       const fd = new FormData();
       fd.append("stroke", $("stroke").value);
+      fd.append("level", currentLevel());
       fd.append("sample", sample ? "1" : "0");
       fd.append("refresh", refresh ? "1" : "0");
       if (f) fd.append("video", f);
@@ -822,6 +858,9 @@
           : data.stroke_mode === "auto"
             ? " · 自动识别正反手"
             : "";
+      const levelNote = data.player_level
+        ? ` · 按 ${esc(data.player_level_label || data.player_level)} 写建议`
+        : "";
       const pct = Math.min(100, o.score);
       let cur = 0;
       reportEl.innerHTML = `
@@ -833,10 +872,10 @@
         <article class="paper">
           <div class="cover">
             <div>
-              <div class="kicker">挥拍测评报告 · 2.0</div>
+              <div class="kicker">挥拍测评报告 · 2.0${data.player_level_label ? " · " + esc(data.player_level_label) : ""}</div>
               <h1>${esc(data.title)}</h1>
               <p class="meta">${esc(data.source_name)} · ${data.view_label}拍摄 · ${data.handedness_label} · ${data.duration_s} 秒</p>
-              <p class="meta">识别到挥拍 ${o.n_swings} 次${modeNote} · 生成于 ${esc(data.generated_at)}${data.tracking && data.tracking.contact_from_ball ? " · 部分击球已按球和拍定位" : ""}</p>
+              <p class="meta">识别到挥拍 ${o.n_swings} 次${modeNote}${levelNote} · 生成于 ${esc(data.generated_at)}${data.tracking && data.tracking.contact_from_ball ? " · 部分击球已按球和拍定位" : ""}</p>
               ${data.summary ? `<p style="margin:12px 0 0">${esc(data.summary)}</p>` : ""}
               ${data.focus ? `<p class="focus" style="margin:10px 0 0;font-weight:650">先抓：${esc(data.focus)}</p>` : ""}
               ${data.overlay_video ? `<video class="overlay" src="${data.overlay_video}" controls playsinline style="margin-top:16px"></video>` : ""}

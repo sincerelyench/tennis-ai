@@ -23,6 +23,9 @@ class HistoryTests(unittest.TestCase):
             "handedness_label": "右手持拍",
             "overall": {"score": score, "grade": "B", "grade_label": "良好", "n_swings": 11},
             "focus": "先把击球点打到身前",
+            "player_level": "3.5",
+            "player_level_label": "3.5 中级",
+            "player_level_title": "中级",
         }
         (d / "report.json").write_text(json.dumps(report, ensure_ascii=False), encoding="utf-8")
         (d / "preview.jpg").write_bytes(b"\xff\xd8preview")
@@ -53,6 +56,8 @@ class HistoryTests(unittest.TestCase):
             self.assertEqual([x["id"] for x in items], ["newjob34efgh", "oldjob12abcd"])
             self.assertEqual(items[0]["score"], 80)
             self.assertTrue(items[0]["has_preview"])
+            self.assertEqual(items[0]["player_level"], "3.5")
+            self.assertEqual(items[0]["player_level_label"], "3.5 中级")
 
     def test_archive_writes_readable_folder(self):
         with tempfile.TemporaryDirectory() as raw:

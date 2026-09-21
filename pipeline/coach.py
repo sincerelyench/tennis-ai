@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Callable
 
 from pipeline.analyze import SCORE_AXES, grade_from_score
+from pipeline.level import parse_level
 from pipeline.cursor_client import available, model_id, model_params, run_with_stream, start_prompt
 from pipeline.technique import prompt_knowledge
 
@@ -203,6 +204,8 @@ def _slim_report(report: dict) -> dict:
             }
         )
     return {
+        "player_level": report.get("player_level"),
+        "player_level_label": report.get("player_level_label"),
         "view": report.get("view_label"),
         "handedness": report.get("handedness_label"),
         "duration_s": report.get("duration_s"),
@@ -218,11 +221,15 @@ def _build_prompt(report: dict, captions: list[str]) -> str:
     caps = "\n".join(f"- 图片{i+1}: {c}" for i, c in enumerate(captions)) or "（无附图）"
     ids = "、".join(c.get("id") or "" for c in report.get("clips") or []) or "forehand"
     handed = report.get("handedness") or "right"
+    level = parse_level(report.get("player_level"))
     knowledge = prompt_knowledge(
         [c.get("id") or "" for c in report.get("clips") or []],
         handed,
+        player_level=level.code,
     )
     return f"""你是有执教经验的网球私教，写一份给认真练球的球友看的深度点评。不要改文件、不要跑命令、不要读仓库。
+
+球员自己选的等级是 {level.label}。下面所有解释和训练必须按这个等级写，不要另估水平，也不要套别的等级的话术。
 
 附图：
 {caps}

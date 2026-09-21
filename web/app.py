@@ -22,6 +22,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from pipeline.cursor_client import warm_agent
+from pipeline.level import DEFAULT_LEVEL, parse_level, public_levels
 from pipeline.oss import refresh_report_urls
 from pipeline.session import analyze_video, get_detector, get_estimator, json_default
 from web.history import archive_report, find_archive, list_history
@@ -33,7 +34,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 SAMPLE_CANDIDATES = [
     ROOT / "samples" / "demo.mp4",
 ]
-SAMPLE_CACHE_VERSION = "2.7-user-copy"
+SAMPLE_CACHE_VERSION = "2.8-player-level"
 
 JOBS_DIR.mkdir(parents=True, exist_ok=True)
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -53,35 +54,35 @@ def _sample_path() -> Path | None:
     return None
 
 
-def _sample_fingerprint(src: Path, stroke: str) -> str:
+def _sample_fingerprint(src: Path, stroke: str, level: str = DEFAULT_LEVEL) -> str:
     st = src.stat()
-    raw = f"{SAMPLE_CACHE_VERSION}|{src.resolve()}|{st.st_mtime_ns}|{st.st_size}|{stroke}|60"
+    raw = f"{SAMPLE_CACHE_VERSION}|{src.resolve()}|{st.st_mtime_ns}|{st.st_size}|{stroke}|{level}|60"
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
-def _sample_cache_dir(src: Path, stroke: str) -> Path:
-    return SAMPLE_CACHE_DIR / _sample_fingerprint(src, stroke)
+def _sample_cache_dir(src: Path, stroke: str, level: str = DEFAULT_LEVEL) -> Path:
+    return SAMPLE_CACHE_DIR / _sample_fingerprint(src, stroke, level)
 
 
-def _load_sample_cache(src: Path, stroke: str) -> Path | None:
-    cache = _sample_cache_dir(src, stroke)
+def _load_sample_cache(src: Path, stroke: str, level: str = DEFAULT_LEVEL) -> Path | None:
+    cache = _sample_cache_dir(src, stroke, level)
     if (cache / "report.json").is_file():
         return cache
     return None
 
 
-def _clear_sample_cache(src: Path, stroke: str) -> None:
-    cache = _sample_cache_dir(src, stroke)
+def _clear_sample_cache(src: Path, stroke: str, level: str = DEFAULT_LEVEL) -> None:
+    cache = _sample_cache_dir(src, stroke, level)
     if cache.is_dir():
         shutil.rmtree(cache, ignore_errors=True)
 
 
-def _save_sample_cache(job_id: str, src: Path, stroke: str) -> None:
+def _save_sample_cache(job_id: str, src: Path, stroke: str, level: str = DEFAULT_LEVEL) -> None:
     job_dir = JOBS_DIR / job_id
     report = job_dir / "report.json"
     if not report.is_file():
         return
-    cache = _sample_cache_dir(src, stroke)
+    cache = _sample_cache_dir(src, stroke, level)
     cache.mkdir(parents=True, exist_ok=True)
     shutil.copy2(report, cache / "report.json")
     preview = job_dir / "preview.jpg"
@@ -240,7 +241,12 @@ def _recover_jobs() -> None:
         if job.get("status") == "done":
             archive_report(job_dir, REPORTS_DIR)
         if job.get("is_sample") and job.get("status") == "done" and sample is not None:
-            _save_sample_cache(job_id, sample, str(job.get("stroke_mode") or "forehand"))
+            _save_sample_cache(
+                job_id,
+                sample,
+                str(job.get("stroke_mode") or "forehand"),
+                str(job.get("player_level") or DEFAULT_LEVEL),
+            )
 
 
 def _run_job(job_id: str) -> None:
@@ -264,6 +270,7 @@ def _run_job(job_id: str) -> None:
             max_seconds=float(job["max_seconds"]),
             stroke_mode=job["stroke_mode"],
             title=job.get("title") or "网球挥拍测评报告",
+            player_level=job.get("player_level") or DEFAULT_LEVEL,
             progress=progress,
         )
         _set(
@@ -280,7 +287,12 @@ def _run_job(job_id: str) -> None:
         if job.get("is_sample"):
             src = _sample_path()
             if src is not None:
-                _save_sample_cache(job_id, src, str(job.get("stroke_mode") or "forehand"))
+                _save_sample_cache(
+                    job_id,
+                    src,
+                    str(job.get("stroke_mode") or "forehand"),
+                    str(job.get("player_level") or DEFAULT_LEVEL),
+                )
     except Exception as exc:
         user_msg = str(exc) if isinstance(exc, RuntimeError) else "分析失败，请稍后重试"
         _set(
@@ -342,7 +354,20 @@ def health():
         gpu = bool(torch.cuda.is_available())
     except Exception:
         gpu = False
-    return {"ok": True, "sample": bool(sample), "gpu": gpu, "version": "2.0", "busy": bool(_busy_job())}
+    return {
+        "ok": True,
+        "sample": bool(sample),
+        "gpu": gpu,
+        "version": "2.0",
+        "busy": bool(_busy_job()),
+        "levels": public_levels(),
+        "default_level": DEFAULT_LEVEL,
+    }
+
+
+@app.get("/api/levels")
+def levels():
+    return {"items": public_levels(), "default": DEFAULT_LEVEL}
 
 
 @app.get("/api/sample")
@@ -365,9 +390,11 @@ async def analyze(
     max_seconds: float = Form(default=0),
     stroke: str = Form(default="forehand"),
     title: str = Form(default="网球挥拍测评报告 2.0"),
+    level: str = Form(default=DEFAULT_LEVEL),
 ):
     if stroke not in ("auto", "forehand", "backhand"):
         stroke = "forehand"
+    player_level = parse_level(level).code
 
     use_sample = sample in ("1", "true", "yes")
     force_refresh = refresh in ("1", "true", "yes")
@@ -375,7 +402,7 @@ async def analyze(
     if use_sample:
         if src is None:
             raise HTTPException(400, "没有可用的样例视频")
-        cache = None if force_refresh else _load_sample_cache(src, stroke)
+        cache = None if force_refresh else _load_sample_cache(src, stroke, player_level)
         if cache is not None:
             job_id = uuid.uuid4().hex[:12]
             meta = _install_sample_cache(job_id, cache)
@@ -390,6 +417,7 @@ async def analyze(
                     "message": "分析完成",
                     "max_seconds": 60,
                     "stroke_mode": stroke,
+                    "player_level": player_level,
                     "title": title,
                     "source_name": meta.get("source_name") or src.name,
                     "score": meta.get("score"),
@@ -407,7 +435,7 @@ async def analyze(
         raise HTTPException(409, "正在分析其他录像，请稍后再试")
 
     if use_sample and force_refresh and src is not None:
-        _clear_sample_cache(src, stroke)
+        _clear_sample_cache(src, stroke, player_level)
 
     job_id = uuid.uuid4().hex[:12]
     out_dir = JOBS_DIR / job_id
@@ -446,6 +474,7 @@ async def analyze(
             "message": "开始分析…",
             "max_seconds": max_seconds,
             "stroke_mode": stroke,
+            "player_level": player_level,
             "title": title,
             "source_name": source_name,
             "video_path": str(video_path),

@@ -36,6 +36,7 @@ from pipeline.analyze import (
 )
 from pipeline.coach import enrich_with_cursor
 from pipeline.contact import draw_hit_point, interpolate_xy
+from pipeline.level import level_caveat, parse_level
 from pipeline.technique import flag_notes
 from pipeline.speed import mean_speeds
 from pipeline.detect import (
@@ -404,9 +405,11 @@ def analyze_video(
     max_seconds: float = 0.0,
     stroke_mode: str = "forehand",
     title: str | None = None,
+    player_level: str = "3.0",
     estimator: PoseEstimator | None = None,
     progress: ProgressCb | None = None,
 ) -> dict:
+    level = parse_level(player_level)
     video_path = Path(video_path)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -717,6 +720,7 @@ def analyze_video(
                 view=view,
                 source="original",
                 hits=[sw.hit_point for sw in sub_swings if sw.hit_point is not None],
+                player_level=level.code,
             )
             all_caveats = written["caveats"]
             for item in sub_payload:
@@ -822,6 +826,10 @@ def analyze_video(
         "generated_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
         "title": title or "网球挥拍测评报告 2.0",
         "app_version": "2.0",
+        "player_level": level.code,
+        "player_level_label": level.label,
+        "player_level_title": level.title,
+        "player_level_blurb": level.blurb,
         "source_name": video_path.name,
         "view": view,
         "view_label": view_label(view),
@@ -869,6 +877,7 @@ def analyze_video(
         "caveats": all_caveats
         or [
             "没有识别到完整挥拍。请换一段人更清楚、挥拍更完整的录像再试。",
+            level_caveat(level),
         ],
     }
 
@@ -902,6 +911,7 @@ def main():
     parser.add_argument("-o", "--out", type=Path, default=ROOT / "outputs" / "session")
     parser.add_argument("--max-seconds", type=float, default=0)
     parser.add_argument("--stroke", choices=["auto", "forehand", "backhand"], default="forehand")
+    parser.add_argument("--level", default="3.0", help="球员自评等级，如 2.0 / 3.5 / 5.0")
     args = parser.parse_args()
 
     def cb(d):
@@ -912,6 +922,7 @@ def main():
         args.out,
         max_seconds=args.max_seconds,
         stroke_mode=args.stroke,
+        player_level=args.level,
         progress=cb,
     )
     print("swings", report["overall"]["n_swings"], "score", report["overall"]["score"])
