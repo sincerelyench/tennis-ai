@@ -412,6 +412,13 @@
     const $ = (id) => document.getElementById(id);
     const upload = $("upload"), analyzing = $("analyzing"), reportEl = $("report");
     const drop = $("drop"), file = $("file");
+    function publicBase() {
+      const p = location.pathname || "/";
+      return p.endsWith("/") ? p : p + "/";
+    }
+    function apiUrl(path) {
+      return publicBase() + String(path || "").replace(/^\//, "");
+    }
 
     function paintSteps(step, etaSteps) {
       $("steps").innerHTML = STEPS.map((s, i) => {
@@ -462,7 +469,7 @@
       analyzing.classList.add("hidden");
       upload.classList.remove("hidden");
       $("again").hidden = true;
-      try { history.replaceState(null, "", location.pathname); } catch (e) {}
+      try { history.replaceState(null, "", publicBase()); } catch (e) {}
       loadHistory();
     }
     window.goHome = goHome;
@@ -479,7 +486,7 @@
       const box = $("history-list");
       if (!box) return;
       try {
-        const res = await fetch("api/history");
+        const res = await fetch(apiUrl("api/history"));
         if (!res.ok) throw new Error("bad");
         const data = await res.json();
         const items = data.items || [];
@@ -497,7 +504,7 @@
             it.n_swings != null ? it.n_swings + " 拍" : "",
           ].filter(Boolean);
           const img = it.has_preview
-            ? `<img class="thumb" src="api/jobs/${encodeURIComponent(it.id)}/preview" alt="" />`
+            ? `<img class="thumb" src="${apiUrl("api/jobs/" + encodeURIComponent(it.id) + "/preview")}" alt="" />`
             : `<div class="thumb"></div>`;
           const sample = it.is_sample ? `<span class="pill ok">样例</span>` : "";
           return `<button class="hist-card" type="button" data-id="${esc(it.id)}">
@@ -520,7 +527,7 @@
 
     async function openHistory(id) {
       if (!id) return false;
-      const r = await fetch("api/jobs/" + encodeURIComponent(id) + "/report");
+      const r = await fetch(apiUrl("api/jobs/" + encodeURIComponent(id) + "/report"));
       if (!r.ok) return false;
       try {
         showReport(await r.json(), id);
@@ -560,7 +567,7 @@
         paintSteps(1);
         $("msg").textContent = refresh ? "正在重新分析样例…" : "正在提交任务…";
       }
-      const res = await fetch("api/analyze", { method: "POST", body: fd });
+      const res = await fetch(apiUrl("api/analyze"), { method: "POST", body: fd });
       if (!res.ok) {
         let msg = "提交失败，请稍后再试";
         try {
@@ -583,7 +590,7 @@
         clearJob();
         upload.classList.add("hidden");
         analyzing.classList.add("hidden");
-        const r = await fetch("api/jobs/" + job_id + "/report");
+        const r = await fetch(apiUrl("api/jobs/" + job_id + "/report"));
         const data = await r.json();
         showReport(data, job_id);
         loadHistory();
@@ -599,7 +606,7 @@
 
     async function poll(id) {
       saveJob(id);
-      const res = await fetch("api/jobs/" + id);
+      const res = await fetch(apiUrl("api/jobs/" + id));
       if (!res.ok) {
         clearJob();
         $("msg").textContent = "任务不存在，请重新分析";
@@ -616,7 +623,7 @@
         <span>${esc(job.eta_hint || "")}</span>`;
       if (job.preview_rev) {
         const img = $("preview");
-        const next = "api/jobs/" + id + "/preview?r=" + job.preview_rev;
+        const next = apiUrl("api/jobs/" + id + "/preview") + "?r=" + job.preview_rev;
         img.classList.remove("hidden");
         if (img.dataset.rev !== String(job.preview_rev)) {
           img.dataset.rev = String(job.preview_rev);
@@ -625,7 +632,7 @@
       }
       if (job.status === "done") {
         clearJob();
-        const r = await fetch("api/jobs/" + id + "/report");
+        const r = await fetch(apiUrl("api/jobs/" + id + "/report"));
         const data = await r.json();
         showReport(data, id);
         loadHistory();
@@ -939,11 +946,11 @@
       let id = "";
       try { id = localStorage.getItem(JOB_KEY) || ""; } catch (e) {}
       if (!id) return;
-      const res = await fetch("api/jobs/" + id);
+      const res = await fetch(apiUrl("api/jobs/" + id));
       if (!res.ok) { clearJob(); return; }
       const job = await res.json();
       if (job.status === "done") {
-        const r = await fetch("api/jobs/" + id + "/report");
+        const r = await fetch(apiUrl("api/jobs/" + id + "/report"));
         if (!r.ok) { clearJob(); return; }
         upload.classList.add("hidden");
         showReport(await r.json(), id);

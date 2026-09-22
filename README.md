@@ -4,10 +4,13 @@
 
 ## 线上
 
-- HTTPS（Caddy + sslip.io，与 knx 同模式）：https://tennis.47.93.203.28.sslip.io/
+- 正式入口：https://yqchen.blog/tai/
 - IP 入口（nginx）：http://47.93.203.28/tennis-ai/
+- HTTPS（Caddy + sslip.io，与 knx 同模式）：https://tennis.47.93.203.28.sslip.io/
 
-服务器目录 `/opt/tennis-ai`。更新：在机器上执行 `deploy/pull.sh`（不覆盖 `.env`、样例视频、模型权重）。
+GPU 服务在 `/opt/tennis-ai`（47.93.203.28）。更新代码：在那台机器上执行 `deploy/pull.sh`（不覆盖 `.env`、样例视频、模型权重）。
+
+`yqchen.blog/tai` 只是博客机（8.216.53.29）上的 nginx 反代，指向上面的 `/tennis-ai/`。首次挂路径：在博客机执行 `deploy/publish-yqchen-tai.sh`。
 
 ## 本地运行
 
