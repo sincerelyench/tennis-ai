@@ -22,6 +22,11 @@ class PublicBaseTests(unittest.TestCase):
         self.assertIn("proxy_pass http://47.93.203.28/tennis-ai/", snippet)
         self.assertIn("client_max_body_size 400m", snippet)
 
+    def test_publish_script_targets_ipitch_default_server(self):
+        script = (ROOT / "deploy" / "publish-yqchen-tai.sh").read_text(encoding="utf-8")
+        self.assertIn("/etc/nginx/conf.d/ipitch.conf", script)
+        self.assertIn("snippets/yqchen-tai.conf", script)
+
 
 if __name__ == "__main__":
     unittest.main()

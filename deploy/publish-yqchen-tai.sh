@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
-# 在 yqchen.blog 那台机器上，把 /tai 反代到已有的网球测评服务。
+# 在 yqchen.blog 那台机器上，把 /tai 反代到已有的网球测评 GPU 服务。
+# 现网 HTTPS 落在 /etc/nginx/conf.d/ipitch.conf 的 default_server
+#（server_name 是 ipitch，不是 yqchen.blog）。
 # 本机执行：
 #   ssh root@8.216.53.29 'bash -s' < deploy/publish-yqchen-tai.sh
-# 或已登录博客机后：
-#   bash deploy/publish-yqchen-tai.sh
 
 set -euo pipefail
 
 SNIPPET_DST=/etc/nginx/snippets/yqchen-tai.conf
-INCLUDE_LINE='include /etc/nginx/snippets/yqchen-tai.conf;'
-MARKER='# tennis-ai /tai'
+TARGET=/etc/nginx/conf.d/ipitch.conf
 
 if [[ ! -f /etc/nginx/nginx.conf ]]; then
   echo "这台机器上没有 nginx，无法挂 yqchen.blog/tai" >&2
+  exit 1
+fi
+if [[ ! -f "$TARGET" ]]; then
+  echo "找不到 $TARGET" >&2
   exit 1
 fi
 
@@ -31,65 +34,28 @@ cp "$src" "$SNIPPET_DST"
 
 python3 - <<'PY'
 from pathlib import Path
-import re
-import sys
 
-include_line = "    include /etc/nginx/snippets/yqchen-tai.conf;"
-marker = "# tennis-ai /tai"
-roots = [Path("/etc/nginx")]
-candidates = []
-for root in roots:
-    if not root.exists():
-        continue
-    for path in root.rglob("*"):
-        if path.suffix not in {".conf", ""} and path.name != "nginx.conf":
-            if path.suffix != ".conf":
-                continue
-        if not path.is_file():
-            continue
-        try:
-            text = path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            continue
-        if re.search(r"server_name\s+[^;]*yqchen\.blog", text):
-            candidates.append(path)
-
-if not candidates:
-    print("找不到 server_name 含 yqchen.blog 的 nginx 配置", file=sys.stderr)
-    sys.exit(1)
-
-# Prefer the file that already has the HTTPS server or /blog /tennis locations.
-def score(path: Path) -> tuple:
-    text = path.read_text(encoding="utf-8", errors="replace")
-    return (
-        1 if "listen 443" in text or "listen [::]:443" in text else 0,
-        1 if "/blog" in text or "/tennis" in text else 0,
-        -len(str(path)),
+path = Path("/etc/nginx/conf.d/ipitch.conf")
+text = path.read_text(encoding="utf-8")
+needle = "include /etc/nginx/snippets/yqchen-tai.conf;"
+if needle in text:
+    print(f"已存在 /tai include: {path}")
+else:
+    insert = (
+        "    # tennis-ai /tai (GPU service on 47.93.203.28)\n"
+        "    include /etc/nginx/snippets/yqchen-tai.conf;\n\n"
     )
-
-target = sorted(candidates, key=score, reverse=True)[0]
-text = target.read_text(encoding="utf-8")
-if "snippets/yqchen-tai.conf" in text or "location ^~ /tai/" in text:
-    print(f"已存在 /tai 配置: {target}")
-    sys.exit(0)
-
-# Insert the include into every server block that names yqchen.blog
-# (80 跳转和 443 都要挂，否则 HTTPS 仍会 404).
-pattern = re.compile(
-    r"(server\s*\{(?:[^{}]|\{[^{}]*\})*?server_name\s+[^;]*yqchen\.blog[^;]*;)",
-    re.S,
-)
-matches = list(pattern.finditer(text))
-if not matches:
-    print(f"{target} 里找不到 yqchen.blog 的 server 块", file=sys.stderr)
-    sys.exit(1)
-
-new_text = text
-for match in reversed(matches):
-    insert = match.group(1) + f"\n    {marker}\n{include_line}"
-    new_text = new_text[: match.start(1)] + insert + new_text[match.end(1) :]
-target.write_text(new_text, encoding="utf-8")
-print(f"已写入 include × {len(matches)}: {target}")
+    for anchor in (
+        "    # 网球智能训练 (Next.js basePath=/tennis).",
+        "    location /tennis {",
+        "    location / {",
+    ):
+        if anchor in text:
+            path.write_text(text.replace(anchor, insert + anchor, 1), encoding="utf-8")
+            print(f"已写入 include: {path}")
+            break
+    else:
+        raise SystemExit(f"{path} 里找不到可插入的锚点")
 PY
 
 nginx -t
@@ -100,4 +66,5 @@ else
 fi
 
 echo "nginx 已 reload。检查 https://yqchen.blog/tai/"
-curl -sS -o /dev/null -w "local /tai/ -> %{http_code}\n" --max-time 15 -H "Host: yqchen.blog" http://127.0.0.1/tai/ || true
+curl -sS -o /dev/null -w "https /tai/ -> %{http_code}\n" --max-time 15 https://yqchen.blog/tai/ || true
+curl -sS -o /dev/null -w "https /tai/api/health -> %{http_code}\n" --max-time 15 https://yqchen.blog/tai/api/health || true
