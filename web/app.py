@@ -337,7 +337,8 @@ def _archived_file(job_id: str, *names: str) -> Path | None:
     return None
 
 
-app = FastAPI(title="网球挥拍测评 2.0")
+_PUBLIC_BASE = os.environ.get("PUBLIC_BASE_PATH", "").strip().rstrip("/")
+app = FastAPI(title="网球挥拍测评 2.0", root_path=_PUBLIC_BASE)
 if os.environ.get("TENNIS_AI_NO_WORKER") != "1":
     _start_worker()
 else:
