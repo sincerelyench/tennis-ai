@@ -14,7 +14,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,12 +25,25 @@ from pipeline.cursor_client import warm_agent
 from pipeline.level import DEFAULT_LEVEL, parse_level, public_levels
 from pipeline.oss import refresh_report_urls
 from pipeline.session import analyze_video, get_detector, get_estimator, json_default
+from web.api_errors import CodedHTTPException, coded_handler
+from web.dev_auth import bearer_token, issue_dev_token, verify_dev_token
 from web.history import archive_report, find_archive, list_history
+from web.upload_meta import (
+    E1_CLIENTS,
+    GuideError,
+    build_job_metadata,
+    parse_client,
+    parse_guide_checks,
+    parse_guide_flag,
+    video_rejection,
+)
 
 JOBS_DIR = ROOT / "outputs" / "jobs"
 REPORTS_DIR = ROOT / "outputs" / "reports"
 SAMPLE_CACHE_DIR = ROOT / "outputs" / "sample_cache"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+I18N_DIR = ROOT / "i18n"
+E1_ASSETS = {"e1.css": "text/css", "e1.js": "text/javascript"}
 SAMPLE_CANDIDATES = [
     ROOT / "samples" / "demo.mp4",
 ]
@@ -314,6 +327,39 @@ def _worker() -> None:
             _queue.task_done()
 
 
+def _prepare_upload_meta(
+    client: str,
+    guide_completed: str,
+    guide_checks: str,
+    authorization: str | None,
+) -> tuple[str, dict | None]:
+    try:
+        client_name = parse_client(client)
+        claimed = parse_guide_flag(guide_completed)
+        checks = parse_guide_checks(guide_checks)
+    except GuideError as exc:
+        raise CodedHTTPException(400, exc.code, str(exc)) from exc
+    token = bearer_token(authorization)
+    user = None
+    if client_name in E1_CLIENTS:
+        if not token:
+            raise CodedHTTPException(401, "auth_required", "请先登录后再上传")
+        user = verify_dev_token(token)
+        if not user:
+            raise CodedHTTPException(401, "auth_invalid", "登录已失效，请重新登录")
+    elif token is not None:
+        user = verify_dev_token(token) if token else None
+        if not user:
+            raise CodedHTTPException(401, "auth_invalid", "登录已失效，请重新登录")
+    metadata = build_job_metadata(
+        client=client_name,
+        checks=checks,
+        claimed=claimed,
+        user=user,
+    )
+    return client_name, metadata
+
+
 def _start_worker() -> None:
     global _worker_started
     if _worker_started:
@@ -338,6 +384,7 @@ def _archived_file(job_id: str, *names: str) -> Path | None:
 
 
 app = FastAPI(title="网球挥拍测评 2.0")
+app.add_exception_handler(CodedHTTPException, coded_handler)
 if os.environ.get("TENNIS_AI_NO_WORKER") != "1":
     _start_worker()
 else:
@@ -370,6 +417,54 @@ def levels():
     return {"items": public_levels(), "default": DEFAULT_LEVEL}
 
 
+@app.post("/api/auth/mock")
+async def auth_mock(request: Request):
+    """开发态 code→token。正式微信登录是后续 ticket，这里不访问微信服务器。"""
+    try:
+        body = await request.json()
+    except Exception as exc:
+        raise CodedHTTPException(400, "login_body_invalid", "登录请求无法识别") from exc
+    if not isinstance(body, dict):
+        raise CodedHTTPException(400, "login_body_invalid", "登录请求无法识别")
+    code = str(body.get("code") or "").strip()
+    if not 4 <= len(code) <= 128:
+        raise CodedHTTPException(400, "login_code_invalid", "登录码无效，请重试")
+    return issue_dev_token(code)
+
+
+@app.get("/api/auth/me")
+def auth_me(authorization: str | None = Header(default=None)):
+    token = bearer_token(authorization)
+    user = verify_dev_token(token) if token else None
+    if not user:
+        raise CodedHTTPException(401, "auth_invalid", "登录已失效，请重新登录")
+    return {"user": {"id": user["sub"]}, "login_mode": "dev-mock"}
+
+
+@app.get("/e1")
+def e1_page():
+    return FileResponse(STATIC_DIR / "e1.html")
+
+
+@app.get("/e1/{name}")
+def e1_asset(name: str):
+    media = E1_ASSETS.get(name)
+    path = STATIC_DIR / name
+    if media is None or not path.is_file():
+        raise HTTPException(404, "文件不存在")
+    return FileResponse(path, media_type=media)
+
+
+@app.get("/i18n/{lang}.json")
+def i18n_catalog(lang: str):
+    if lang not in {"zh-CN", "en"}:
+        raise HTTPException(404, "不支持的语言")
+    path = I18N_DIR / f"{lang}.json"
+    if not path.is_file():
+        raise HTTPException(404, "不支持的语言")
+    return FileResponse(path, media_type="application/json")
+
+
 @app.get("/api/sample")
 def sample_info():
     path = _sample_path()
@@ -391,10 +486,17 @@ async def analyze(
     stroke: str = Form(default="forehand"),
     title: str = Form(default="网球挥拍测评报告 2.0"),
     level: str = Form(default=DEFAULT_LEVEL),
+    client: str = Form(default=""),
+    guide_completed: str = Form(default=""),
+    guide_checks: str = Form(default=""),
+    authorization: str | None = Header(default=None),
 ):
     if stroke not in ("auto", "forehand", "backhand"):
         stroke = "forehand"
     player_level = parse_level(level).code
+    _client_name, metadata = _prepare_upload_meta(
+        client, guide_completed, guide_checks, authorization
+    )
 
     use_sample = sample in ("1", "true", "yes")
     force_refresh = refresh in ("1", "true", "yes")
@@ -432,7 +534,7 @@ async def analyze(
             return {"job_id": job_id, "cached": True}
 
     if _busy_job():
-        raise HTTPException(409, "正在分析其他录像，请稍后再试")
+        raise CodedHTTPException(409, "busy", "正在分析其他录像，请稍后再试")
 
     if use_sample and force_refresh and src is not None:
         _clear_sample_cache(src, stroke, player_level)
@@ -447,16 +549,16 @@ async def analyze(
         max_seconds = 60
     else:
         if video is None or not video.filename:
-            raise HTTPException(400, "请上传视频，或选择使用样例")
+            shutil.rmtree(out_dir, ignore_errors=True)
+            raise CodedHTTPException(400, "video_required", "请上传视频，或选择使用样例")
         suffix = Path(video.filename).suffix.lower()
-        if suffix not in {".mp4", ".mov", ".webm", ".m4v", ".avi"}:
-            raise HTTPException(400, "请上传 mp4 / mov / webm 视频")
-        video_path = out_dir / f"source{suffix}"
         data = await video.read()
-        if len(data) < 1000:
-            raise HTTPException(400, "视频文件太小或已损坏")
-        if len(data) > 400 * 1024 * 1024:
-            raise HTTPException(400, "视频超过 400MB")
+        rejection = video_rejection(suffix, len(data))
+        if rejection is not None:
+            shutil.rmtree(out_dir, ignore_errors=True)
+            code, message = rejection
+            raise CodedHTTPException(400, code, message)
+        video_path = out_dir / f"source{suffix}"
         video_path.write_bytes(data)
         source_name = Path(video.filename).name
         max_seconds = 0
@@ -464,10 +566,11 @@ async def analyze(
     with _lock:
         for job in _jobs.values():
             if job.get("status") in ("queued", "running"):
-                raise HTTPException(409, "正在分析其他录像，请稍后再试")
-        _jobs[job_id] = {
+                shutil.rmtree(out_dir, ignore_errors=True)
+                raise CodedHTTPException(409, "busy", "正在分析其他录像，请稍后再试")
+        record = {
             "id": job_id,
-            "status": "running",
+            "status": "queued",
             "step": 0,
             "step_name": "准备中",
             "progress": 0,
@@ -481,6 +584,9 @@ async def analyze(
             "is_sample": use_sample,
             "created_at": _now(),
         }
+        if metadata:
+            record["metadata"] = metadata
+        _jobs[job_id] = record
         _write_status(job_id)
 
     _queue.put(job_id)

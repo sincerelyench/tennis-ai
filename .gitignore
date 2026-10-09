@@ -11,6 +11,12 @@ outputs/
 .DS_Store
 .idea/
 .vscode/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+miniprogram/project.private.config.json
 
 # Large local media not required to run the app
 *.mp4
