@@ -1,0 +1,95 @@
+{
+  "appTitle": "涨球",
+  "lang": {
+    "zh": "中文",
+    "en": "EN"
+  },
+  "home": {
+    "lead": "Film a swing, follow the shooting guide, then queue it for analysis.",
+    "sub": "Use it to review your own practice. This does not promise a higher rating.",
+    "devNote": "This is a development login. WeChat sign-in will be added later.",
+    "login": "Development login",
+    "loggingIn": "Signing in…",
+    "continue": "View shooting guide",
+    "codeLabel": "Login code (optional)",
+    "codePlaceholder": "Leave blank to use a development code",
+    "loggedIn": "Signed in",
+    "localCode": "WeChat did not return a code, so a local development code was used."
+  },
+  "guide": {
+    "title": "Shooting guide",
+    "intro": "Check the items you already did. You can continue if some are open; the job will be marked guide not completed.",
+    "incompleteHint": "An unfinished guide is stored on this job for a later result.",
+    "progress": "Checked {{done}}/{{total}}",
+    "continue": "Continue to upload",
+    "items": [
+      {
+        "key": "side",
+        "title": "Side-on camera",
+        "desc": "Place the phone beside the player so the swing direction is visible. Do not film face-on."
+      },
+      {
+        "key": "full_body",
+        "title": "Full body in frame",
+        "desc": "Keep the head, torso, and feet inside the frame."
+      },
+      {
+        "key": "racket",
+        "title": "Racket visible",
+        "desc": "Keep the racket in frame through the backswing, contact, and follow-through."
+      }
+    ]
+  },
+  "upload": {
+    "title": "Upload a swing",
+    "intro": "Choose a video or record one. An 8–15 second swing is enough.",
+    "guideDone": "Shooting guide completed",
+    "guideSkipped": "Shooting guide not completed. The upload will still record that.",
+    "strokeLabel": "This clip is mainly",
+    "forehand": "Forehand",
+    "backhand": "Backhand",
+    "choose": "Choose from album",
+    "record": "Record now",
+    "chosen": "Selected {{name}} ({{size}})",
+    "none": "No video selected yet",
+    "submit": "Upload and queue",
+    "uploading": "Uploading…",
+    "longClip": "This clip is long, so analysis will take longer after it is queued."
+  },
+  "queue": {
+    "title": "Queued",
+    "queued": "Queued",
+    "running": "Analyzing",
+    "done": "Analysis finished",
+    "error": "Analysis did not finish",
+    "cancelled": "This analysis was cancelled",
+    "unknown": "Checking status",
+    "jobId": "Job {{id}}",
+    "polling": "Checking progress with the server.",
+    "guideDone": "The shooting guide was completed for this job.",
+    "guideSkipped": "The shooting guide was not completed. A later result can mark that.",
+    "doneHint": "A detailed breakdown will be available in a later version. This page does not show scores.",
+    "home": "Back to home",
+    "retry": "Upload again",
+    "serverDetail": "Server note"
+  },
+  "errors": {
+    "auth_required": "Sign in before uploading",
+    "auth_invalid": "Your login expired. Sign in again",
+    "login_code_invalid": "That login code is not valid. Try again",
+    "login_body_invalid": "The login request could not be read",
+    "guide_invalid": "The shooting guide could not be read",
+    "guide_too_long": "The shooting guide data is too long",
+    "bad_client": "This client could not be recognized",
+    "video_required": "Choose or record a video first",
+    "video_type": "Upload an mp4, mov, or webm video",
+    "video_too_small": "The video file is too small or damaged",
+    "video_too_large": "The video is over 400MB. Trim it and try again",
+    "busy": "Another video is being analyzed. Try again shortly",
+    "network": "Network problem. Check the connection and the server address",
+    "bad_response": "Upload did not finish and no job id was returned",
+    "server": "The server is busy. Try again shortly",
+    "generic": "Something went wrong. Try again shortly",
+    "i18n": "Could not load copy. Start the local server"
+  }
+}

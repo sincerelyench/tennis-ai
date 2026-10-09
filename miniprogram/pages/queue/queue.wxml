@@ -1,0 +1,22 @@
+<view class="page">
+  <view class="top">
+    <text class="brand">{{copy.appTitle}}</text>
+    <view class="langs">
+      <view class="lang {{lang === 'zh-CN' ? 'on' : ''}}" data-lang="zh-CN" bindtap="onSwitch">{{copy.lang.zh}}</view>
+      <view class="lang {{lang === 'en' ? 'on' : ''}}" data-lang="en" bindtap="onSwitch">{{copy.lang.en}}</view>
+    </view>
+  </view>
+  <view class="card">
+    <text class="kicker">{{copy.queue.title}}</text>
+    <text class="h1"><text class="pulse" wx:if="{{!terminal}}"></text>{{statusLabel}}</text>
+    <text class="jobid">{{jobLine}}</text>
+    <text class="hint" wx:if="{{!terminal}}">{{copy.queue.polling}}</text>
+    <text class="ok" wx:if="{{guideFlag === true}}">{{copy.queue.guideDone}}</text>
+    <text class="hint" wx:if="{{guideFlag === false}}">{{copy.queue.guideSkipped}}</text>
+    <text class="sub" wx:if="{{status === 'done'}}">{{copy.queue.doneHint}}</text>
+    <text class="error" wx:if="{{serverMessage}}">{{copy.queue.serverDetail}} {{serverMessage}}</text>
+    <text class="error" wx:if="{{error}}">{{error}}</text>
+    <view class="primary" bindtap="onHome">{{copy.queue.home}}</view>
+    <view class="ghost" wx:if="{{status === 'error' || status === 'cancelled' || error}}" bindtap="onRetry">{{copy.queue.retry}}</view>
+  </view>
+</view>

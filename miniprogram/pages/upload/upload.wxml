@@ -1,0 +1,28 @@
+<view class="page">
+  <view class="top">
+    <text class="brand">{{copy.appTitle}}</text>
+    <view class="langs">
+      <view class="lang {{lang === 'zh-CN' ? 'on' : ''}}" data-lang="zh-CN" bindtap="onSwitch">{{copy.lang.zh}}</view>
+      <view class="lang {{lang === 'en' ? 'on' : ''}}" data-lang="en" bindtap="onSwitch">{{copy.lang.en}}</view>
+    </view>
+  </view>
+  <view class="card">
+    <text class="kicker">{{copy.upload.title}}</text>
+    <text class="h1">{{copy.upload.title}}</text>
+    <text class="sub">{{copy.upload.intro}}</text>
+    <text class="{{guideDone ? 'ok' : 'hint'}}">{{guideDone ? copy.upload.guideDone : copy.upload.guideSkipped}}</text>
+    <text class="hint">{{copy.upload.strokeLabel}}</text>
+    <view class="seg">
+      <view class="ghost {{stroke === 'forehand' ? 'on' : ''}}" data-stroke="forehand" bindtap="onStroke">{{copy.upload.forehand}}</view>
+      <view class="ghost {{stroke === 'backhand' ? 'on' : ''}}" data-stroke="backhand" bindtap="onStroke">{{copy.upload.backhand}}</view>
+    </view>
+    <view class="row">
+      <view class="ghost" data-source="album" bindtap="onChoose">{{copy.upload.choose}}</view>
+      <view class="ghost" data-source="camera" bindtap="onChoose">{{copy.upload.record}}</view>
+    </view>
+    <text class="sub">{{chosen}}</text>
+    <text class="hint" wx:if="{{longClip}}">{{copy.upload.longClip}}</text>
+    <view class="primary" bindtap="onSubmit">{{loading ? copy.upload.uploading : copy.upload.submit}}</view>
+    <text class="error">{{error}}</text>
+  </view>
+</view>

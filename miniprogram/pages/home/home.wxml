@@ -1,0 +1,22 @@
+<view class="page">
+  <view class="top">
+    <text class="brand">{{copy.appTitle}}</text>
+    <view class="langs">
+      <view class="lang {{lang === 'zh-CN' ? 'on' : ''}}" data-lang="zh-CN" bindtap="onSwitch">{{copy.lang.zh}}</view>
+      <view class="lang {{lang === 'en' ? 'on' : ''}}" data-lang="en" bindtap="onSwitch">{{copy.lang.en}}</view>
+    </view>
+  </view>
+  <view class="card">
+    <view class="ball"></view>
+    <text class="h1">{{copy.appTitle}}</text>
+    <text class="lead">{{copy.home.lead}}</text>
+    <text class="sub">{{copy.home.sub}}</text>
+    <text class="hint">{{copy.home.devNote}}</text>
+    <text class="ok" wx:if="{{loggedIn}}">{{copy.home.loggedIn}}</text>
+    <text class="hint" wx:if="{{notice}}">{{notice}}</text>
+    <text class="label">{{copy.home.codeLabel}}</text>
+    <input class="field" maxlength="128" placeholder="{{copy.home.codePlaceholder}}" value="{{code}}" bindinput="onCode" />
+    <view class="primary" bindtap="onPrimary">{{loading ? copy.home.loggingIn : (loggedIn ? copy.home.continue : copy.home.login)}}</view>
+    <text class="error">{{error}}</text>
+  </view>
+</view>

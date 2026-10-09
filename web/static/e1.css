@@ -1,0 +1,111 @@
+:root {
+  --bg: #07140e;
+  --card: rgba(16, 36, 27, 0.92);
+  --line: #2d4a3a;
+  --text: #eef6ee;
+  --muted: #8ea196;
+  --ball: #d6e35a;
+  --ink: #142117;
+  --bad: #ffb4b4;
+  --ok: #b7e3c4;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font: 16px/1.5 "PingFang SC", "Noto Sans SC", "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(420px 220px at 90% -10%, rgba(214, 227, 90, 0.18), transparent 60%),
+    linear-gradient(180deg, #0c1c14, var(--bg) 42%);
+}
+.app { max-width: 440px; margin: 0 auto; padding: 20px 18px 48px; }
+.boot, .muted { color: var(--muted); }
+.top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.brand { font-weight: 750; letter-spacing: 0.18em; font-size: 14px; color: var(--ball); }
+.langs { display: flex; gap: 6px; }
+.langs button, .ghost, .primary, .check, .seg button {
+  font: inherit;
+  color: inherit;
+}
+.langs button, .seg button, .ghost {
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+.langs button.on, .seg button.on { background: var(--ball); color: var(--ink); border-color: transparent; font-weight: 700; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 22px 18px 18px;
+}
+h1 { margin: 8px 0 10px; font-size: 28px; letter-spacing: -0.03em; }
+.lead { margin: 0 0 8px; font-size: 18px; }
+.sub, .hint, .note { color: var(--muted); margin: 0 0 14px; }
+.ball {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4ffb0, var(--ball) 46%, #6d8a22);
+  box-shadow: 0 0 16px rgba(214, 227, 90, 0.45);
+  margin-bottom: 12px;
+}
+label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 6px; }
+input[type="text"] {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #0b1712;
+  color: var(--text);
+  font: inherit;
+  padding: 12px 12px;
+}
+.primary, .ghost { width: 100%; margin-top: 12px; padding: 12px 16px; border-radius: 999px; }
+.primary { background: var(--ball); color: var(--ink); border: 0; font-weight: 750; }
+.primary:disabled { opacity: 0.6; }
+.row { display: flex; gap: 8px; }
+.row .ghost, .row .primary { width: auto; flex: 1; }
+.error { color: var(--bad); min-height: 1.2em; margin: 10px 0 0; }
+.ok { color: var(--ok); }
+.check {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: #0c1914;
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.check strong, .check small { display: block; }
+.check small { color: var(--muted); margin-top: 4px; }
+.box {
+  width: 22px; height: 22px; flex: 0 0 22px; margin-top: 2px;
+  border-radius: 6px; border: 1.5px solid var(--ball);
+}
+.check[aria-pressed="true"] { border-color: var(--ball); }
+.check[aria-pressed="true"] .box { background: var(--ball); box-shadow: inset 0 0 0 4px #0c1914; }
+.seg { display: flex; gap: 8px; margin-bottom: 8px; }
+.seg button { flex: 1; }
+.sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
+}
+.jobid {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  letter-spacing: 0.02em;
+  background: #0b1712;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.pulse {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--ball);
+  box-shadow: 0 0 0 0 rgba(214, 227, 90, 0.7);
+  animation: pulse 1.6s infinite;
+  display: inline-block; margin-right: 8px;
+}
+@keyframes pulse {
+  70% { box-shadow: 0 0 0 10px rgba(214, 227, 90, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(214, 227, 90, 0); }
+}
+.kicker { letter-spacing: 0.16em; font-size: 12px; color: var(--ball); margin: 0; }
