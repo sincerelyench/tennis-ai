@@ -2,6 +2,9 @@ plugins {
     id "com.android.application"
 }
 
+// 打包时覆盖：./gradlew assembleDebug -PZQ_START_URL=http://10.0.2.2:27116/e1
+def zqStartUrl = (project.findProperty("ZQ_START_URL") ?: "https://tennis.47.93.203.28.sslip.io/e1").toString()
+
 android {
     namespace "app.zhangqiu"
     compileSdk 34
@@ -12,6 +15,7 @@ android {
         targetSdk 34
         versionCode 1
         versionName "0.1.0"
+        resValue "string", "start_url", zqStartUrl
     }
 
     compileOptions {

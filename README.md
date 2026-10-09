@@ -40,19 +40,26 @@ E1 是拍摄引导、上传和排队，不是四维结果页。网页入口是 `
 
 ### Android
 
-Android 工程是一层 WebView，打开上面的 `/e1` 页面，不另写分析或打分界面。模拟器通过 `10.0.2.2` 访问电脑的 `127.0.0.1`。
+Android 工程是一层 WebView，打开 `/e1`，不另写分析或打分界面。应用名是「涨球」。
 
-1. 先启动后端。
-2. 用 Android Studio 打开仓库里的 `android/`，同步 Gradle（工程使用 Gradle 8.7 / Android Gradle Plugin 8.5.2）。
-3. 跑模拟器。默认地址在 `android/app/src/main/res/values/strings.xml` 的 `start_url`，即 `http://10.0.2.2:27116/e1`。
-4. 真机要用电脑的局域网地址，并把后端改成对局域网可访问，例如 `uvicorn web.app:app --host 0.0.0.0 --port 27116`。然后改 `start_url`，或用 adb 临时指定：
+默认打包地址是线上 `https://tennis.47.93.203.28.sslip.io/e1`。要改地址，打包时传入 `ZQ_START_URL`：
+
+```bash
+cd android
+./gradlew assembleDebug
+# 模拟器连本机后端：
+./gradlew assembleDebug -PZQ_START_URL=http://10.0.2.2:27116/e1
+```
+
+模拟器访问电脑的 `127.0.0.1` 用 `10.0.2.2`。真机连开发机时，把后端监听改成 `0.0.0.0`，并把 `ZQ_START_URL` 设成电脑的局域网地址。也可以不重新打包，用 adb 临时指定：
 
 ```bash
 adb shell am start -n app.zhangqiu/.MainActivity --es start_url "http://192.168.1.10:27116/e1"
 ```
 
-5. 开发环境允许 HTTP 明文（`usesCleartextTraffic`）。正式环境应换成 HTTPS，并收紧明文流量。
-6. 页面路径与网页相同：登录 → 拍摄引导 → 上传 → 排队页看到任务编号。语言切换在页面右上角。
+网络或证书失败时，WebView 显示中英对照的说明和重试，而不是空白页。开发包仍允许 HTTP 明文，方便连本机；默认的线上地址是 HTTPS。
+
+页面路径与网页相同：登录 → 拍摄引导 → 上传 → 排队页看到任务编号。语言切换在页面右上角。线上 `/e1` 要等本分支合入 `main` 后，在服务器执行 `deploy/pull.sh` 才会出现。
 
 上传成功后，任务的 `metadata.guide_completed` 与 `metadata.guide_checks` 会记在 job 上。三条都勾选才是引导完成；没勾完也能上传，标记为未完成。排队页只显示任务编号和状态，不展示四维分数。
 

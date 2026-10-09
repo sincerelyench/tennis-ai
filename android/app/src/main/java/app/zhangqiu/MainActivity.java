@@ -7,10 +7,13 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.net.http.SslError;
+import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -71,9 +74,20 @@ public class MainActivity extends Activity {
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request == null || !request.isForMainFrame() || showingError) return;
-                showingError = true;
-                view.loadDataWithBaseURL(null, errorHtml(), "text/html", "utf-8", null);
+                if (request == null || !request.isForMainFrame()) return;
+                showLoadError();
+            }
+
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                if (request == null || !request.isForMainFrame() || errorResponse == null) return;
+                if (errorResponse.getStatusCode() >= 400) showLoadError();
+            }
+
+            @Override
+            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                if (handler != null) handler.cancel();
+                showLoadError();
             }
         });
         setContentView(webView);
@@ -89,15 +103,22 @@ public class MainActivity extends Activity {
         return url;
     }
 
+    private void showLoadError() {
+        if (showingError || webView == null) return;
+        showingError = true;
+        webView.loadDataWithBaseURL(null, errorHtml(), "text/html", "utf-8", null);
+    }
+
     private String errorHtml() {
-        String retry = startUrl == null ? "" : startUrl.replace("&", "&amp;").replace("\"", "&quot;");
+        String retry = startUrl == null ? "" : startUrl.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "");
         return "<!DOCTYPE html><html><head><meta charset=\"utf-8\"/>"
                 + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>"
-                + "<style>body{margin:0;padding:28px;background:#07140e;color:#eef6ee;font-family:sans-serif}"
-                + "a{color:#d6e35a}</style></head><body>"
+                + "<style>body{margin:0;padding:32px 24px;background:#07140e;color:#eef6ee;"
+                + "font-family:sans-serif;font-size:18px;line-height:1.5}"
+                + "h1{font-size:28px}a{color:#d6e35a}</style></head><body>"
                 + "<h1>涨球</h1>"
-                + "<p>打不开页面。请先在电脑上启动后端，并确认地址能从这台设备访问。</p>"
-                + "<p>Could not open the page. Start the local server, then confirm this device can reach it.</p>"
+                + "<p>页面暂时打不开。请检查网络后重试。</p>"
+                + "<p>The page could not be opened. Check the network and try again.</p>"
                 + "<p><a href=\"" + retry + "\">重试 / Retry</a></p>"
                 + "</body></html>";
     }
