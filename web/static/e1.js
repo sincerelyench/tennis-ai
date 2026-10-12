@@ -65,7 +65,10 @@
   }
 
   function clientName() {
-    return (navigator.userAgent || "").indexOf("ZhangqiuAndroid") >= 0 ? "android" : "e1";
+    const ua = navigator.userAgent || "";
+    if (ua.indexOf("ZhangqiuAndroid") >= 0) return "android";
+    if (ua.indexOf("ZhangqiuIOS") >= 0) return "ios";
+    return "e1";
   }
 
   function guideDone() {
