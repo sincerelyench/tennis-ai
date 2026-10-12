@@ -3,7 +3,8 @@
     "pages/home/home",
     "pages/guide/guide",
     "pages/upload/upload",
-    "pages/queue/queue"
+    "pages/queue/queue",
+    "pages/result/result"
   ],
   "window": {
     "navigationBarTitleText": "涨球",

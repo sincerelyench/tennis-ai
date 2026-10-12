@@ -54,6 +54,10 @@ function job(id, token) {
   return request({ path: "/api/jobs/" + encodeURIComponent(id), token })
 }
 
+function jobResult(id, token) {
+  return request({ path: "/api/jobs/" + encodeURIComponent(id) + "/result", token })
+}
+
 function uploadVideo({ filePath, token, stroke, guideCompleted, guideChecks }) {
   return new Promise((resolve, reject) => {
     if (!token) {
@@ -100,4 +104,4 @@ function uploadVideo({ filePath, token, stroke, guideCompleted, guideChecks }) {
   })
 }
 
-module.exports = { mockLogin, me, job, uploadVideo }
+module.exports = { mockLogin, me, job, jobResult, uploadVideo }

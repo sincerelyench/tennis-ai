@@ -19,8 +19,12 @@
     jobErrorCode: "",
     jobErrorText: "",
     pollTimer: 0,
+    result: null,
+    resultLoading: false,
+    resultErrorCode: "",
   };
   let pollSeq = 0;
+  let resultSeq = 0;
 
   function esc(value) {
     return String(value ?? "").replace(/[&<>"]/g, (ch) => ({
@@ -85,6 +89,7 @@
     if (path === "guide") return { name: "guide" };
     if (path === "upload") return { name: "upload" };
     if (path === "queue") return { name: "queue", job: params.get("job") || "" };
+    if (path === "result") return { name: "result", job: params.get("job") || "" };
     return { name: "home" };
   }
 
@@ -208,6 +213,7 @@
       '<div class="seg">' +
       '<button type="button" data-stroke="forehand" class="' + (state.stroke === "forehand" ? "on" : "") + '">' + esc(text("upload.forehand")) + "</button>" +
       '<button type="button" data-stroke="backhand" class="' + (state.stroke === "backhand" ? "on" : "") + '">' + esc(text("upload.backhand")) + "</button>" +
+      '<button type="button" data-stroke="serve" class="' + (state.stroke === "serve" ? "on" : "") + '">' + esc(text("upload.serve")) + "</button>" +
       "</div>" +
       '<div class="row">' +
       '<button class="ghost" type="button" id="pick">' + esc(text("upload.choose")) + "</button>" +
@@ -252,10 +258,166 @@
       (status === "done" ? '<p class="sub">' + esc(text("queue.doneHint")) + "</p>" : "") +
       server +
       (shownJobError() ? '<p class="error">' + esc(shownJobError()) + "</p>" : "") +
-      '<button class="primary" type="button" id="home">' + esc(text("queue.home")) + "</button>" +
+      (status === "done"
+        ? '<button class="primary" type="button" id="open-result">' + esc(text("queue.viewResult")) + "</button>"
+        : "") +
+      '<button class="' + (status === "done" ? "ghost" : "primary") + '" type="button" id="home">' + esc(text("queue.home")) + "</button>" +
       (status === "error" || status === "cancelled" || shownJobError()
         ? '<button class="ghost" type="button" id="retry">' + esc(text("queue.retry")) + "</button>"
         : "") +
+      "</section>"
+    );
+  }
+
+  function bandKey(score, max) {
+    if (typeof score !== "number" || !max) return "";
+    const ratio = score / max;
+    if (ratio >= 0.8) return "high";
+    if (ratio >= 0.6) return "mid";
+    return "low";
+  }
+
+  function strokeLabel(stroke) {
+    if (hasText("result.strokes." + stroke)) return text("result.strokes." + stroke);
+    return stroke || "";
+  }
+
+  function gradeText(letter) {
+    if (letter && hasText("result.grades." + letter)) return text("result.grades." + letter);
+    return "";
+  }
+
+  function whenLabel(iso) {
+    return String(iso || "").replace("T", " ").slice(0, 16);
+  }
+
+  function deltaText(value) {
+    const n = Number(value) || 0;
+    if (n > 0) return "+" + n;
+    return String(n);
+  }
+
+  function axisMarkup(axes) {
+    return (axes || []).map((axis) => {
+      const max = Number(axis.max) || 0;
+      const known = typeof axis.score === "number";
+      const width = known && max ? Math.max(0, Math.min(100, Math.round((axis.score / max) * 100))) : 0;
+      const band = known ? bandKey(axis.score, max) : "";
+      const scoreLine = known ? axis.score + "/" + max : text("result.noNumber");
+      return (
+        '<article class="axis">' +
+        '<div class="axis-top"><strong>' + esc(text("result.axes." + axis.key)) + "</strong><span>" + esc(scoreLine) + "</span></div>" +
+        (band ? '<p class="hint">' + esc(text("result.bands." + band)) + "</p>" : "") +
+        '<div class="bar" aria-hidden="true"><span style="width:' + width + '%"></span></div>' +
+        '<p class="tip"><span>' + esc(text("result.tipLabel")) + "</span> " + esc(axis.tip || "") + "</p>" +
+        "</article>"
+      );
+    }).join("");
+  }
+
+  function timelineMarkup(progress) {
+    const items = (progress && progress.items) || [];
+    if (!items.length) return "";
+    return (
+      "<h2>" + esc(text("result.timelineTitle")) + "</h2>" +
+      items.map((item) => {
+        const bits = ["balance", "contact", "chain", "effect"].map((key) => {
+          const value = item.scores ? item.scores[key] : null;
+          return text("result.axes." + key) + " " + (typeof value === "number" ? value : text("result.noNumber"));
+        }).join(" · ");
+        const shot = item.thumbnail
+          ? '<img alt="" src="' + esc(item.thumbnail) + '" />'
+          : "";
+        const contact = typeof item.contact_t === "number"
+          ? '<p class="hint">' + esc(text("result.contactAt", { t: item.contact_t })) + "</p>"
+          : "";
+        return (
+          '<article class="tl' + (item.current ? " on" : "") + '">' +
+          shot +
+          "<div><strong>" + esc(whenLabel(item.created_at)) +
+          (item.current ? " · " + esc(text("result.current")) : "") +
+          "</strong><p>" + esc(bits) + "</p>" + contact + "</div></article>"
+        );
+      }).join("")
+    );
+  }
+
+  function compareMarkup(payload) {
+    const progress = (payload && payload.progress) || {};
+    const card = progress.comparison;
+    if (progress.compare_ready && card) {
+      const rows = (payload.axes || []).map((axis) => {
+        const before = card.earlier && card.earlier.scores ? card.earlier.scores[axis.key] : null;
+        const after = card.later && card.later.scores ? card.later.scores[axis.key] : null;
+        const delta = card.deltas ? card.deltas[axis.key] : 0;
+        const cls = delta > 0 ? "up" : (delta < 0 ? "down" : "");
+        return (
+          "<div><span>" + esc(text("result.axes." + axis.key)) + "</span> " +
+          esc(before) + " → " + esc(after) +
+          ' <b class="' + cls + '">' + esc(deltaText(delta)) + "</b></div>"
+        );
+      }).join("");
+      return (
+        '<section class="compare">' +
+        "<h2>" + esc(text("result.compareTitle")) + "</h2>" +
+        '<p class="hint">' + esc(text("result.compareNote")) + "</p>" +
+        '<p class="hint">' + esc(text("result.earlier")) + " " + esc(whenLabel(card.earlier && card.earlier.created_at)) +
+        " · " + esc(text("result.later")) + " " + esc(whenLabel(card.later && card.later.created_at)) + "</p>" +
+        '<div class="deltas">' + rows + "</div></section>"
+      );
+    }
+    const reason = progress.reason || "need_two";
+    const reasonKey = "result.reasons." + reason;
+    const note = hasText(reasonKey)
+      ? text(reasonKey, { count: progress.count || 0 })
+      : text("result.reasons.need_two", { count: progress.count || 0 });
+    return (
+      '<section class="compare locked" aria-disabled="true">' +
+      "<h2>" + esc(text("result.compareTitle")) + "</h2>" +
+      "<p>" + esc(note) + "</p></section>"
+    );
+  }
+
+  function resultView(route) {
+    if (state.resultLoading) {
+      return header() + '<section class="card"><p class="hint">' + esc(text("result.loading")) + "</p></section>";
+    }
+    if (state.resultErrorCode || !state.result) {
+      const code = state.resultErrorCode || "generic";
+      const message = hasText("errors." + code) ? text("errors." + code) : text("errors.generic");
+      return (
+        header() +
+        '<section class="card"><h1>' + esc(text("result.title")) + "</h1>" +
+        '<p class="error">' + esc(message) + "</p>" +
+        '<button class="primary" type="button" id="home">' + esc(text("result.home")) + "</button></section>"
+      );
+    }
+    const payload = state.result;
+    const grade = gradeText(payload.grade);
+    const total = typeof payload.total === "number"
+      ? '<p class="ok">' + esc(text("result.total", { score: payload.total, grade: grade })) + "</p>"
+      : "";
+    const shot = payload.thumbnail ? '<img class="shot" alt="" src="' + esc(payload.thumbnail) + '" />' : "";
+    const contact = typeof payload.contact_t === "number"
+      ? '<p class="hint">' + esc(text("result.contactAt", { t: payload.contact_t })) + "</p>"
+      : "";
+    return (
+      header() +
+      '<section class="card">' +
+      '<p class="kicker">' + esc(strokeLabel(payload.stroke)) + "</p>" +
+      "<h1>" + esc(text("result.title")) + "</h1>" +
+      '<p class="sub">' + esc(text("result.intro")) + "</p>" +
+      (payload.guide_warning ? '<p class="warn">' + esc(text("result.guideWarning")) + "</p>" : "") +
+      (payload.stroke === "serve" ? '<p class="hint">' + esc(text("result.serveNote")) + "</p>" : "") +
+      shot +
+      contact +
+      total +
+      (payload.focus ? '<p class="focus"><span>' + esc(text("result.focusLabel")) + "</span> " + esc(payload.focus) + "</p>" : "") +
+      axisMarkup(payload.axes) +
+      timelineMarkup(payload.progress) +
+      compareMarkup(payload) +
+      '<button class="ghost" type="button" id="back-queue">' + esc(text("result.backQueue")) + "</button>" +
+      '<button class="ghost" type="button" id="home">' + esc(text("result.home")) + "</button>" +
       "</section>"
     );
   }
@@ -265,6 +427,7 @@
     if (route.name === "guide") return guideView();
     if (route.name === "upload") return uploadView();
     if (route.name === "queue") return queueView(route);
+    if (route.name === "result") return resultView(route);
     return homeView();
   }
 
@@ -507,7 +670,8 @@
     if (next) next.addEventListener("click", () => { location.hash = "#/upload"; });
     document.querySelectorAll("[data-stroke]").forEach((button) => {
       button.addEventListener("click", () => {
-        state.stroke = button.getAttribute("data-stroke") === "backhand" ? "backhand" : "forehand";
+        const picked = button.getAttribute("data-stroke");
+        state.stroke = picked === "backhand" || picked === "serve" ? picked : "forehand";
         render();
       });
     });
@@ -523,22 +687,76 @@
     if (submit) submit.addEventListener("click", upload);
     const home = document.getElementById("home");
     if (home) home.addEventListener("click", () => { location.hash = "#/"; });
+    const openResult = document.getElementById("open-result");
+    if (openResult) {
+      openResult.addEventListener("click", () => {
+        const route = currentRoute();
+        const jobId = route.job || (state.job && state.job.id) || "";
+        if (!jobId) return;
+        location.hash = "#/result?job=" + encodeURIComponent(jobId);
+      });
+    }
+    const backQueue = document.getElementById("back-queue");
+    if (backQueue) {
+      backQueue.addEventListener("click", () => {
+        const jobId = (state.result && state.result.job_id) || currentRoute().job || "";
+        location.hash = jobId ? "#/queue?job=" + encodeURIComponent(jobId) : "#/";
+      });
+    }
     const retry = document.getElementById("retry");
     if (retry) retry.addEventListener("click", () => { location.hash = "#/upload"; });
   }
 
+  async function loadResult(jobId, seq) {
+    state.resultLoading = true;
+    state.result = null;
+    state.resultErrorCode = "";
+    render();
+    try {
+      const headers = {};
+      if (validAuth()) headers.Authorization = "Bearer " + state.auth.token;
+      const res = await fetch("/api/jobs/" + encodeURIComponent(jobId) + "/result", { headers: headers });
+      let body = null;
+      try { body = await res.json(); } catch (e) { body = null; }
+      if (seq !== resultSeq) return;
+      state.resultLoading = false;
+      if (!res.ok || !body || !body.axes) {
+        const code = body && body.code;
+        state.resultErrorCode = code && hasText("errors." + code) ? code : "generic";
+      } else {
+        state.result = body;
+      }
+      render();
+    } catch (e) {
+      if (seq !== resultSeq) return;
+      state.resultLoading = false;
+      state.resultErrorCode = "network";
+      render();
+    }
+  }
+
   function onRoute() {
     stopPoll();
+    resultSeq += 1;
     const route = currentRoute();
     if (route.name !== "home" && !validAuth()) {
       location.hash = "#/";
       return;
     }
     clearError();
+    state.resultErrorCode = "";
+    state.resultLoading = false;
+    if (route.name !== "result") state.result = null;
     render();
     if (route.name === "queue" && route.job) startPoll(route.job);
     if (route.name === "queue" && !route.job) {
       setJobErrorCode("bad_response");
+      render();
+    }
+    if (route.name === "result" && route.job) loadResult(route.job, resultSeq);
+    if (route.name === "result" && !route.job) {
+      state.result = null;
+      state.resultErrorCode = "result_missing";
       render();
     }
   }

@@ -60,7 +60,8 @@ Page({
     })
   },
   onStroke(e) {
-    const stroke = e.currentTarget.dataset.stroke === "backhand" ? "backhand" : "forehand"
+    const picked = e.currentTarget.dataset.stroke
+    const stroke = picked === "backhand" || picked === "serve" ? picked : "forehand"
     this.setData({ stroke })
   },
   onChoose(e) {
