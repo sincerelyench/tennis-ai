@@ -28,6 +28,7 @@ from pipeline.session import analyze_video, get_detector, get_estimator, json_de
 from web.api_errors import CodedHTTPException, coded_handler
 from web.dev_auth import bearer_token, issue_dev_token, verify_dev_token
 from web.history import archive_report, find_archive, list_history
+from web.progress import assemble_result, entry_from, list_entries, stroke_of, upsert_entry, user_id_of
 from web.upload_meta import (
     E1_CLIENTS,
     GuideError,
@@ -40,6 +41,7 @@ from web.upload_meta import (
 
 JOBS_DIR = ROOT / "outputs" / "jobs"
 REPORTS_DIR = ROOT / "outputs" / "reports"
+PROGRESS_DIR = ROOT / "outputs" / "progress"
 SAMPLE_CACHE_DIR = ROOT / "outputs" / "sample_cache"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 I18N_DIR = ROOT / "i18n"
@@ -253,6 +255,7 @@ def _recover_jobs() -> None:
             _write_status(job_id)
         if job.get("status") == "done":
             archive_report(job_dir, REPORTS_DIR)
+            _save_progress(job_id)
         if job.get("is_sample") and job.get("status") == "done" and sample is not None:
             _save_sample_cache(
                 job_id,
@@ -297,6 +300,7 @@ def _run_job(job_id: str) -> None:
             n_swings=report["overall"]["n_swings"],
         )
         archive_report(out_dir, REPORTS_DIR)
+        _save_progress(job_id)
         if job.get("is_sample"):
             src = _sample_path()
             if src is not None:
@@ -369,6 +373,56 @@ def _start_worker() -> None:
     t.start()
     threading.Thread(target=warm_agent, name="cursor-warm", daemon=True).start()
     _recover_jobs()
+
+
+def _job_record(job_id: str) -> dict | None:
+    with _lock:
+        job = _jobs.get(job_id)
+        if job is not None:
+            return dict(job)
+    data = _load_status_file(JOBS_DIR / job_id)
+    return dict(data) if data else None
+
+
+def _read_report(job_id: str) -> dict | None:
+    path = JOBS_DIR / job_id / "report.json"
+    if not path.is_file():
+        archived = _archived_file(job_id, "report.json")
+        path = archived if archived is not None else path
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _thumbnail_url(job_id: str) -> str | None:
+    if not job_id or any(ch in job_id for ch in "/\\"):
+        return None
+    root = (JOBS_DIR / job_id).resolve()
+    for name in ("preview.jpg", "cover.jpg"):
+        target = (root / name).resolve()
+        if target.parent == root and target.is_file():
+            return f"/api/jobs/{job_id}/preview"
+    if _archived_file(job_id, "preview.jpg", "cover.jpg") is not None:
+        return f"/api/jobs/{job_id}/preview"
+    return None
+
+
+def _save_progress(job_id: str) -> None:
+    job = _job_record(job_id)
+    report = _read_report(job_id) if job else None
+    if not job or not report:
+        return
+    entry = entry_from(job, report, _thumbnail_url(job_id))
+    if entry is None:
+        return
+    try:
+        upsert_entry(PROGRESS_DIR, entry)
+    except (OSError, ValueError):
+        print(f"[progress] save failed {job_id}", flush=True)
 
 
 def _archived_file(job_id: str, *names: str) -> Path | None:
@@ -491,7 +545,7 @@ async def analyze(
     guide_checks: str = Form(default=""),
     authorization: str | None = Header(default=None),
 ):
-    if stroke not in ("auto", "forehand", "backhand"):
+    if stroke not in ("auto", "forehand", "backhand", "serve"):
         stroke = "forehand"
     player_level = parse_level(level).code
     _client_name, metadata = _prepare_upload_meta(
@@ -530,7 +584,12 @@ async def analyze(
                     "updated_at": now,
                 }
                 _write_status(job_id)
+            if metadata:
+                with _lock:
+                    _jobs[job_id]["metadata"] = metadata
+                    _write_status(job_id)
             archive_report(JOBS_DIR / job_id, REPORTS_DIR)
+            _save_progress(job_id)
             return {"job_id": job_id, "cached": True}
 
     if _busy_job():
@@ -620,6 +679,45 @@ def job_status(job_id: str):
             return _public_job(data)
         return data
     raise HTTPException(404, "任务不存在")
+
+
+@app.get("/api/jobs/{job_id}/result")
+def job_result(job_id: str, authorization: str | None = Header(default=None)):
+    job = _job_record(job_id)
+    if job is None:
+        raise CodedHTTPException(404, "result_missing", "找不到这次任务")
+    report = _read_report(job_id)
+    if report is None:
+        status = str(job.get("status") or "")
+        if status in ("error", "cancelled"):
+            raise CodedHTTPException(409, "result_unavailable", "这次分析没有完成")
+        raise CodedHTTPException(409, "result_pending", "结果还在生成")
+    owner = user_id_of(job)
+    token = bearer_token(authorization)
+    viewer = verify_dev_token(token) if token else None
+    viewer_id = str(viewer.get("sub")) if viewer and viewer.get("sub") else ""
+    stroke = stroke_of(job, report)
+    timeline: list[dict] = []
+    if not owner:
+        reason = "no_user"
+    elif viewer_id == owner:
+        _save_progress(job_id)
+        try:
+            timeline = list_entries(PROGRESS_DIR, owner, stroke)
+        except OSError:
+            timeline = []
+        reason = "" if len(timeline) >= 2 else "need_two"
+    elif viewer_id:
+        reason = "not_owner"
+    else:
+        reason = "sign_in"
+    return assemble_result(
+        job,
+        report,
+        timeline=timeline,
+        reason=reason,
+        thumbnail=_thumbnail_url(job_id),
+    )
 
 
 @app.get("/api/jobs/{job_id}/preview")

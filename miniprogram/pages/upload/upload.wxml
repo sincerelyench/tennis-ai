@@ -15,6 +15,7 @@
     <view class="seg">
       <view class="ghost {{stroke === 'forehand' ? 'on' : ''}}" data-stroke="forehand" bindtap="onStroke">{{copy.upload.forehand}}</view>
       <view class="ghost {{stroke === 'backhand' ? 'on' : ''}}" data-stroke="backhand" bindtap="onStroke">{{copy.upload.backhand}}</view>
+      <view class="ghost {{stroke === 'serve' ? 'on' : ''}}" data-stroke="serve" bindtap="onStroke">{{copy.upload.serve}}</view>
     </view>
     <view class="row">
       <view class="ghost" data-source="album" bindtap="onChoose">{{copy.upload.choose}}</view>

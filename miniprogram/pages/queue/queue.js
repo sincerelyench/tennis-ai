@@ -85,6 +85,11 @@ Page({
       this._timer = setTimeout(() => this.poll(), 3000)
     })
   },
+  onOpenResult() {
+    const id = this.jobId || ""
+    if (!id) return
+    wx.navigateTo({ url: "/pages/result/result?job_id=" + encodeURIComponent(id) })
+  },
   onHome() {
     wx.reLaunch({ url: "/pages/home/home" })
   },

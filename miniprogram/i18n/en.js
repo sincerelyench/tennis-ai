@@ -5,7 +5,7 @@ module.exports = {
     "en": "EN"
   },
   "home": {
-    "lead": "Film a swing, follow the shooting guide, then queue it for analysis.",
+    "lead": "Film a swing, follow the shooting guide, then view the four-part result and practice cues.",
     "sub": "Use it to review your own practice. This does not promise a higher rating.",
     "devNote": "This is a development login. WeChat sign-in will be added later.",
     "login": "Development login",
@@ -48,6 +48,7 @@ module.exports = {
     "strokeLabel": "This clip is mainly",
     "forehand": "Forehand",
     "backhand": "Backhand",
+    "serve": "Serve",
     "choose": "Choose from album",
     "record": "Record now",
     "chosen": "Selected {{name}} ({{size}})",
@@ -68,7 +69,8 @@ module.exports = {
     "polling": "Checking progress with the server.",
     "guideDone": "The shooting guide was completed for this job.",
     "guideSkipped": "The shooting guide was not completed. A later result can mark that.",
-    "doneHint": "A detailed breakdown will be available in a later version. This page does not show scores.",
+    "doneHint": "Analysis finished. You can open the four-part result and the practice cues.",
+    "viewResult": "View four-part result",
     "home": "Back to home",
     "retry": "Upload again",
     "serverDetail": "Server note"
@@ -90,6 +92,59 @@ module.exports = {
     "bad_response": "Upload did not finish and no job id was returned",
     "server": "The server is busy. Try again shortly",
     "generic": "Something went wrong. Try again shortly",
-    "i18n": "Could not load copy. Start the local server"
+    "i18n": "Could not load copy. Start the local server",
+    "result_pending": "The result is still being prepared. Check again shortly",
+    "result_missing": "This job could not be found",
+    "result_unavailable": "This analysis did not finish"
+  },
+  "result": {
+    "title": "Four-part result",
+    "loading": "Loading this analysis…",
+    "intro": "These four parts come from this analysis. Practice cues stay in Chinese. Camera angle can change the numbers.",
+    "total": "Total {{score}} · {{grade}}",
+    "noNumber": "—",
+    "tipLabel": "Practice",
+    "focusLabel": "Practice this first",
+    "guideWarning": "The shooting guide was not completed, so the camera position may affect the numbers. Use this as practice feedback, not a precise measurement.",
+    "serveNote": "You labeled this clip as a serve, so progress is tracked separately for serves. The numbers still come from the current swing analysis and are for practice.",
+    "timelineTitle": "Progress timeline",
+    "compareTitle": "Before and after",
+    "compareNote": "This is the difference between an earlier and a later clip of the same stroke. It only shows that the two clips differ.",
+    "earlier": "Earlier",
+    "later": "Later",
+    "delta": "Difference",
+    "contactAt": "Contact around {{t}}s",
+    "current": "This one",
+    "backQueue": "Back to queue",
+    "home": "Back to home",
+    "axes": {
+      "balance": "Balance",
+      "contact": "Contact point",
+      "chain": "Kinetic chain",
+      "effect": "Ball effect"
+    },
+    "bands": {
+      "high": "This part looks steady",
+      "mid": "This part can use more practice",
+      "low": "Practice this part first"
+    },
+    "grades": {
+      "A": "Higher",
+      "B": "Solid",
+      "C": "Middle",
+      "D": "Needs practice",
+      "E": "Build the basics"
+    },
+    "strokes": {
+      "forehand": "Forehand",
+      "backhand": "Backhand",
+      "serve": "Serve"
+    },
+    "reasons": {
+      "need_two": "Comparison opens after 2 analyses of the same stroke. You have {{count}}.",
+      "sign_in": "Sign in to see progress and comparison for your own strokes.",
+      "not_owner": "Comparison is only for the signed-in account's own strokes.",
+      "no_user": "This job is not tied to a signed-in user, so it cannot be saved on a progress timeline."
+    }
   }
 };

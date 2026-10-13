@@ -20,9 +20,9 @@ cp .env.example .env
 
 把侧面样例视频放到 `samples/demo.mp4` 后，可点「分析 1 分钟样例」（只分析前 60 秒）。自己上传的视频按整段分析。能看到球或球拍时，击球画面会按球和拍的距离选取。
 
-## 小程序、Android 与 iOS 本地运行（E1）
+## 小程序、Android 与 iOS 本地运行
 
-E1 是拍摄引导、上传和排队，不是四维结果页。网页入口是 `http://127.0.0.1:27116/e1`，小程序、Android 和 iOS 都调用现有的 `POST /api/analyze` 与 `GET /api/jobs/{id}`。分析仍由原来的 pipeline 完成。
+网页入口是 `http://127.0.0.1:27116/e1`。小程序、Android 和 iOS 都调用现有的 `POST /api/analyze` 与 `GET /api/jobs/{id}`。分析仍由原来的 pipeline 完成。任务完成后，同一页面打开四维结果：`GET /api/jobs/{id}/result`。iOS 壳的 User-Agent 带 `ZhangqiuIOS`，上传时 `client` 为 `ios`。
 
 登录是开发态模拟：客户端把一段 code 交给 `POST /api/auth/mock`，换回 token。正式微信登录还没接。可选环境变量 `DEV_AUTH_SECRET` 用来签发这个开发 token。
 
@@ -59,7 +59,7 @@ adb shell am start -n app.zhangqiu/.MainActivity --es start_url "http://192.168.
 
 网络或证书失败时，WebView 显示中英对照的说明和重试，而不是空白页。开发包仍允许 HTTP 明文，方便连本机；默认的线上地址是 HTTPS。
 
-页面路径与网页相同：登录 → 拍摄引导 → 上传 → 排队页看到任务编号。语言切换在页面右上角。线上 `/e1` 要等本分支合入 `main` 后，在服务器执行 `deploy/pull.sh` 才会出现。
+页面路径与网页相同：登录 → 拍摄引导 → 上传 → 排队页看到任务编号，分析结束后打开四维结果。语言切换在页面右上角。线上 `/e1` 要等本分支合入 `main` 后，在服务器执行 `deploy/pull.sh` 才会出现。
 
 ### iOS
 
@@ -97,7 +97,7 @@ xcodebuild -project ios/Zhangqiu.xcodeproj -scheme Zhangqiu -configuration Debug
 
 选择视频和拍摄走 WKWebView 自带的文件面板（和 Safari 的 `<input type="file">` 一样，`capture="environment"` 会进相机）。Info.plist 里写了相机、麦克风、相册和本地网络的用途说明，否则系统会直接拒绝。页面上的按钮点的是隐藏 file input，壳在文档开头注入了一小段样式，避免 iOS 因为 `clip` 打不开选择器。User-Agent 带 `ZhangqiuIOS/1`，上传时 `client` 为 `ios`。
 
-页面路径与网页相同：登录 → 拍摄引导 → 上传 → 排队页看到任务编号。语言切换在页面右上角。
+页面路径与网页相同：登录 → 拍摄引导 → 上传 → 排队页看到任务编号，分析结束后打开四维结果。语言切换在页面右上角。
 
 真机侧载需要本机签名。在 Xcode 的 Signing & Capabilities 里选好 Team 后归档并导出 development IPA：
 
@@ -114,7 +114,11 @@ xcodebuild -exportArchive \
 
 导出的包在 `ios/build/ipa/Zhangqiu.ipa`。用 Xcode Devices、Apple Configurator，或 `xcrun devicectl device install app --device <UDID> ios/build/ipa/Zhangqiu.ipa` 装到已注册的开发设备上。
 
-上传成功后，任务的 `metadata.guide_completed` 与 `metadata.guide_checks` 会记在 job 上。三条都勾选才是引导完成；没勾完也能上传，标记为未完成。排队页只显示任务编号和状态，不展示四维分数。
+上传成功后，任务的 `metadata.guide_completed` 与 `metadata.guide_checks` 会记在 job 上。三条都勾选才是引导完成；没勾完也能上传，标记为未完成。分析结束后，排队页可以打开四维结果。引导没完成时，结果页会提示机位可能影响分数。
+
+同一登录用户、同一动作（正手 / 反手 / 发球）的成功分析会写进 `outputs/progress/<user_id>.json`，字段包括 user_id、stroke、job_id、四维分数、关键帧缩略图或击球时间、created_at。满 2 次才打开前后对比；只有 1 次时对比卡片是灰的。这个目录在 `.gitignore` 里，`deploy/pull.sh` 只拉代码并重启，不会清掉它。
+
+Android 和 iOS 都不用新页面，WebView 打开的 `/e1` 就是这套结果。小程序在排队页进入 `pages/result/result`，请求同一个结果接口。
 
 2.0 评分四维：重心（稳且低）、击球点（胸口高度、持拍侧稍外、身前约 45°）、动力链（伤病相关核心）、击球效果（拍头速度与旋转轨迹）。击球画面会标出实际击球点（球碰到拍的位置）和理想区。
 

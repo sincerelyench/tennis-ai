@@ -14,9 +14,10 @@
     <text class="ok" wx:if="{{guideFlag === true}}">{{copy.queue.guideDone}}</text>
     <text class="hint" wx:if="{{guideFlag === false}}">{{copy.queue.guideSkipped}}</text>
     <text class="sub" wx:if="{{status === 'done'}}">{{copy.queue.doneHint}}</text>
+    <view class="primary" wx:if="{{status === 'done'}}" bindtap="onOpenResult">{{copy.queue.viewResult}}</view>
     <text class="error" wx:if="{{serverMessage}}">{{copy.queue.serverDetail}} {{serverMessage}}</text>
     <text class="error" wx:if="{{error}}">{{error}}</text>
-    <view class="primary" bindtap="onHome">{{copy.queue.home}}</view>
+    <view class="{{status === 'done' ? 'ghost' : 'primary'}}" bindtap="onHome">{{copy.queue.home}}</view>
     <view class="ghost" wx:if="{{status === 'error' || status === 'cancelled' || error}}" bindtap="onRetry">{{copy.queue.retry}}</view>
   </view>
 </view>
