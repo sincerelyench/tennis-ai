@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 
 GUIDE_KEYS = ("side", "full_body", "racket")
-E1_CLIENTS = frozenset({"miniprogram", "android", "e1"})
+E1_CLIENTS = frozenset({"miniprogram", "android", "ios", "e1"})
 MAX_GUIDE_JSON = 2000
 MAX_CLIENT_LEN = 32
 ALLOWED_VIDEO_SUFFIXES = {".mp4", ".mov", ".webm", ".m4v", ".avi"}

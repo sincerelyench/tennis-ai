@@ -17,6 +17,11 @@ android/app/build/
 android/local.properties
 android/.idea/
 miniprogram/project.private.config.json
+ios/build/
+ios/DerivedData/
+*.xcuserstate
+**/xcuserdata/
+*.xcarchive
 
 # Large local media not required to run the app
 *.mp4

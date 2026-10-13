@@ -137,6 +137,19 @@ class E1ApiTests(unittest.TestCase):
         android = self._upload(token, client="android", checks={"side": False, "full_body": False, "racket": False})
         self.assertEqual(android.status_code, 200, android.text)
         self.assertTrue(android.json()["job_id"])
+
+    def test_ios_client_requires_login_and_stores_metadata(self):
+        missing = self._upload(None, client="ios", checks={"side": True, "full_body": False, "racket": False})
+        self.assertEqual(missing.status_code, 401)
+        self.assertEqual(missing.json()["code"], "auth_required")
+        token = self._token()
+        res = self._upload(token, client="ios", checks={"side": True, "full_body": False, "racket": False})
+        self.assertEqual(res.status_code, 200, res.text)
+        job = self.client.get("/api/jobs/" + res.json()["job_id"]).json()
+        self.assertEqual(job["metadata"]["client"], "ios")
+        self.assertFalse(job["metadata"]["guide_completed"])
+        self.assertEqual(job["metadata"]["guide_checks"]["side"], True)
+        self.assertEqual(job["metadata"]["guide_checks"]["full_body"], False)
         with appmod._lock:
             appmod._jobs.clear()
         legacy = self.client.post(
@@ -218,6 +231,9 @@ class E1CopyTests(unittest.TestCase):
             ROOT / "android" / "app" / "src" / "main" / "java" / "app" / "zhangqiu" / "MainActivity.java",
         ):
             chunks.append(path.read_text(encoding="utf-8"))
+        for path in (ROOT / "ios").rglob("*"):
+            if path.suffix in {".swift", ".plist"} and path.is_file():
+                chunks.append(path.read_text(encoding="utf-8"))
         for path in (ROOT / "miniprogram").rglob("*"):
             if path.suffix in {".js", ".wxml", ".json", ".wxss"} and path.is_file():
                 chunks.append(path.read_text(encoding="utf-8"))
