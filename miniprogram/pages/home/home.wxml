@@ -14,8 +14,15 @@
     <text class="hint">{{copy.home.devNote}}</text>
     <text class="ok" wx:if="{{loggedIn}}">{{copy.home.loggedIn}}</text>
     <text class="hint" wx:if="{{notice}}">{{notice}}</text>
-    <text class="label">{{copy.home.codeLabel}}</text>
-    <input class="field" maxlength="128" placeholder="{{copy.home.codePlaceholder}}" value="{{code}}" bindinput="onCode" />
+    <block wx:if="{{!loggedIn}}">
+      <text class="label">{{copy.home.phoneLabel}}</text>
+      <input class="field" type="number" maxlength="11" placeholder="{{copy.home.phonePlaceholder}}" value="{{phone}}" bindinput="onPhone" />
+      <text class="label">{{copy.home.codeLabel}}</text>
+      <view class="row">
+        <input class="field flex" type="number" maxlength="6" placeholder="{{copy.home.codePlaceholder}}" value="{{code}}" bindinput="onCode" />
+        <view class="ghost send" bindtap="onSendCode">{{sending ? copy.home.sending : (devCode ? (copy.home.codeIs + devCode) : copy.home.sendCode)}}</view>
+      </view>
+    </block>
     <view class="primary" bindtap="onPrimary">{{loading ? copy.home.loggingIn : (loggedIn ? copy.home.continue : copy.home.login)}}</view>
     <text class="error">{{error}}</text>
   </view>
