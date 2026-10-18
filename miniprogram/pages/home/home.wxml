@@ -17,6 +17,7 @@
     <text class="label">{{copy.home.codeLabel}}</text>
     <input class="field" maxlength="128" placeholder="{{copy.home.codePlaceholder}}" value="{{code}}" bindinput="onCode" />
     <view class="primary" bindtap="onPrimary">{{loading ? copy.home.loggingIn : (loggedIn ? copy.home.continue : copy.home.login)}}</view>
+    <view class="ghost" bindtap="onCoachLibrary" wx:if="{{loggedIn}}">{{copy.home.coachLibrary}}</view>
     <text class="error">{{error}}</text>
   </view>
 </view>

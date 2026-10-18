@@ -48,6 +48,9 @@ Page({
   onCode(e) {
     this.setData({ code: e.detail.value })
   },
+  onCoachLibrary() {
+    wx.navigateTo({ url: "/pages/coach-library/coach-library" })
+  },
   onPrimary() {
     if (this.data.loading) return
     if (this.data.loggedIn && !String(this.data.code || "").trim()) {
