@@ -66,15 +66,19 @@ class ResultApiTests(unittest.TestCase):
         preview: bool = False,
         status: str = "done",
         write_report: bool = True,
+        speeds: dict | None = None,
     ) -> None:
         folder = self.jobs / job_id
         folder.mkdir()
         if write_report:
+            overall = {"score": sum(scores.values()), "scores": scores, "n_swings": 4}
+            if speeds is not None:
+                overall["speeds"] = speeds
             report = {
                 "generated_at": created,
                 "focus": focus,
                 "stroke_mode": stroke,
-                "overall": {"score": sum(scores.values()), "scores": scores, "n_swings": 4},
+                "overall": overall,
                 "clips": [
                     {
                         "id": stroke,
@@ -252,6 +256,33 @@ class ResultApiTests(unittest.TestCase):
         job = self.client.get("/api/jobs/" + res.json()["job_id"]).json()
         self.assertEqual(job["stroke_mode"], "serve")
 
+    def test_speeds_exposed_on_result_with_fallbacks(self):
+        token, user = self._user("player-lin")
+        scores = {"重心": 13, "击球点": 9, "动力链": 30, "击球效果": 22}
+        speeds = {
+            "swing_kmh": 83.2,
+            "swing_kmh_max": 177.4,
+            "wrist_kmh": 27.1,
+            "hip_kmh": 7.7,
+            "ball_in_kmh": 102,
+            "ball_out_kmh": 121,
+            "swing_from": "racket",
+        }
+        self._seed("jobspeed0001", user, scores, speeds=speeds, guide=True)
+        body = self._result("jobspeed0001", token).json()
+        self.assertEqual(body["axes"][0]["score"], 13)
+        self.assertEqual(body["speeds"]["racket_kmh"], 83)
+        self.assertEqual(body["speeds"]["wrist_kmh"], 27)
+        self.assertEqual(body["speeds"]["hip_kmh"], 7.7)
+        self.assertEqual(body["speeds"]["ball_in_kmh"], 102)
+        self.assertEqual(body["speeds"]["ball_out_kmh"], 121)
+        self.assertEqual(body["speeds"]["racket_kmh_max"], 177)
+        self.assertEqual(body["speeds"]["swing_from"], "racket")
+
+        self._seed("jobnospeed01", user, scores, guide=True)
+        empty = self._result("jobnospeed01", token).json()
+        self.assertIsNone(empty["speeds"])
+
 
 class ResultCopyTests(unittest.TestCase):
     def test_axis_caps_match_analysis(self):
@@ -261,6 +292,9 @@ class ResultCopyTests(unittest.TestCase):
         script = (ROOT / "web" / "static" / "e1.js").read_text(encoding="utf-8")
         self.assertIn("/result", script)
         self.assertIn("guide_warning", script)
+        self.assertIn("speedMarkup", script)
+        self.assertIn("radarMarkup", script)
+        self.assertIn("fourTitle", script)
         self.assertNotIn("/report", script)
         self.assertNotIn("overall", script)
         queue = (ROOT / "miniprogram" / "pages" / "queue" / "queue.js").read_text(encoding="utf-8")

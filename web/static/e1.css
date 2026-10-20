@@ -120,9 +120,62 @@ h2 { margin: 18px 0 8px; font-size: 18px; }
 }
 .focus span, .tip span { color: var(--ball); font-size: 12px; letter-spacing: 0.08em; }
 .axis { margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.axis.tip-only { border-bottom: 0; padding-bottom: 0; }
 .axis-top { display: flex; justify-content: space-between; gap: 8px; }
 .bar { height: 8px; border-radius: 99px; background: #0b1712; overflow: hidden; margin: 6px 0; }
 .bar > span { display: block; height: 100%; background: var(--ball); }
+.dim-block, .speed-block, .charts { margin: 16px 0 8px; }
+.dim-block h2, .speed-block h2 { margin: 0 0 10px; font-size: 17px; }
+.dim-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.dim-card, .speed-card {
+  background: #0c1914;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 12px 10px;
+}
+.dim-lab { margin: 0; font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+.dim-val { margin: 6px 0 10px; font-size: 28px; line-height: 1; letter-spacing: -0.03em; }
+.dim-val b { font-weight: 750; }
+.dim-max { font-size: 13px; color: var(--muted); font-weight: 500; }
+.dim-bar { height: 7px; border-radius: 99px; background: #07140e; overflow: hidden; }
+.dim-bar > span { display: block; height: 100%; background: linear-gradient(90deg, #b7c84a, var(--ball)); }
+.speed-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.speed-val { margin: 8px 0 0; font-size: 24px; font-weight: 750; letter-spacing: -0.03em; }
+.speed-val .unit { font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 2px; }
+.speed-note { margin: 10px 0 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
+.speed-block.empty .speed-note, .speed-block.empty .hint { margin-top: 0; }
+.charts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.chart-panel {
+  background: #0c1914;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+}
+.chart-panel h3 { margin: 0 0 8px; font-size: 14px; color: var(--muted); font-weight: 600; }
+.radar { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.hbar-list { display: flex; flex-direction: column; gap: 10px; }
+.hbar-row { display: grid; grid-template-columns: 4.5em 1fr 2em; gap: 8px; align-items: center; }
+.hbar-lab { font-size: 13px; color: var(--muted); }
+.hbar-track { height: 12px; border-radius: 99px; background: #07140e; overflow: hidden; }
+.hbar-track > span { display: block; height: 100%; background: linear-gradient(90deg, #6d8a22, var(--ball)); }
+.hbar-num { text-align: right; font-weight: 700; font-size: 14px; }
+@media (min-width: 520px) {
+  .dim-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .speed-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .charts { grid-template-columns: 1fr 1fr; align-items: start; }
+}
 .shot { width: 100%; height: auto; max-height: 220px; object-fit: cover; border-radius: 16px; margin: 8px 0 12px; background: #0b1712; }
 .tl {
   display: flex; gap: 10px; align-items: center;

@@ -300,22 +300,158 @@
     return String(n);
   }
 
-  function axisMarkup(axes) {
-    return (axes || []).map((axis) => {
+  function fmtKmh(v) {
+    if (v == null || v === "") return "";
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "";
+    return n >= 20 ? String(Math.round(n)) : n.toFixed(1);
+  }
+
+  function axisCardsMarkup(axes) {
+    const cards = (axes || []).map((axis) => {
       const max = Number(axis.max) || 0;
       const known = typeof axis.score === "number";
       const width = known && max ? Math.max(0, Math.min(100, Math.round((axis.score / max) * 100))) : 0;
-      const band = known ? bandKey(axis.score, max) : "";
-      const scoreLine = known ? axis.score + "/" + max : text("result.noNumber");
+      const score = known ? String(axis.score) : text("result.noNumber");
+      const maxLine = known ? "/ " + max : "";
       return (
-        '<article class="axis">' +
-        '<div class="axis-top"><strong>' + esc(text("result.axes." + axis.key)) + "</strong><span>" + esc(scoreLine) + "</span></div>" +
-        (band ? '<p class="hint">' + esc(text("result.bands." + band)) + "</p>" : "") +
-        '<div class="bar" aria-hidden="true"><span style="width:' + width + '%"></span></div>' +
-        '<p class="tip"><span>' + esc(text("result.tipLabel")) + "</span> " + esc(axis.tip || "") + "</p>" +
+        '<article class="dim-card">' +
+        '<p class="dim-lab">' + esc(text("result.axes." + axis.key)) + "</p>" +
+        '<p class="dim-val"><b>' + esc(score) + "</b>" +
+        (maxLine ? '<span class="dim-max"> ' + esc(maxLine) + "</span>" : "") +
+        "</p>" +
+        '<div class="dim-bar" aria-hidden="true"><span style="width:' + width + '%"></span></div>' +
         "</article>"
       );
     }).join("");
+    return (
+      '<section class="dim-block">' +
+      "<h2>" + esc(text("result.fourTitle")) + "</h2>" +
+      '<div class="dim-grid">' + cards + "</div></section>"
+    );
+  }
+
+  function axisTipsMarkup(axes) {
+    return (axes || []).map((axis) => {
+      const max = Number(axis.max) || 0;
+      const known = typeof axis.score === "number";
+      const band = known ? bandKey(axis.score, max) : "";
+      if (!axis.tip && !band) return "";
+      return (
+        '<article class="axis tip-only">' +
+        '<div class="axis-top"><strong>' + esc(text("result.axes." + axis.key)) + "</strong>" +
+        (band ? "<span>" + esc(text("result.bands." + band)) + "</span>" : "") +
+        "</div>" +
+        (axis.tip
+          ? '<p class="tip"><span>' + esc(text("result.tipLabel")) + "</span> " + esc(axis.tip) + "</p>"
+          : "") +
+        "</article>"
+      );
+    }).join("");
+  }
+
+  function radarMarkup(axes) {
+    const list = axes || [];
+    if (!list.length) return "";
+    const cx = 100, cy = 100, r = 72;
+    const n = list.length;
+    const grid = [0.4, 0.7, 1].map((k) => {
+      const g = list.map((_, i) => {
+        const ang = -Math.PI / 2 + i * (2 * Math.PI / n);
+        return (cx + Math.cos(ang) * r * k).toFixed(1) + "," + (cy + Math.sin(ang) * r * k).toFixed(1);
+      }).join(" ");
+      return '<polygon points="' + g + '" fill="none" stroke="rgba(45,74,58,.95)" />';
+    }).join("");
+    const pts = list.map((axis, i) => {
+      const ang = -Math.PI / 2 + i * (2 * Math.PI / n);
+      const max = Number(axis.max) || 1;
+      const known = typeof axis.score === "number";
+      const v = known ? Math.max(0, Math.min(1, axis.score / max)) : 0;
+      return [cx + Math.cos(ang) * r * v, cy + Math.sin(ang) * r * v];
+    });
+    const labels = list.map((axis, i) => {
+      const ang = -Math.PI / 2 + i * (2 * Math.PI / n);
+      const x = cx + Math.cos(ang) * 94;
+      const y = cy + Math.sin(ang) * 94;
+      return (
+        '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) +
+        '" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="#8ea196">' +
+        esc(text("result.axes." + axis.key)) + "</text>"
+      );
+    }).join("");
+    return (
+      '<div class="chart-panel">' +
+      "<h3>" + esc(text("result.radarTitle")) + "</h3>" +
+      '<svg class="radar" viewBox="0 0 200 200" width="220" height="220" aria-hidden="true">' +
+      grid +
+      '<polygon points="' + pts.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ") +
+      '" fill="rgba(214,227,90,.28)" stroke="#d6e35a" stroke-width="1.8"/>' +
+      labels + "</svg></div>"
+    );
+  }
+
+  function hBarsMarkup(axes) {
+    const rows = (axes || []).map((axis) => {
+      const max = Number(axis.max) || 0;
+      const known = typeof axis.score === "number";
+      const width = known && max ? Math.max(0, Math.min(100, Math.round((axis.score / max) * 100))) : 0;
+      const score = known ? String(axis.score) : text("result.noNumber");
+      return (
+        '<div class="hbar-row">' +
+        '<span class="hbar-lab">' + esc(text("result.axes." + axis.key)) + "</span>" +
+        '<div class="hbar-track"><span style="width:' + width + '%"></span></div>' +
+        '<span class="hbar-num">' + esc(score) + "</span></div>"
+      );
+    }).join("");
+    return (
+      '<div class="chart-panel">' +
+      "<h3>" + esc(text("result.barsTitle")) + "</h3>" +
+      '<div class="hbar-list">' + rows + "</div></div>"
+    );
+  }
+
+  function chartsMarkup(axes) {
+    if (!(axes || []).length) return "";
+    return '<section class="charts">' + radarMarkup(axes) + hBarsMarkup(axes) + "</section>";
+  }
+
+  function speedMarkup(speeds) {
+    if (!speeds) {
+      return (
+        '<section class="speed-block empty">' +
+        "<h2>" + esc(text("result.speedTitle")) + "</h2>" +
+        '<p class="hint">' + esc(text("result.speedEmpty")) + "</p></section>"
+      );
+    }
+    const racketLab = speeds.swing_from === "wrist"
+      ? text("result.speed.racketWrist")
+      : text("result.speed.racket");
+    const cells = [
+      [racketLab, speeds.racket_kmh],
+      [text("result.speed.wrist"), speeds.wrist_kmh],
+      [text("result.speed.hip"), speeds.hip_kmh],
+      [text("result.speed.ballIn"), speeds.ball_in_kmh],
+      [text("result.speed.ballOut"), speeds.ball_out_kmh],
+    ].map(([lab, val]) => {
+      const n = fmtKmh(val);
+      return (
+        '<article class="speed-card">' +
+        '<p class="dim-lab">' + esc(lab) + "</p>" +
+        '<p class="speed-val">' +
+        (n ? esc(n) + '<span class="unit"> km/h</span>' : esc(text("result.noNumber"))) +
+        "</p></article>"
+      );
+    }).join("");
+    const maxNote = fmtKmh(speeds.racket_kmh_max);
+    const note = maxNote
+      ? text("result.speedNoteMax", { max: maxNote })
+      : text("result.speedNote");
+    return (
+      '<section class="speed-block">' +
+      "<h2>" + esc(text("result.speedTitle")) + "</h2>" +
+      '<div class="speed-grid">' + cells + "</div>" +
+      '<p class="speed-note">' + esc(note) + "</p></section>"
+    );
   }
 
   function timelineMarkup(progress) {
@@ -416,7 +552,10 @@
       contact +
       total +
       (payload.focus ? '<p class="focus"><span>' + esc(text("result.focusLabel")) + "</span> " + esc(payload.focus) + "</p>" : "") +
-      axisMarkup(payload.axes) +
+      axisCardsMarkup(payload.axes) +
+      speedMarkup(payload.speeds) +
+      chartsMarkup(payload.axes) +
+      axisTipsMarkup(payload.axes) +
       timelineMarkup(payload.progress) +
       compareMarkup(payload) +
       '<button class="ghost" type="button" id="back-queue">' + esc(text("result.backQueue")) + "</button>" +
