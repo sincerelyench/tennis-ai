@@ -123,6 +123,49 @@ h2 { margin: 18px 0 8px; font-size: 18px; }
 .axis-top { display: flex; justify-content: space-between; gap: 8px; }
 .bar { height: 8px; border-radius: 99px; background: #0b1712; overflow: hidden; margin: 6px 0; }
 .bar > span { display: block; height: 100%; background: var(--ball); }
+.steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin: 14px 0 10px;
+}
+.step {
+  background: #0b1712;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 8px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.step b { display: block; color: var(--text); font-size: 12px; margin-bottom: 4px; }
+.step.on { border-color: var(--ball); color: #cfe39a; box-shadow: 0 0 14px rgba(214, 227, 90, 0.12); }
+.step.done { border-color: rgba(214, 227, 90, 0.4); color: #b7c99a; }
+.step .eta { display: block; margin-top: 6px; font-size: 10px; opacity: 0.9; }
+.progress-track {
+  height: 8px; border-radius: 99px; background: #0b1712; overflow: hidden; margin: 4px 0 12px;
+}
+.progress-track > i {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, #7fa83a, var(--ball), #fff4a0);
+  transition: width 0.35s ease;
+}
+.live { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 10px; margin: 12px 0 4px; }
+.live .mini {
+  background: #0b1712; border: 1px solid var(--line); border-radius: 14px; padding: 12px;
+}
+.live h3 { margin: 0 0 8px; font-size: 13px; }
+.preview-box {
+  width: 100%; aspect-ratio: 16/10; background: #000; border-radius: 10px; overflow: hidden;
+}
+.preview-box img, .preview-box video {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.preview-empty { color: var(--muted); font-size: 12px; padding: 18px 8px; text-align: center; }
+@media (max-width: 520px) {
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .live { grid-template-columns: 1fr; }
+}
 .shot { width: 100%; height: auto; max-height: 220px; object-fit: cover; border-radius: 16px; margin: 8px 0 12px; background: #0b1712; }
 .tl {
   display: flex; gap: 10px; align-items: center;

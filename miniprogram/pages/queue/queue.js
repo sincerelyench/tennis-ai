@@ -79,10 +79,11 @@ Page({
         terminal,
       })
       if (terminal) return
-      this._timer = setTimeout(() => this.poll(), 2000)
+      // Fast path / warm GPU: poll quickly so UI does not sit idle at low %.
+      this._timer = setTimeout(() => this.poll(), 250)
     }).catch((err) => {
       this.paint(i18n.getLang(), { errorCode: (err && err.code) || "generic" })
-      this._timer = setTimeout(() => this.poll(), 3000)
+      this._timer = setTimeout(() => this.poll(), 1000)
     })
   },
   onOpenResult() {

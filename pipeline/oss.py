@@ -139,14 +139,33 @@ def upload_file(local_path: Path, key: str) -> dict:
 
 
 def refresh_report_urls(report: dict) -> dict:
-    """Re-sign stored oss_key fields so the report stays playable."""
-    if not configured():
-        raise RuntimeError("服务暂时不可用，请稍后重试")
+    """Re-sign stored oss_key fields so the report stays playable.
+
+    Fast-path reports may only have local ``/jobs/{id}/…`` URLs with empty
+    oss keys — leave those alone and skip the OSS requirement.
+    """
     pairs = (
         ("overlay_oss_key", "overlay_video"),
         ("cover_oss_key", "cover_image"),
         ("preview_oss_key", "preview"),
     )
+    needs_oss = any(report.get(k) for k, _ in pairs)
+    if not needs_oss:
+        for clip in report.get("clips") or []:
+            for swing in clip.get("swings") or []:
+                if swing.get("video_oss_key"):
+                    needs_oss = True
+                    break
+                for phase in (swing.get("phases") or {}).values():
+                    if isinstance(phase, dict) and phase.get("oss_key"):
+                        needs_oss = True
+                        break
+            if needs_oss:
+                break
+    if not needs_oss:
+        return report
+    if not configured():
+        raise RuntimeError("服务暂时不可用，请稍后重试")
     for key_field, url_field in pairs:
         oss_key = report.get(key_field)
         if oss_key:
