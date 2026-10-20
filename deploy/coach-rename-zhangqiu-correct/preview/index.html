@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 涨球教练</title>
+  <style>
+    :root {
+      --bg: #0f1a14;
+      --panel: #16241c;
+      --ink: #f2f7f3;
+      --muted: #9bb0a3;
+      --accent: #3ecf8e;
+      --line: #2a3d32;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, #1d3a2a, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    header {
+      padding: 20px 24px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .brand { font-size: 28px; font-weight: 700; letter-spacing: 0.04em; }
+    .ai { color: var(--muted); font-size: 14px; }
+    main { padding: 8px 24px 40px; max-width: 720px; }
+    h1 { font-size: 18px; font-weight: 600; margin: 12px 0 16px; color: var(--muted); }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+    }
+    .name { font-size: 22px; font-weight: 700; }
+    .badge {
+      display: inline-block;
+      margin-top: 8px;
+      color: var(--accent);
+      font-size: 13px;
+    }
+    .cue { margin: 10px 0 0; color: var(--muted); line-height: 1.5; }
+    .row { display: grid; gap: 12px; }
+    @media (min-width: 640px) { .row { grid-template-columns: 1fr 1fr; } }
+    .label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .en .name { letter-spacing: 0.01em; }
+    footer { padding: 0 24px 28px; color: var(--muted); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">涨球</div>
+    <div class="ai">AI 教练</div>
+  </header>
+  <main>
+    <h1>教练 · 默认人格（更正后）</h1>
+    <div class="row">
+      <section class="card" id="zh">
+        <div class="label">中文</div>
+        <div class="name">涨球教练 · 涨球教练</div>
+        <div class="badge">使用中</div>
+        <p class="cue">涨球教练：再往身前送一个拍头。力量放在击球之后。</p>
+      </section>
+      <section class="card en" id="en">
+        <div class="label">English</div>
+        <div class="name">Zhangqiu Coach · Zhangqiu Coach</div>
+        <div class="badge">Active</div>
+        <p class="cue">Zhangqiu Coach: meet it a racket-head farther in front. Power comes after contact.</p>
+      </section>
+    </div>
+    <section class="card" id="library">
+      <div class="label">动作库 / Library</div>
+      <div class="name">涨球教练</div>
+      <p class="cue">涨球教练 · 正手上旋 · 示范可用 · 产品名仍为「涨球」</p>
+    </section>
+    <section class="card" id="download">
+      <div class="label">下载页文案</div>
+      <p class="cue">教练显示为「涨球教练」，含动作库。当前包：涨球 · 涨球教练 · 只选技术。</p>
+    </section>
+  </main>
+  <footer>Banned strings absent: 掌球教练 / Poppy / 东东 / Palm Ball Coach</footer>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 下载与入口</title>
+  <meta name="description" content="涨球：Android APK、iOS、微信小程序与网页入口" />
+  <link rel="icon" href="https://yqchen.blog/tennis/icon.png" />
+  <style>
+    :root {
+      --bg0: #07140e;
+      --bg1: #0d2418;
+      --ink: #eef6ee;
+      --muted: #8ea196;
+      --accent: #d6e35a;
+      --line: #2d4a3a;
+      --card: rgba(16, 36, 27, 0.92);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      font-family: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      background:
+        radial-gradient(900px 480px at 12% -10%, rgba(214, 227, 90, 0.18), transparent 55%),
+        radial-gradient(700px 420px at 90% 10%, rgba(90, 180, 120, 0.12), transparent 50%),
+        linear-gradient(165deg, var(--bg0), var(--bg1) 48%, #0a1a12);
+    }
+    body { padding: 28px 18px 64px; }
+    .wrap { max-width: 560px; margin: 0 auto; }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+      animation: rise 0.6s ease both;
+    }
+    header img {
+      width: 48px; height: 48px; border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    }
+    .brand {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+    .tag {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 0 0 8px;
+      animation: rise 0.7s ease both;
+    }
+    .lead {
+      color: var(--muted);
+      margin: 0 0 28px;
+      line-height: 1.6;
+      animation: rise 0.8s ease both;
+    }
+    .list { display: grid; gap: 14px; }
+    a.item {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px 18px 16px;
+      transition: border-color 0.2s, transform 0.2s, background 0.2s;
+      animation: rise 0.9s ease both;
+    }
+    a.item:nth-child(2) { animation-delay: 0.05s; }
+    a.item:nth-child(3) { animation-delay: 0.1s; }
+    a.item:nth-child(4) { animation-delay: 0.15s; }
+    a.item:hover, a.item:focus-visible {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      background: rgba(22, 48, 36, 0.95);
+      outline: none;
+    }
+    .kicker {
+      color: var(--accent);
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .title { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+    .desc { color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+    .url {
+      margin-top: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      color: #b7e3c4;
+      word-break: break-all;
+    }
+    footer {
+      margin-top: 36px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      animation: rise 1s ease both;
+    }
+    footer a { color: var(--accent); }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="https://yqchen.blog/tennis/icon.png" width="48" height="48" alt="" />
+      <div>
+        <div class="brand">涨球</div>
+        <span class="tag">多端入口 · Downloads</span>
+      </div>
+    </header>
+
+    <h1>下载与打开</h1>
+    <p class="lead">Android 安装包、iOS 包、微信小程序工程，以及浏览器网页。开局只选技术动作，无水平下拉。教练显示为「涨球教练」，含动作库。</p>
+
+    <div class="list">
+      <a class="item" href="https://yqchen.blog/tennis-ai.apk" data-platform="android">
+        <div class="kicker">Android</div>
+        <div class="title">Android APK</div>
+        <div class="desc">直接下载安装。允许「未知来源」后打开「涨球」。</div>
+        <div class="url">https://yqchen.blog/tennis-ai.apk</div>
+      </a>
+
+      <a class="item" href="https://yqchen.blog/tennis-ai.ipa" data-platform="ios">
+        <div class="kicker">iOS</div>
+        <div class="title">iOS 安装包</div>
+        <div class="desc">侧载 IPA（由姊妹任务上传；文件稍后落地亦可先收藏此链接）。</div>
+        <div class="url">https://yqchen.blog/tennis-ai.ipa</div>
+      </a>
+
+      <a class="item" href="https://yqchen.blog/mp-weixin.zip" data-platform="weixin">
+        <div class="kicker">WeChat · 2026-10-20</div>
+        <div class="title">微信小程序工程包</div>
+        <div class="desc">当前包：涨球 · 涨球教练 · 只选技术（无 NTRP）· 动作库。用微信开发者工具导入；AppID 可用 touristappid / 测试号。详见使用说明。</div>
+        <div class="url">https://yqchen.blog/mp-weixin.zip</div>
+      </a>
+
+      <a class="item" href="https://yqchen.blog/tennis" data-platform="web">
+        <div class="kicker">Web</div>
+        <div class="title">浏览器打开网页</div>
+        <div class="desc">完整 Web 端，手机号登录后即可分析、教练与球友。</div>
+        <div class="url">https://yqchen.blog/tennis</div>
+      </a>
+    </div>
+
+    <footer>
+      微信导入步骤：<a href="https://yqchen.blog/mp-weixin-README.txt">使用说明</a> ·
+      品牌 <strong style="color:var(--accent)">涨球</strong> ·
+      与线上 Web 同源 API。
+    </footer>
+  </div>
+</body>
+</html>
