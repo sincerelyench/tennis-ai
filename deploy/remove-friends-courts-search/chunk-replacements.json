@@ -1,0 +1,42 @@
+[
+  [
+    ",(0,t.jsx)(O.Input,{value:a,onChange:e=>n(e.target.value),placeholder:e(\"friends.searchPh\"),\"aria-label\":e(\"friends.searchAria\"),className:\"h-10 bg-background\"})",
+    ""
+  ],
+  [
+    ",(0,t.jsx)(O.Input,{value:a,onChange:e=>n(e.target.value),placeholder:e('friends.searchPh'),\"aria-label\":e('friends.searchAria'),className:\"h-10 bg-background\"})",
+    ""
+  ],
+  [
+    "searchPh:\"Search friends or courts\"",
+    "searchPh:\"\""
+  ],
+  [
+    "searchPh:\"搜索球友或球场\"",
+    "searchPh:\"\""
+  ],
+  [
+    "searchAria:\"Search friends\"",
+    "searchAria:\"\""
+  ],
+  [
+    "searchAria:\"搜索球友\"",
+    "searchAria:\"\""
+  ],
+  [
+    "emptyDesc:\"Try another name or court.\"",
+    "emptyDesc:\"No friends listed yet.\""
+  ],
+  [
+    "emptyDesc:\"换个名字或场地再试。\"",
+    "emptyDesc:\"这一带暂时没有球友。\""
+  ],
+  [
+    "empty:\"No friends found\"",
+    "empty:\"No friends yet\""
+  ],
+  [
+    "empty:\"没有找到球友\"",
+    "empty:\"还没有球友\""
+  ]
+]

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 球友（线上现状·有搜索）</title>
+  <style>
+    :root { --bg:#f4f7f5; --fg:#0f1a14; --muted:#5c6b62; --card:#fff; --border:#d7e0da; --primary:#0d8a5b; --primary-subtle:#e6f6ef; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:"Noto Sans SC","PingFang SC","Segoe UI",sans-serif; background:var(--bg); color:var(--fg); }
+    .phone { max-width:390px; margin:24px auto; min-height:780px; background:var(--bg); border:1px solid var(--border); border-radius:16px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 12px 40px rgba(15,26,20,.08); }
+    header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; background:#fff; border-bottom:1px solid var(--border); }
+    .brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:15px; }
+    .logo { width:28px; height:28px; border-radius:999px; background:radial-gradient(circle at 35% 35%, #c8f56a, #0d8a5b); }
+    main { flex:1; padding:16px; }
+    h1 { margin:0; font-size:16px; }
+    .lead { margin:6px 0 12px; font-size:12px; color:var(--muted); }
+    .warn { margin:0 16px; padding:10px 12px; border-radius:10px; background:#fff4e8; color:#8a4b00; font-size:12px; border:1px solid #f0d2a8; }
+    .search { width:100%; height:40px; border-radius:10px; border:1px solid var(--border); padding:0 12px; margin:12px 0; background:#fff; font-size:14px; color:var(--muted); }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    .row { display:flex; gap:12px; padding:12px 14px; border-bottom:1px solid var(--border); }
+    .row:last-child { border-bottom:0; }
+    .avatar { width:40px; height:40px; border-radius:999px; background:var(--primary-subtle); color:var(--primary); display:grid; place-items:center; font-weight:700; }
+    .name { font-size:14px; font-weight:600; }
+    .meta { margin-top:2px; font-size:12px; color:var(--muted); }
+    nav { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--border); background:#fff; padding:8px 0 12px; text-align:center; font-size:11px; color:var(--muted); }
+    nav .active { color:var(--primary); font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <header><div class="brand"><div class="logo"></div><span>涨球</span></div><span>🔔</span></header>
+    <p class="warn">线上现状（部署前）：仍有「搜索球友或球场」输入框。</p>
+    <main>
+      <h1>球友</h1>
+      <p class="lead">8 位球友 · 无锡一带</p>
+      <input class="search" readonly value="" placeholder="搜索球友或球场" aria-label="搜索球友" />
+      <div class="card">
+        <div class="row"><div class="avatar">陈</div><div><div class="name">陈晓</div><div class="meta">NTRP 3.5 · 无锡体育中心</div></div></div>
+        <div class="row"><div class="avatar">李</div><div><div class="name">李佳</div><div class="meta">NTRP 2.5 · 滨湖市民网球场</div></div></div>
+      </div>
+    </main>
+    <nav><span>分析</span><span>教练</span><span class="active">球友</span><span>我的</span></nav>
+  </div>
+</body>
+</html>
