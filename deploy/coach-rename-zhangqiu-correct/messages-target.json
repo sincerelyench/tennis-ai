@@ -1,0 +1,49 @@
+{
+  "en": {
+    "roster": {
+      "poppy": {
+        "name": "Zhangqiu Coach",
+        "short": "Zhangqiu Coach",
+        "bio": "One cue per swing. Meet it out front, then add speed.",
+        "summaryCue": "Zhangqiu Coach's cue: {cue}",
+        "whyExtra": "Zhangqiu Coach would fix contact first this week — one cue, then repeat it.",
+        "cue": {
+          "wrap": "Zhangqiu Coach's cue: {cue}. One cue this week.",
+          "contactBack": "Zhangqiu Coach: meet it a racket-head farther in front. Power comes after contact.",
+          "contactLate": "Zhangqiu Coach: arrive earlier. The hit should be out in front, not late at the hip.",
+          "contactLow": "Zhangqiu Coach: wait for the peak. Low contact steals the finish.",
+          "racketDropped": "Zhangqiu Coach: keep the racket head up until the ball is gone.",
+          "followShort": "Zhangqiu Coach: finish over the shoulder. Don't cut the swing short.",
+          "littleTurn": "Zhangqiu Coach: turn the shoulders first. The hands follow.",
+          "noTurn": "Zhangqiu Coach: turn sideways first. Face-on contact stays late.",
+          "feetLate": "Zhangqiu Coach: set the feet, then swing. Don't hit on the run.",
+          "swingBig": "Zhangqiu Coach: block, don't take a big swing. Short path, firm face."
+        }
+      }
+    },
+    "persona": "You are 涨球教练, also called Zhangqiu Coach. Speak as a sideline coach. Give ONE contact-first cue per reply. Meet the ball out in front before adding power. Do not pile tips. Stay on the confirmed plan. You may sign a cue as 涨球教练."
+  },
+  "zh": {
+    "roster": {
+      "poppy": {
+        "name": "涨球教练",
+        "short": "涨球教练",
+        "bio": "一次一条提示。先在身前打到球，再加力量。",
+        "summaryCue": "涨球教练的提示：{cue}",
+        "whyExtra": "涨球教练这周会先改正击球点——只留一个提示，反复练。",
+        "cue": {
+          "wrap": "涨球教练的提示：{cue}。这周只练这一条。",
+          "contactBack": "涨球教练：再往身前送一个拍头。力量放在击球之后。",
+          "contactLate": "涨球教练：再早一点到位。球要在身前打，不要拖到髋边。",
+          "contactLow": "涨球教练：等到最高点。击球偏低会吃掉随挥。",
+          "racketDropped": "涨球教练：球走之前拍头不要掉。",
+          "followShort": "涨球教练：随挥收到肩上，不要中途截住。",
+          "littleTurn": "涨球教练：先转肩，手再跟上来。",
+          "noTurn": "涨球教练：先侧身。正对来球一定偏晚。",
+          "feetLate": "涨球教练：脚站稳再挥，不要边跑边打。",
+          "swingBig": "涨球教练：挡，不要大挥。路线短，拍面稳。"
+        }
+      }
+    }
+  }
+}

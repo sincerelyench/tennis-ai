@@ -1,0 +1,210 @@
+[
+  [
+    "You are 掌球教练, also called Zhangqiu Coach. Speak as a sideline coach. Give ONE contact-first cue per reply. Meet the ball out in front before adding power. Do not pile tips. Stay on the confirmed plan. You may sign a cue as 掌球教练.",
+    "You are 涨球教练, also called Zhangqiu Coach. Speak as a sideline coach. Give ONE contact-first cue per reply. Meet the ball out in front before adding power. Do not pile tips. Stay on the confirmed plan. You may sign a cue as 涨球教练."
+  ],
+  [
+    "You are Poppy, also called 东东教练. Speak as a sideline coach. Give ONE contact-first cue per reply. Meet the ball out in front before adding power. Do not pile tips. Stay on the confirmed plan. You may sign a cue as Poppy.",
+    "You are 涨球教练, also called Zhangqiu Coach. Speak as a sideline coach. Give ONE contact-first cue per reply. Meet the ball out in front before adding power. Do not pile tips. Stay on the confirmed plan. You may sign a cue as 涨球教练."
+  ],
+  [
+    "name:\"掌球教练\",short:\"掌球教练\"",
+    "name:\"涨球教练\",short:\"涨球教练\""
+  ],
+  [
+    "name: \"掌球教练\",\n        short: \"掌球教练\"",
+    "name: \"涨球教练\",\n        short: \"涨球教练\""
+  ],
+  [
+    "name:\"Poppy\",short:\"Coach Dongdong\"",
+    "name:\"Zhangqiu Coach\",short:\"Zhangqiu Coach\""
+  ],
+  [
+    "name:\"Poppy\",short:\"东东教练\"",
+    "name:\"涨球教练\",short:\"涨球教练\""
+  ],
+  [
+    "name: \"Poppy\",\n        short: \"Coach Dongdong\"",
+    "name: \"Zhangqiu Coach\",\n        short: \"Zhangqiu Coach\""
+  ],
+  [
+    "name: \"Poppy\",\n        short: \"东东教练\"",
+    "name: \"涨球教练\",\n        short: \"涨球教练\""
+  ],
+  [
+    "掌球教练的提示：{cue}。这周只练这一条。",
+    "涨球教练的提示：{cue}。这周只练这一条。"
+  ],
+  [
+    "掌球教练的提示：{cue}",
+    "涨球教练的提示：{cue}"
+  ],
+  [
+    "掌球教练这周会先改正击球点——只留一个提示，反复练。",
+    "涨球教练这周会先改正击球点——只留一个提示，反复练。"
+  ],
+  [
+    "掌球教练：再往身前送一个拍头。力量放在击球之后。",
+    "涨球教练：再往身前送一个拍头。力量放在击球之后。"
+  ],
+  [
+    "掌球教练：再早一点到位。球要在身前打，不要拖到髋边。",
+    "涨球教练：再早一点到位。球要在身前打，不要拖到髋边。"
+  ],
+  [
+    "掌球教练：等到最高点。击球偏低会吃掉随挥。",
+    "涨球教练：等到最高点。击球偏低会吃掉随挥。"
+  ],
+  [
+    "掌球教练：球走之前拍头不要掉。",
+    "涨球教练：球走之前拍头不要掉。"
+  ],
+  [
+    "掌球教练：随挥收到肩上，不要中途截住。",
+    "涨球教练：随挥收到肩上，不要中途截住。"
+  ],
+  [
+    "掌球教练：先转肩，手再跟上来。",
+    "涨球教练：先转肩，手再跟上来。"
+  ],
+  [
+    "掌球教练：先侧身。正对来球一定偏晚。",
+    "涨球教练：先侧身。正对来球一定偏晚。"
+  ],
+  [
+    "掌球教练：脚站稳再挥，不要边跑边打。",
+    "涨球教练：脚站稳再挥，不要边跑边打。"
+  ],
+  [
+    "掌球教练：挡，不要大挥。路线短，拍面稳。",
+    "涨球教练：挡，不要大挥。路线短，拍面稳。"
+  ],
+  [
+    "东东教练的提示：{cue}。这周只练这一条。",
+    "涨球教练的提示：{cue}。这周只练这一条。"
+  ],
+  [
+    "东东教练的提示：{cue}",
+    "涨球教练的提示：{cue}"
+  ],
+  [
+    "东东教练这周会先改正击球点——只留一个提示，反复练。",
+    "涨球教练这周会先改正击球点——只留一个提示，反复练。"
+  ],
+  [
+    "东东：再往身前送一个拍头。力量放在击球之后。",
+    "涨球教练：再往身前送一个拍头。力量放在击球之后。"
+  ],
+  [
+    "东东：再早一点到位。球要在身前打，不要拖到髋边。",
+    "涨球教练：再早一点到位。球要在身前打，不要拖到髋边。"
+  ],
+  [
+    "东东：等到最高点。击球偏低会吃掉随挥。",
+    "涨球教练：等到最高点。击球偏低会吃掉随挥。"
+  ],
+  [
+    "东东：球走之前拍头不要掉。",
+    "涨球教练：球走之前拍头不要掉。"
+  ],
+  [
+    "东东：随挥收到肩上，不要中途截住。",
+    "涨球教练：随挥收到肩上，不要中途截住。"
+  ],
+  [
+    "东东：先转肩，手再跟上来。",
+    "涨球教练：先转肩，手再跟上来。"
+  ],
+  [
+    "东东：先侧身。正对来球一定偏晚。",
+    "涨球教练：先侧身。正对来球一定偏晚。"
+  ],
+  [
+    "东东：脚站稳再挥，不要边跑边打。",
+    "涨球教练：脚站稳再挥，不要边跑边打。"
+  ],
+  [
+    "东东：挡，不要大挥。路线短，拍面稳。",
+    "涨球教练：挡，不要大挥。路线短，拍面稳。"
+  ],
+  [
+    "Poppy's cue: {cue}. One cue this week.",
+    "Zhangqiu Coach's cue: {cue}. One cue this week."
+  ],
+  [
+    "Poppy's cue: {cue}",
+    "Zhangqiu Coach's cue: {cue}"
+  ],
+  [
+    "Poppy would fix contact first this week — one cue, then repeat it.",
+    "Zhangqiu Coach would fix contact first this week — one cue, then repeat it."
+  ],
+  [
+    "Poppy: meet it a racket-head farther in front. Power comes after contact.",
+    "Zhangqiu Coach: meet it a racket-head farther in front. Power comes after contact."
+  ],
+  [
+    "Poppy: arrive earlier. The hit should be out in front, not late at the hip.",
+    "Zhangqiu Coach: arrive earlier. The hit should be out in front, not late at the hip."
+  ],
+  [
+    "Poppy: wait for the peak. Low contact steals the finish.",
+    "Zhangqiu Coach: wait for the peak. Low contact steals the finish."
+  ],
+  [
+    "Poppy: keep the racket head up until the ball is gone.",
+    "Zhangqiu Coach: keep the racket head up until the ball is gone."
+  ],
+  [
+    "Poppy: finish over the shoulder. Don't cut the swing short.",
+    "Zhangqiu Coach: finish over the shoulder. Don't cut the swing short."
+  ],
+  [
+    "Poppy: turn the shoulders first. The hands follow.",
+    "Zhangqiu Coach: turn the shoulders first. The hands follow."
+  ],
+  [
+    "Poppy: turn sideways first. Face-on contact stays late.",
+    "Zhangqiu Coach: turn sideways first. Face-on contact stays late."
+  ],
+  [
+    "Poppy: set the feet, then swing. Don't hit on the run.",
+    "Zhangqiu Coach: set the feet, then swing. Don't hit on the run."
+  ],
+  [
+    "Poppy: block, don't take a big swing. Short path, firm face.",
+    "Zhangqiu Coach: block, don't take a big swing. Short path, firm face."
+  ],
+  [
+    "掌球教练 · 掌球教练",
+    "涨球教练 · 涨球教练"
+  ],
+  [
+    "Poppy · Coach Dongdong",
+    "Zhangqiu Coach · Zhangqiu Coach"
+  ],
+  [
+    "Poppy · 东东教练",
+    "涨球教练 · 涨球教练"
+  ],
+  [
+    "Poppy教练",
+    "涨球教练"
+  ],
+  [
+    "Coach Dongdong",
+    "Zhangqiu Coach"
+  ],
+  [
+    "东东教练",
+    "涨球教练"
+  ],
+  [
+    "掌球教练",
+    "涨球教练"
+  ],
+  [
+    "Palm Ball Coach",
+    "Zhangqiu Coach"
+  ]
+]
