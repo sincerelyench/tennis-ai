@@ -79,11 +79,31 @@
     "leaveHint": "Closing this page will not stop the job. Come back anytime to check progress.",
     "stepPct": "{{name}} · {{pct}}%",
     "steps": {
-      "1": { "name": "Read video", "blurb": "Open your clip", "eta": "~15 sec" },
-      "2": { "name": "Pose", "blurb": "See the swing motion", "eta": "~3–6 min" },
-      "3": { "name": "Find swings", "blurb": "Mark each hit", "eta": "~30 sec" },
-      "4": { "name": "Organize", "blurb": "Prepare scoring basis", "eta": "~1 min" },
-      "5": { "name": "Coach notes", "blurb": "Zhangqiu Coach writes drills", "eta": "~2 min, slowest" }
+      "1": {
+        "name": "Read video",
+        "blurb": "Open your clip",
+        "eta": "~0.2s short"
+      },
+      "2": {
+        "name": "Pose",
+        "blurb": "See the swing motion",
+        "eta": "~1s short / minutes full"
+      },
+      "3": {
+        "name": "Find swings",
+        "blurb": "Mark each hit",
+        "eta": "~30 sec"
+      },
+      "4": {
+        "name": "Organize",
+        "blurb": "Prepare scoring basis",
+        "eta": "~1 min"
+      },
+      "5": {
+        "name": "Coach notes",
+        "blurb": "Zhangqiu Coach writes drills",
+        "eta": "rules on fast path; ~2 min full"
+      }
     }
   },
   "errors": {
