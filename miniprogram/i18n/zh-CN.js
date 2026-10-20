@@ -15,7 +15,8 @@ module.exports = {
     "codePlaceholder": "留空会自动生成开发码",
     "loggedIn": "已登录",
     "localCode": "没有拿到微信登录码，已改用本地开发码。",
-    "coachLibrary": "动作库 / 我的示范"
+    "coachLibrary": "动作库 / 我的示范",
+    "coachPicker": "选择教练"
   },
   "guide": {
     "title": "拍摄引导",

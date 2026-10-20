@@ -51,6 +51,9 @@ Page({
   onCoachLibrary() {
     wx.navigateTo({ url: "/pages/coach-library/coach-library" })
   },
+  onCoachPicker() {
+    wx.navigateTo({ url: "/pages/coach-picker/coach-picker" })
+  },
   onPrimary() {
     if (this.data.loading) return
     if (this.data.loggedIn && !String(this.data.code || "").trim()) {

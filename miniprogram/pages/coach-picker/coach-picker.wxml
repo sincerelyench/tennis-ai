@@ -1,0 +1,43 @@
+<view class="page" data-coach-picker="true">
+  <view class="top">
+    <text class="brand">涨球</text>
+    <text class="lang" bindtap="onToggleLang">{{locale === 'en' ? '中文' : 'EN'}}</text>
+  </view>
+
+  <view class="hdr">
+    <text class="title">{{locale === 'en' ? 'Choose a coach' : '选择教练'}}</text>
+    <text class="lead">{{locale === 'en' ? 'Published coaches only. Each coach is a different style.' : '仅显示已发布教练。不同教练代表不同风格。'}}</text>
+    <text class="hint">{{locale === 'en' ? 'Default persona: Zhangqiu Coach' : '默认人格：掌球教练'}}</text>
+  </view>
+
+  <view wx:if="{{phase === 'loading'}}" class="hint">{{locale === 'en' ? 'Loading…' : '加载中…'}}</view>
+  <view wx:elif="{{phase === 'error'}}" class="hint err">
+    <text>{{locale === 'en' ? 'Failed to load' : '加载失败'}}</text>
+    <button size="mini" bindtap="load">{{locale === 'en' ? 'Retry' : '重试'}}</button>
+  </view>
+  <view wx:elif="{{!coaches.length}}" class="empty" data-empty="true">
+    {{locale === 'en' ? 'No published coaches yet.' : '暂无已发布教练。'}}
+  </view>
+  <block wx:else>
+    <view
+      wx:for="{{coaches}}"
+      wx:key="coachId"
+      class="card {{item.coachId === selectedId ? 'on' : ''}}"
+      data-coach-id="{{item.coachId}}"
+      data-selected="{{item.coachId === selectedId ? '1' : '0'}}"
+    >
+      <text class="name" data-coach-name="true">{{item.displayName}}</text>
+      <text wx:if="{{item.styleTagline}}" class="style">{{item.styleTagline}}</text>
+      <button
+        size="mini"
+        type="primary"
+        disabled="{{item.coachId === selectedId}}"
+        data-id="{{item.coachId}}"
+        bindtap="onPick"
+        data-action="select-coach"
+      >
+        {{item.coachId === selectedId ? (locale === 'en' ? 'Selected' : '当前选用') : (locale === 'en' ? 'Select' : '选用')}}
+      </button>
+    </view>
+  </block>
+</view>

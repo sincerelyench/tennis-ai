@@ -15,7 +15,8 @@ module.exports = {
     "codePlaceholder": "Leave blank to use a development code",
     "loggedIn": "Signed in",
     "localCode": "WeChat did not return a code, so a local development code was used.",
-    "coachLibrary": "Stroke library / My demos"
+    "coachLibrary": "Stroke library / My demos",
+    "coachPicker": "Choose a coach"
   },
   "guide": {
     "title": "Shooting guide",

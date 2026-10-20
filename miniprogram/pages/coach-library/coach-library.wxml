@@ -48,4 +48,25 @@
     </button>
     <text wx:if="{{flash}}" class="ok">{{flash}}</text>
   </view>
+
+  <view class="card publish" data-coach-publish="true" data-status="{{publishStatus}}">
+    <text class="lbl">{{locale === 'en' ? 'Publish & training' : '发布与训练'}}</text>
+    <text class="hint">{{locale === 'en' ? 'Status' : '状态'}}：{{publishStatusLabel}}</text>
+    <text wx:if="{{trainProgress !== null}}" class="hint">{{locale === 'en' ? 'Progress' : '进度'}}：{{trainProgress}}%</text>
+    <text class="lbl">{{locale === 'en' ? 'Published display name' : '发布显示名'}}</text>
+    <input class="inp" value="{{displayName}}" bindinput="onDisplayName" placeholder="{{coachName}}" />
+    <text class="lbl">{{locale === 'en' ? 'Style blurb' : '风格简介'}}</text>
+    <input class="inp" value="{{styleTagline}}" bindinput="onStyleTagline" placeholder="{{locale === 'en' ? 'Your coaching style…' : '你的教学风格…'}}" />
+    <button wx:if="{{canTrain}}" type="primary" size="mini" loading="{{pubBusy}}" bindtap="onSubmitTrain" data-action="submit-train">
+      {{locale === 'en' ? 'Submit for training' : '提交训练'}}
+    </button>
+    <button wx:if="{{canPublish}}" type="primary" size="mini" loading="{{pubBusy}}" bindtap="onRequestPublish" data-action="request-publish">
+      {{locale === 'en' ? 'Request publish' : '申请发布'}}
+    </button>
+    <button wx:if="{{canWithdraw}}" size="mini" loading="{{pubBusy}}" bindtap="onWithdraw" data-action="withdraw">
+      {{locale === 'en' ? 'Withdraw' : '撤回'}}
+    </button>
+    <text wx:if="{{pubFlash}}" class="ok">{{pubFlash}}</text>
+    <text class="hint">{{locale === 'en' ? 'Training is a stub (queued → training → ready).' : '训练为 stub：排队 → 训练中 → 就绪。'}}</text>
+  </view>
 </view>
