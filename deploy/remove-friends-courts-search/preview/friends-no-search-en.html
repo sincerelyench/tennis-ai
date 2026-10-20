@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 球友（无搜索）</title>
+  <style>
+    :root {
+      --bg: #f4f7f5;
+      --fg: #0f1a14;
+      --muted: #5c6b62;
+      --card: #fff;
+      --border: #d7e0da;
+      --primary: #0d8a5b;
+      --primary-subtle: #e6f6ef;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    .phone {
+      max-width: 390px;
+      margin: 24px auto;
+      min-height: 780px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 12px 40px rgba(15, 26, 20, 0.08);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+    .logo {
+      width: 28px; height: 28px; border-radius: 999px;
+      background: radial-gradient(circle at 35% 35%, #c8f56a, #0d8a5b);
+    }
+    main { flex: 1; padding: 16px; overflow: auto; }
+    h1 { margin: 0; font-size: 16px; }
+    .lead { margin: 6px 0 16px; font-size: 12px; color: var(--muted); }
+    h2 { margin: 0; font-size: 14px; }
+    .section { margin-bottom: 18px; }
+    .rank-lead { margin: 6px 0 10px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .toggle { display: flex; gap: 8px; margin-bottom: 10px; }
+    .toggle button {
+      flex: 1; border: 0; border-radius: 10px; padding: 10px;
+      font-weight: 650; font-size: 13px; cursor: default;
+    }
+    .toggle .on { background: var(--primary); color: #fff; }
+    .toggle .off { background: #e8eee9; color: var(--muted); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .row {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 12px 14px; border-bottom: 1px solid var(--border);
+    }
+    .row:last-child { border-bottom: 0; }
+    .rank { width: 22px; font-weight: 700; color: var(--primary); font-size: 13px; }
+    .avatar {
+      width: 40px; height: 40px; border-radius: 999px;
+      background: var(--primary-subtle); color: var(--primary);
+      display: grid; place-items: center; font-weight: 700; font-size: 14px; flex-shrink: 0;
+    }
+    .name { font-size: 14px; font-weight: 600; }
+    .meta { margin-top: 2px; font-size: 12px; color: var(--muted); }
+    .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .chip {
+      background: var(--primary-subtle); color: var(--primary);
+      border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 650;
+    }
+    .how { margin-top: 8px; font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .proof {
+      margin: 12px 16px 0; padding: 10px 12px; border-radius: 10px;
+      background: #ecfaf3; color: #0b5c3d; font-size: 12px; line-height: 1.45;
+      border: 1px solid #b7e6cf;
+    }
+    .proof strong { display: block; margin-bottom: 4px; }
+    nav {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--border); background: #fff; padding: 8px 0 12px;
+    }
+    nav span {
+      text-align: center; font-size: 11px; color: var(--muted);
+    }
+    nav .active { color: var(--primary); font-weight: 700; }
+    .en { display: none !important; }
+    body.en .zh { display: none !important; }
+    body.en .en { display: revert !important; }
+    body.en span.en { display: inline !important; }
+    body.en button.en { display: inline-block !important; }
+    body.en h1.en, body.en h2.en, body.en p.en, body.en div.en { display: block !important; }
+    .switch {
+      max-width: 390px; margin: 12px auto 0; display: flex; gap: 8px; justify-content: center;
+    }
+    .switch button {
+      border: 1px solid var(--border); background: #fff; border-radius: 8px;
+      padding: 6px 12px; cursor: pointer; font-size: 12px;
+    }
+  </style>
+</head>
+<body class="en">
+  <div class="switch">
+    <button type="button" onclick="document.body.classList.remove('en')">中文</button>
+    <button type="button" onclick="document.body.classList.add('en')">English</button>
+  </div>
+  <div class="phone" id="frame">
+    <header>
+      <div class="brand"><div class="logo"></div><span>涨球</span></div>
+      <span aria-hidden="true">🔔</span>
+    </header>
+    <div class="proof zh">
+      <strong>已去掉搜索球友 / 搜索球场</strong>
+      本预览无搜索框；保留本地排行与球友列表。教练名仍为掌球教练（未改）。
+    </div>
+    <div class="proof en">
+      <strong>Friends / courts search removed</strong>
+      No search field. Local ladder + friend list kept. Coach name unchanged (掌球教练 / Zhangqiu Coach).
+    </div>
+    <main>
+      <h1 class="zh">球友</h1>
+      <h1 class="en">Friends</h1>
+      <p class="lead zh">8 位球友 · 无锡一带</p>
+      <p class="lead en">8 friends · Wuxi area</p>
+
+      <section class="section">
+        <h2 class="zh">本地排行</h2>
+        <h2 class="en">Local ladder</h2>
+        <p class="rank-lead zh">无锡及附近。先按 NTRP 定级，再按战绩、对手强度和近期比赛上下浮动。</p>
+        <p class="rank-lead en">Wuxi and nearby. Seeded from NTRP, then moved by results, opponent strength, and recent form.</p>
+        <div class="toggle">
+          <button class="on zh" type="button">单打</button>
+          <button class="off zh" type="button">双打</button>
+          <button class="on en" type="button">Singles</button>
+          <button class="off en" type="button">Doubles</button>
+        </div>
+        <div class="card">
+          <div class="row"><div class="rank">1</div><div class="avatar">赵</div><div><div class="name">赵琳</div><div class="meta">3–0 · 胜 周宁</div></div><div style="margin-left:auto;font-weight:700">9.6</div></div>
+          <div class="row"><div class="rank">2</div><div class="avatar">周</div><div><div class="name">周宁</div><div class="meta">2–1 · 负于 赵琳</div></div><div style="margin-left:auto;font-weight:700">8.4</div></div>
+          <div class="row"><div class="rank">3</div><div class="avatar">孙</div><div><div class="name">孙凯</div><div class="meta">2–1</div></div><div style="margin-left:auto;font-weight:700">7.9</div></div>
+        </div>
+        <p class="how zh">起点是 NTRP × 2.15。每场按「对这个对手该不该赢」调整。近六周权重大。</p>
+        <p class="how en">Start from NTRP × 2.15. Each match shifts you by how surprising the result was.</p>
+      </section>
+
+      <!-- intentionally no search input -->
+
+      <section class="section">
+        <div class="card">
+          <div class="row">
+            <div class="avatar">陈</div>
+            <div>
+              <div class="name">陈晓</div>
+              <div class="meta">NTRP 3.5 · 无锡体育中心</div>
+              <div class="chips"><span class="chip zh">正手上旋</span><span class="chip zh">发球</span><span class="chip en">Forehand topspin</span><span class="chip en">Serve</span></div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="avatar">李</div>
+            <div>
+              <div class="name">李佳</div>
+              <div class="meta">NTRP 2.5 · 滨湖市民网球场</div>
+              <div class="chips"><span class="chip zh">正手上旋</span><span class="chip zh">反手切削</span><span class="chip en">Forehand topspin</span><span class="chip en">Backhand slice</span></div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="avatar">王</div>
+            <div>
+              <div class="name">王磊</div>
+              <div class="meta">NTRP 4.0 · 太湖国际网球中心</div>
+              <div class="chips"><span class="chip zh">发球</span><span class="chip zh">高压球</span><span class="chip en">Serve</span><span class="chip en">Smash</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <nav>
+      <span class="zh">分析</span><span class="zh">教练</span><span class="zh active">球友</span><span class="zh">我的</span>
+      <span class="en">Analyze</span><span class="en">Coach</span><span class="en active">Friends</span><span class="en">Me</span>
+    </nav>
+  </div>
+</body>
+</html>
