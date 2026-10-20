@@ -143,7 +143,7 @@
     <section id="viewCoach" data-coach-publish="true">
       <div class="coach" id="coachPersona">掌球教练</div>
       <h1 id="coachTitle">动作库 · 发布与训练</h1>
-      <p class="lead" id="coachLead">保存讲解后提交训练；就绪后申请发布。默认人格名：掌球教练（非 Poppy / 东东）。</p>
+      <p class="lead" id="coachLead">保存讲解后提交训练；就绪后申请发布。默认人格名：掌球教练。</p>
 
       <div class="panel">
         <label for="prompt" id="lblPrompt">讲解 / 分析提示（示例）</label>
@@ -283,8 +283,8 @@
       document.getElementById("coachPersona").textContent = DEFAULT_NAME[locale];
       document.getElementById("coachTitle").textContent = locale === "zh" ? "动作库 · 发布与训练" : "Library · Publish & train";
       document.getElementById("coachLead").textContent = locale === "zh"
-        ? "保存讲解后提交训练；就绪后申请发布。默认人格名：掌球教练（非 Poppy / 东东）。"
-        : "Save teaching notes, submit training, then request publish. Default persona: Zhangqiu Coach (not Poppy).";
+        ? "保存讲解后提交训练；就绪后申请发布。默认人格名：掌球教练。"
+        : "Save teaching notes, submit training, then request publish. Default persona: Zhangqiu Coach.";
       document.getElementById("lblPrompt").textContent = locale === "zh" ? "讲解 / 分析提示（示例）" : "Teaching / analysis prompt (sample)";
       document.getElementById("saveLibBtn").textContent = locale === "zh" ? "保存到动作库" : "Save to library";
       document.getElementById("lblName").textContent = locale === "zh" ? "发布显示名" : "Published display name";
