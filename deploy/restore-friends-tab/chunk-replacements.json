@@ -1,0 +1,22 @@
+[
+  [
+    "{href:\"/coaches\",key:\"coaches\",labelKey:\"coaches.nav\"",
+    "{href:\"/friends\",key:\"friends\",labelKey:\"nav.friends\""
+  ],
+  [
+    "{href:'/coaches',key:'coaches',labelKey:'coaches.nav'",
+    "{href:'/friends',key:'friends',labelKey:'nav.friends'"
+  ],
+  [
+    "href:\"/coaches\",key:\"coaches\",labelKey:\"coaches.nav\"",
+    "href:\"/friends\",key:\"friends\",labelKey:\"nav.friends\""
+  ],
+  [
+    "{ href: \"/coaches\", key: \"coaches\", labelKey: \"coaches.nav\"",
+    "{ href: \"/friends\", key: \"friends\", labelKey: \"nav.friends\""
+  ],
+  [
+    "{ href: '/coaches', key: 'coaches', labelKey: 'coaches.nav'",
+    "{ href: '/friends', key: 'friends', labelKey: 'nav.friends'"
+  ]
+]

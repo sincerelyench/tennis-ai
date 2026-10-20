@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 恢复球友 tab 预览</title>
+  <style>
+    :root {
+      --bg: #f3f7f4;
+      --card: #fff;
+      --ink: #0f1f16;
+      --muted: #5b6b62;
+      --primary: #0d9488;
+      --primary-soft: #ccfbf1;
+      --border: #d5e0d9;
+      --nav: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #e8f3ec 0%, var(--bg) 40%, #eef4f0 100%);
+      color: var(--ink);
+    }
+    .phone {
+      max-width: 390px;
+      margin: 24px auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(15, 31, 22, 0.08);
+      min-height: 720px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    header.app {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: #fff;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: 0.02em;
+    }
+    .logo {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #f5e547, #16a34a 55%, #0f766e);
+    }
+    main { flex: 1; padding: 16px 16px 88px; overflow: auto; }
+    h1 { font-size: 22px; margin: 0 0 6px; }
+    .lead { color: var(--muted); font-size: 13px; margin: 0 0 14px; line-height: 1.45; }
+    .hint {
+      font-size: 12px; color: var(--primary); font-weight: 600; margin-bottom: 10px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: var(--card);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .card h3 { margin: 0; font-size: 15px; }
+    .card p { margin: 4px 0 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+    .btn {
+      border: 0;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+    .btn.ghost { background: var(--primary-soft); color: var(--primary); }
+    .ladder {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .ladder .row {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .ladder .row:first-child { border-top: 0; }
+    .utr { font-weight: 800; color: var(--primary); }
+    .tabs-demo {
+      display: flex;
+      gap: 8px;
+      margin: 12px auto 0;
+      max-width: 390px;
+      justify-content: center;
+    }
+    .tabs-demo button {
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .tabs-demo button.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+    nav.bottom {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background: var(--nav);
+      border-top: 1px solid var(--border);
+      padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+    }
+    nav.bottom a {
+      text-align: center;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px;
+    }
+    nav.bottom a.on { color: var(--primary); }
+    nav.bottom .ico { display: block; font-size: 18px; margin-bottom: 2px; }
+    .note {
+      max-width: 390px;
+      margin: 0 auto 24px;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 0 8px;
+      line-height: 1.5;
+    }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="tabs-demo">
+    <button type="button" class="on" data-view="coach" id="tabCoach">教练（含选教练）</button>
+    <button type="button" data-view="friends" id="tabFriends">球友</button>
+  </div>
+  <p class="note">预览目标态：底栏固定 <strong>分析 | 教练 | 球友 | 我的</strong>。「选教练」只在教练页内；默认人格 <strong>涨球教练</strong>。球友为 UTR，无搜索。</p>
+
+  <div class="phone" id="phone">
+    <header class="app">
+      <div class="brand"><span class="logo" aria-hidden="true"></span>涨球</div>
+      <span aria-hidden="true">🔔</span>
+    </header>
+
+    <main id="view-coach">
+      <h1>教练</h1>
+      <p class="lead">改进计划与任务。在本页选择已发布教练风格。</p>
+      <p class="hint">选教练 · 仅已发布 · 默认人格：涨球教练</p>
+      <div class="card" data-coach-select-published="true">
+        <div>
+          <h3>涨球教练</h3>
+          <p>稳健底线，强调随挥放松</p>
+        </div>
+        <button class="btn" type="button">当前选用</button>
+      </div>
+      <div class="card">
+        <div>
+          <h3>改进计划</h3>
+          <p>正手：先打到点，再加速。发球：抛球抛到身前。</p>
+        </div>
+        <button class="btn ghost" type="button">详情</button>
+      </div>
+    </main>
+
+    <main id="view-friends" hidden>
+      <h1>球友</h1>
+      <p class="lead">8 位球友 · 无锡一带</p>
+      <p class="hint">本地排行 · 按类 UTR（无 NTRP · 无搜索）</p>
+      <div class="ladder">
+        <div class="row"><span>1</span><span>赵琳 · 3-0</span><span class="utr">9.6</span></div>
+        <div class="row"><span>2</span><span>周宁 · 2-1</span><span class="utr">8.6</span></div>
+        <div class="row"><span>3</span><span>孙凯 · 2-1</span><span class="utr">7.6</span></div>
+        <div class="row"><span>4</span><span>你 · 1-2</span><span class="utr">7.5</span></div>
+      </div>
+      <div class="card">
+        <div>
+          <h3>赵琳</h3>
+          <p>UTR 9.6 · 尤姆体育中心</p>
+        </div>
+      </div>
+    </main>
+
+    <nav class="bottom" aria-label="底部导航">
+      <a href="#analysis"><span class="ico">📹</span>分析</a>
+      <a href="#coach" id="navCoach" class="on"><span class="ico">💬</span>教练</a>
+      <a href="#friends" id="navFriends"><span class="ico">👥</span>球友</a>
+      <a href="#me"><span class="ico">👤</span>我的</a>
+    </nav>
+  </div>
+
+  <script>
+    const tabCoach = document.getElementById("tabCoach");
+    const tabFriends = document.getElementById("tabFriends");
+    const viewCoach = document.getElementById("view-coach");
+    const viewFriends = document.getElementById("view-friends");
+    const navCoach = document.getElementById("navCoach");
+    const navFriends = document.getElementById("navFriends");
+
+    function show(view) {
+      const friends = view === "friends";
+      viewFriends.hidden = !friends;
+      viewCoach.hidden = friends;
+      tabFriends.classList.toggle("on", friends);
+      tabCoach.classList.toggle("on", !friends);
+      navFriends.classList.toggle("on", friends);
+      navCoach.classList.toggle("on", !friends);
+    }
+    tabCoach.onclick = () => show("coach");
+    tabFriends.onclick = () => show("friends");
+    navCoach.onclick = (e) => { e.preventDefault(); show("coach"); };
+    navFriends.onclick = (e) => { e.preventDefault(); show("friends"); };
+  </script>
+</body>
+</html>
