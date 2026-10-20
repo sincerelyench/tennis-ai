@@ -37,6 +37,7 @@ from pipeline.analyze import (
 from pipeline.coach import enrich_with_cursor
 from pipeline.contact import draw_hit_point, interpolate_xy
 from pipeline.level import level_caveat, parse_level
+from pipeline.stroke import clip_id_for, measure_family, normalize_stroke, stroke_label
 from pipeline.technique import flag_notes
 from pipeline.speed import mean_speeds
 from pipeline.detect import (
@@ -409,6 +410,8 @@ def analyze_video(
     estimator: PoseEstimator | None = None,
     progress: ProgressCb | None = None,
 ) -> dict:
+    stroke_mode = normalize_stroke(stroke_mode, default="forehand")
+    family = measure_family(stroke_mode)
     level = parse_level(player_level)
     video_path = Path(video_path)
     out_dir = Path(out_dir)
@@ -540,8 +543,10 @@ def analyze_video(
 
     labels: list[str] = []
     for p in peaks:
-        if stroke_mode in ("forehand", "backhand"):
-            labels.append(stroke_mode)
+        if family in ("forehand", "backhand"):
+            # Declared product stroke (serve, fh-topspin, …) pins the measure family
+            # so serve is never auto-classified into a random groundstroke mix.
+            labels.append(family)
         else:
             labels.append(classify_swing(xy_list, conf_list, t_arr, p, handed, fps))
 
@@ -699,10 +704,9 @@ def analyze_video(
                 payload["hit_point"] = sw.hit_point.as_dict()
             swing_payload.append(payload)
 
-        if stroke == "forehand":
-            grouped = [("forehand", "forehand", list(zip(swings, swing_payload)))]
-        else:
-            grouped = [("backhand", "backhand", list(zip(swings, swing_payload)))]
+        # Prefer the user-declared product stroke (serve, fh-topspin, …) on the clip.
+        declared_id = clip_id_for(stroke_mode, stroke)
+        grouped = [(declared_id, stroke, list(zip(swings, swing_payload)))]
 
         for clip_id, score_stroke, pairs in grouped:
             if not pairs:
@@ -721,7 +725,11 @@ def analyze_video(
                 source="original",
                 hits=[sw.hit_point for sw in sub_swings if sw.hit_point is not None],
                 player_level=level.code,
+                display_stroke=clip_id,
             )
+            # Override rule-engine groundstroke label when the user declared serve/etc.
+            if clip_id not in ("forehand", "backhand"):
+                written["label"] = stroke_label(clip_id)
             all_caveats = written["caveats"]
             for item in sub_payload:
                 timeline.append(

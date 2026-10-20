@@ -25,6 +25,7 @@ from pipeline.cursor_client import warm_agent
 from pipeline.level import DEFAULT_LEVEL, parse_level, public_levels
 from pipeline.oss import refresh_report_urls
 from pipeline.session import analyze_video, get_detector, get_estimator, json_default
+from pipeline.stroke import normalize_stroke
 from web.api_errors import CodedHTTPException, coded_handler
 from web.dev_auth import bearer_token, issue_dev_token, verify_dev_token
 from web.history import archive_report, find_archive, list_history
@@ -545,8 +546,9 @@ async def analyze(
     guide_checks: str = Form(default=""),
     authorization: str | None = Header(default=None),
 ):
-    if stroke not in ("auto", "forehand", "backhand", "serve"):
-        stroke = "forehand"
+    # Product clients send fh-topspin / serve / smash / … — keep them.
+    # Unknown values still fall back to forehand inside normalize_stroke.
+    stroke = normalize_stroke(stroke, default="forehand")
     player_level = parse_level(level).code
     _client_name, metadata = _prepare_upload_meta(
         client, guide_completed, guide_checks, authorization
