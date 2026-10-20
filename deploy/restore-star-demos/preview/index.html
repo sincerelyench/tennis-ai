@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 球星示范预览</title>
+  <style>
+    :root {
+      --bg: #0b1f17;
+      --card: #12261e;
+      --ink: #e8f5ef;
+      --muted: #9dbfaf;
+      --accent: #14b8a6;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1a3d2e, var(--bg));
+      color: var(--ink);
+      padding: 24px 16px 64px;
+    }
+    header { max-width: 920px; margin: 0 auto 24px; }
+    h1 { font-size: 1.6rem; margin: 0 0 8px; letter-spacing: 0.02em; }
+    .brand { color: var(--accent); font-weight: 700; }
+    .lead { color: #b6d4c6; margin: 0; line-height: 1.5; }
+    .grid { max-width: 920px; margin: 0 auto; display: grid; gap: 20px; }
+    section {
+      background: var(--card);
+      border: 1px solid #1f3d30;
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .meta { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .name { font-weight: 650; }
+    .tag { font-size: 12px; color: #7dd3c0; }
+    .frame { position: relative; padding-top: 56.25%; background: #050a08; border-radius: 10px; overflow: hidden; }
+    iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .links { margin-top: 10px; display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+    a { color: var(--accent); }
+    .before {
+      max-width: 920px; margin: 0 auto 20px;
+      padding: 12px 14px; border-radius: 12px;
+      background: #2a1a0a; border: 1px solid #5b3a12; color: #fde68a;
+      font-size: 14px; line-height: 1.45;
+    }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #134e4a; color: #99f6e4; font-size: 11px; margin-left: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span class="brand">涨球</span> · 平台默认球星示范（高清）</h1>
+    <p class="lead">拍摄示例 / 正确动作默认播成名球星片（萨巴伦卡、德约、桑普拉斯、费德勒、小威）。教练自有示范仅在选用已发布教练且其动作库有该技术视频时出现。默认教练名：涨球教练。</p>
+  </header>
+
+  <div class="before">
+    <strong>回归原因：</strong>线上 <code>/tennis/examples/*.mp4</code> 是 640×480 陌生教练糊片（红夹克 / TOPPER 挡网 / DIVX），被当作拍摄示例与正确动作回退。本预览恢复 B站优先的球星高清嵌入。
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <script>
+    const STARS = [
+      { id: "fh-topspin", stroke: "正手上旋", name: "阿里娜·萨巴伦卡", bili: "BV1knqeB4EpG", yt: "BZEAu4L3WzQ", q: "HD" },
+      { id: "bh-topspin", stroke: "反手上旋", name: "诺瓦克·德约科维奇", bili: "BV1Gy4y1a7zj", yt: "6WyMFz4ynl4", q: "Slow-mo" },
+      { id: "serve", stroke: "发球", name: "皮特·桑普拉斯", bili: "BV13t411K7Kw", yt: "L_FCXLtUgI8", q: "Full HD" },
+      { id: "smash", stroke: "高压", name: "小威廉姆斯", bili: "BV1gF411o7tU", yt: "fpxXcyjEUok", q: "HD" },
+      { id: "fh-volley", stroke: "正手截击", name: "罗杰·费德勒", yt: "b2mHhUeeSvc", q: "Slow-mo" },
+      { id: "bh-slice", stroke: "反手切削", name: "罗杰·费德勒", yt: "sXXM3I9E4E8", q: "Slow-mo" },
+    ];
+
+    const grid = document.getElementById("grid");
+    for (const s of STARS) {
+      const preferBili = Boolean(s.bili);
+      const embed = preferBili
+        ? `https://player.bilibili.com/player.html?bvid=${s.bili}&high_quality=1&danmaku=0&autoplay=0&as_wide=1`
+        : `https://www.youtube-nocookie.com/embed/${s.yt}?rel=0&modestbranding=1`;
+      const watchBili = s.bili ? `https://www.bilibili.com/video/${s.bili}/` : null;
+      const watchYt = `https://www.youtube.com/watch?v=${s.yt}`;
+      const el = document.createElement("section");
+      el.innerHTML = `
+        <div class="meta">
+          <div class="name">${s.name}<span class="pill">${s.q}</span></div>
+          <div class="tag">${s.stroke} · ${s.id}</div>
+        </div>
+        <div class="frame"><iframe src="${embed}" allowfullscreen allow="fullscreen; encrypted-media" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+        <div class="links">
+          ${watchBili ? `<a href="${watchBili}" target="_blank" rel="noreferrer">B站原页（高清）</a>` : ""}
+          <a href="${watchYt}" target="_blank" rel="noreferrer">YouTube 原页</a>
+        </div>`;
+      grid.appendChild(el);
+    }
+  </script>
+</body>
+</html>
