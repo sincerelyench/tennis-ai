@@ -27,6 +27,30 @@ function absUrl(path) {
   return String(config.apiBase || "").replace(/\/$/, "") + path
 }
 
+function fmtKmh(v) {
+  if (v == null || v === "") return ""
+  const n = Number(v)
+  if (!Number.isFinite(n)) return ""
+  return n >= 20 ? String(Math.round(n)) : n.toFixed(1)
+}
+
+function radarClip(axes) {
+  const order = ["balance", "contact", "chain", "effect"]
+  const byKey = {}
+  ;(axes || []).forEach((a) => { byKey[a.key] = a })
+  const pts = order.map((key, i) => {
+    const axis = byKey[key] || {}
+    const max = Number(axis.max) || 1
+    const known = typeof axis.score === "number"
+    const v = known ? Math.max(0, Math.min(1, axis.score / max)) : 0
+    const ang = -Math.PI / 2 + i * (Math.PI / 2)
+    const x = 50 + Math.cos(ang) * 46 * v
+    const y = 50 + Math.sin(ang) * 46 * v
+    return x.toFixed(1) + "% " + y.toFixed(1) + "%"
+  })
+  return "clip-path: polygon(" + pts.join(", ") + ");"
+}
+
 Page({
   data: {
     lang: "zh-CN",
@@ -42,6 +66,11 @@ Page({
     totalLine: "",
     focus: "",
     axes: [],
+    dimCards: [],
+    speedCards: [],
+    speedEmpty: true,
+    speedNote: "",
+    radarStyle: "",
     timeline: [],
     compareReady: false,
     compareReason: "",
@@ -77,6 +106,11 @@ Page({
       totalLine: "",
       focus: "",
       axes: [],
+      dimCards: [],
+      speedCards: [],
+      speedEmpty: true,
+      speedNote: "",
+      radarStyle: "",
       timeline: [],
       compareReady: false,
       compareReason: "",
@@ -104,8 +138,43 @@ Page({
         width: known && max ? Math.max(0, Math.min(100, Math.round((axis.score / max) * 100))) : 0,
         band: band ? i18n.lookup(lang, "result.bands." + band) : "",
         tip: axis.tip || "",
+        score: known ? axis.score : null,
+        max,
       }
     })
+    const dimCards = axes.map((axis) => ({
+      key: axis.key,
+      label: axis.label,
+      score: typeof axis.score === "number" ? String(axis.score) : i18n.lookup(lang, "result.noNumber"),
+      max: typeof axis.score === "number" ? String(axis.max) : "",
+      width: axis.width,
+    }))
+    const speeds = payload.speeds || null
+    const racketLab = speeds && speeds.swing_from === "wrist"
+      ? i18n.lookup(lang, "result.speed.racketWrist")
+      : i18n.lookup(lang, "result.speed.racket")
+    const speedDefs = speeds ? [
+      ["racket", racketLab, speeds.racket_kmh],
+      ["wrist", i18n.lookup(lang, "result.speed.wrist"), speeds.wrist_kmh],
+      ["hip", i18n.lookup(lang, "result.speed.hip"), speeds.hip_kmh],
+      ["ballIn", i18n.lookup(lang, "result.speed.ballIn"), speeds.ball_in_kmh],
+      ["ballOut", i18n.lookup(lang, "result.speed.ballOut"), speeds.ball_out_kmh],
+    ] : []
+    const speedCards = speedDefs.map(([key, label, val]) => {
+      const n = fmtKmh(val)
+      return {
+        key,
+        label,
+        value: n || i18n.lookup(lang, "result.noNumber"),
+        unit: n ? "km/h" : "",
+      }
+    })
+    const maxNote = speeds ? fmtKmh(speeds.racket_kmh_max) : ""
+    const speedNote = speeds
+      ? (maxNote
+        ? i18n.format(lang, "result.speedNoteMax", { max: maxNote })
+        : i18n.lookup(lang, "result.speedNote"))
+      : ""
     const progress = payload.progress || {}
     const timeline = (progress.items || []).map((item) => ({
       jobId: item.job_id,
@@ -152,6 +221,11 @@ Page({
         : "",
       focus: payload.focus || "",
       axes,
+      dimCards,
+      speedCards,
+      speedEmpty: !speeds,
+      speedNote,
+      radarStyle: radarClip(payload.axes),
       timeline,
       compareReady: !!progress.compare_ready,
       compareReason: i18n.format(lang, "result.reasons." + reason, { count: progress.count || 0 }),

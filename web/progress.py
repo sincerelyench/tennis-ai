@@ -312,6 +312,61 @@ def _comparison(items: list[dict], current_job: str) -> dict | None:
     }
 
 
+def _as_kmh(value) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    n = float(value)
+    if n != n or n < 0 or n > 250:  # NaN / absurd
+        return None
+    return round(n, 1) if n < 20 else float(int(round(n)))
+
+
+def _speed_block(report: dict) -> dict | None:
+    """Public km/h estimates from overall / clip / swing speeds. Never invent values."""
+    overall = report.get("overall") if isinstance(report.get("overall"), dict) else {}
+    sources: list[dict] = []
+    if isinstance(overall.get("speeds"), dict):
+        sources.append(overall["speeds"])
+    for clip in report.get("clips") or []:
+        if not isinstance(clip, dict):
+            continue
+        summary = clip.get("summary") if isinstance(clip.get("summary"), dict) else {}
+        if isinstance(summary.get("speeds"), dict):
+            sources.append(summary["speeds"])
+        for swing in clip.get("swings") or []:
+            if isinstance(swing, dict) and isinstance(swing.get("speeds"), dict):
+                sources.append(swing["speeds"])
+    if not sources:
+        return None
+
+    def first(*keys: str) -> float | None:
+        for src in sources:
+            for key in keys:
+                got = _as_kmh(src.get(key))
+                if got is not None:
+                    return got
+        return None
+
+    swing_from = None
+    for src in sources:
+        raw = src.get("swing_from")
+        if raw in ("racket", "wrist"):
+            swing_from = raw
+            break
+    out = {
+        "racket_kmh": first("swing_kmh", "racket_kmh"),
+        "wrist_kmh": first("wrist_kmh"),
+        "hip_kmh": first("hip_kmh"),
+        "ball_in_kmh": first("ball_in_kmh"),
+        "ball_out_kmh": first("ball_out_kmh"),
+        "racket_kmh_max": first("swing_kmh_max", "racket_kmh_max"),
+        "swing_from": swing_from,
+    }
+    if all(out[k] is None for k in ("racket_kmh", "wrist_kmh", "hip_kmh", "ball_in_kmh", "ball_out_kmh")):
+        return None
+    return out
+
+
 def assemble_result(
     job: dict,
     report: dict,
@@ -343,6 +398,7 @@ def assemble_result(
     items = [_public_item(item, current_job) for item in timeline]
     compared = _comparison(timeline, current_job) if reason == "" else None
     ready = compared is not None
+    speeds = _speed_block(report)
     return {
         "job_id": job.get("id"),
         "stroke": stroke_of(job, report),
@@ -355,6 +411,7 @@ def assemble_result(
         "thumbnail": thumbnail if isinstance(thumbnail, str) else None,
         "contact_t": contact_t(report),
         "axes": axes,
+        "speeds": speeds,
         "progress": {
             "count": len(timeline) if reason in ("", "need_two") else 0,
             "compare_ready": ready,

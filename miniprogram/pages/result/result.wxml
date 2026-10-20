@@ -18,14 +18,53 @@
       <text class="hint" wx:if="{{contactLine}}">{{contactLine}}</text>
       <text class="ok" wx:if="{{totalLine}}">{{totalLine}}</text>
       <text class="sub" wx:if="{{focus}}"><text class="focus-label">{{copy.result.focusLabel}}</text> {{focus}}</text>
+
+      <text class="h2">{{copy.result.fourTitle}}</text>
+      <view class="dim-grid">
+        <view class="dim-card" wx:for="{{dimCards}}" wx:key="key">
+          <text class="dim-lab">{{item.label}}</text>
+          <view class="dim-val"><text class="dim-score">{{item.score}}</text><text class="dim-max" wx:if="{{item.max}}"> / {{item.max}}</text></view>
+          <view class="dim-bar"><view class="dim-fill" style="width: {{item.width}}%;"></view></view>
+        </view>
+      </view>
+
+      <text class="h2">{{copy.result.speedTitle}}</text>
+      <text class="hint" wx:if="{{speedEmpty}}">{{copy.result.speedEmpty}}</text>
+      <view class="speed-grid" wx:if="{{!speedEmpty}}">
+        <view class="speed-card" wx:for="{{speedCards}}" wx:key="key">
+          <text class="dim-lab">{{item.label}}</text>
+          <view class="speed-val"><text>{{item.value}}</text><text class="unit" wx:if="{{item.unit}}"> {{item.unit}}</text></view>
+        </view>
+      </view>
+      <text class="speed-note" wx:if="{{!speedEmpty}}">{{speedNote}}</text>
+
+      <view class="charts">
+        <view class="chart-panel">
+          <text class="chart-title">{{copy.result.radarTitle}}</text>
+          <view class="radar-wrap">
+            <view class="radar-poly" style="{{radarStyle}}"></view>
+            <view class="radar-lab t">{{copy.result.axes.balance}}</view>
+            <view class="radar-lab r">{{copy.result.axes.contact}}</view>
+            <view class="radar-lab b">{{copy.result.axes.chain}}</view>
+            <view class="radar-lab l">{{copy.result.axes.effect}}</view>
+          </view>
+        </view>
+        <view class="chart-panel">
+          <text class="chart-title">{{copy.result.barsTitle}}</text>
+          <view class="hbar-row" wx:for="{{dimCards}}" wx:key="key">
+            <text class="hbar-lab">{{item.label}}</text>
+            <view class="hbar-track"><view class="hbar-fill" style="width: {{item.width}}%;"></view></view>
+            <text class="hbar-num">{{item.score}}</text>
+          </view>
+        </view>
+      </view>
+
       <view class="axis" wx:for="{{axes}}" wx:key="key">
         <view class="axis-top">
           <text class="item-title">{{item.label}}</text>
-          <text>{{item.scoreText}}</text>
+          <text wx:if="{{item.band}}">{{item.band}}</text>
         </view>
-        <text class="hint" wx:if="{{item.band}}">{{item.band}}</text>
-        <view class="bar"><view class="bar-fill" style="width: {{item.width}}%;"></view></view>
-        <text class="tip"><text class="tip-label">{{copy.result.tipLabel}}</text> {{item.tip}}</text>
+        <text class="tip" wx:if="{{item.tip}}"><text class="tip-label">{{copy.result.tipLabel}}</text> {{item.tip}}</text>
       </view>
       <text class="h2" wx:if="{{timeline.length}}">{{copy.result.timelineTitle}}</text>
       <view class="tl {{item.current ? 'on' : ''}}" wx:for="{{timeline}}" wx:key="jobId">
