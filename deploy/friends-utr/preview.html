@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 球友 UTR 排行（预览）</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --card: #fff;
+      --fg: #1a1a1a;
+      --muted: #6b7280;
+      --line: #e5e2da;
+      --accent: #0f766e;
+      --accent-soft: #ccfbf1;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
+      background:
+        radial-gradient(900px 420px at 10% -10%, #d9f3ee 0%, transparent 55%),
+        radial-gradient(700px 380px at 100% 0%, #f3e8c8 0%, transparent 50%),
+        var(--bg);
+      color: var(--fg);
+    }
+    .shell { max-width: 420px; margin: 0 auto; min-height: 100vh; padding: 16px 16px 48px; }
+    .brand { font-size: 28px; font-weight: 800; letter-spacing: 0.02em; }
+    .lead { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .tabs { display: flex; gap: 8px; margin: 18px 0 12px; }
+    .tab {
+      flex: 1; border: 1px solid var(--line); background: var(--card);
+      border-radius: 10px; padding: 10px; font-size: 14px; font-weight: 600;
+      cursor: pointer;
+    }
+    .tab[aria-selected="true"] {
+      border-color: var(--accent); color: var(--accent); background: var(--accent-soft);
+    }
+    .panel {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+    }
+    .how {
+      margin: 12px 0 0; padding: 12px 14px; font-size: 12px; color: var(--muted); line-height: 1.55;
+      border: 1px dashed var(--line); border-radius: 12px; background: rgba(255,255,255,0.55);
+    }
+    .row {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 12px 14px; border-bottom: 1px solid var(--line);
+    }
+    .row:last-child { border-bottom: 0; }
+    .rank { width: 22px; font-weight: 800; font-size: 14px; padding-top: 2px; }
+    .meta { flex: 1; min-width: 0; }
+    .name { font-size: 14px; font-weight: 600; }
+    .sub { margin-top: 2px; font-size: 12px; color: var(--muted); }
+    .rating {
+      font-size: 15px; font-weight: 800; color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .badge {
+      display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 700;
+      color: var(--accent); background: var(--accent-soft); padding: 1px 6px; border-radius: 999px;
+      vertical-align: middle;
+    }
+    .list-title { margin: 22px 0 8px; font-size: 15px; font-weight: 700; }
+    .friend {
+      display: flex; gap: 12px; align-items: center;
+      padding: 12px 0; border-bottom: 1px solid var(--line);
+    }
+    .avatar {
+      width: 40px; height: 40px; border-radius: 999px; background: var(--accent-soft);
+      color: var(--accent); display: grid; place-items: center; font-weight: 700;
+    }
+    .note { margin-top: 18px; font-size: 11px; color: var(--muted); }
+    .lang { display: flex; gap: 8px; margin-top: 10px; }
+    .lang button {
+      border: 1px solid var(--line); background: #fff; border-radius: 8px;
+      padding: 6px 10px; font-size: 12px; cursor: pointer;
+    }
+    .lang button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="brand">涨球</div>
+    <p class="lead" id="lead"></p>
+    <div class="lang">
+      <button type="button" id="zhBtn" aria-pressed="true">中文</button>
+      <button type="button" id="enBtn" aria-pressed="false">English</button>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" type="button" role="tab" data-format="singles" aria-selected="true" id="tabSingles">单打</button>
+      <button class="tab" type="button" role="tab" data-format="doubles" aria-selected="false" id="tabDoubles">双打</button>
+    </div>
+
+    <div class="panel" id="ladder" data-ladder="utr"></div>
+    <p class="how" id="how"></p>
+
+    <h2 class="list-title" id="listTitle">球友</h2>
+    <div id="friends"></div>
+    <p class="note" id="note"></p>
+  </div>
+
+  <script type="application/json" id="singlesData">
+[
+  {
+    "id": "f5",
+    "name": "赵琳",
+    "ntrp": 4.5,
+    "place": "太湖",
+    "rating": 9.6,
+    "seed": 9.7,
+    "wins": 3,
+    "losses": 0,
+    "played": true,
+    "lastResult": "win",
+    "lastName": "周宁",
+    "rank": 1
+  },
+  {
+    "id": "f3",
+    "name": "周宁",
+    "ntrp": 4.0,
+    "place": "太湖",
+    "rating": 8.6,
+    "seed": 8.6,
+    "wins": 2,
+    "losses": 2,
+    "played": true,
+    "lastResult": "loss",
+    "lastName": "赵琳",
+    "rank": 2
+  },
+  {
+    "id": "f6",
+    "name": "孙凯",
+    "ntrp": 3.5,
+    "place": "新吴",
+    "rating": 7.6,
+    "seed": 7.5,
+    "wins": 1,
+    "losses": 2,
+    "played": true,
+    "lastResult": "loss",
+    "lastName": "周宁",
+    "rank": 3
+  },
+  {
+    "id": "f1",
+    "name": "陈晓",
+    "ntrp": 3.5,
+    "place": "无锡体育中心",
+    "rating": 7.5,
+    "seed": 7.5,
+    "wins": 2,
+    "losses": 2,
+    "played": true,
+    "lastResult": "win",
+    "lastName": "钱芳",
+    "rank": 4
+  },
+  {
+    "id": "f4",
+    "name": "王硕",
+    "ntrp": 3.0,
+    "place": "梁溪",
+    "rating": 6.4,
+    "seed": 6.4,
+    "wins": 2,
+    "losses": 1,
+    "played": true,
+    "lastResult": "win",
+    "lastName": "李佳",
+    "rank": 5
+  },
+  {
+    "id": "f7",
+    "name": "钱芳",
+    "ntrp": 3.0,
+    "place": "无锡体育中心",
+    "rating": 6.3,
+    "seed": 6.4,
+    "wins": 1,
+    "losses": 2,
+    "played": true,
+    "lastResult": "win",
+    "lastName": "李佳",
+    "rank": 6
+  },
+  {
+    "id": "f2",
+    "name": "李佳",
+    "ntrp": 2.5,
+    "place": "滨湖",
+    "rating": 5.5,
+    "seed": 5.4,
+    "wins": 0,
+    "losses": 2,
+    "played": true,
+    "lastResult": "loss",
+    "lastName": "钱芳",
+    "rank": 7
+  },
+  {
+    "id": "f8",
+    "name": "吴迪",
+    "ntrp": 2.5,
+    "place": "惠山",
+    "rating": 5.4,
+    "seed": 5.4,
+    "wins": 0,
+    "losses": 0,
+    "played": false,
+    "lastResult": null,
+    "lastName": null,
+    "rank": 8
+  }
+]
+  </script>
+  <script type="application/json" id="doublesData">
+[
+  {
+    "id": "f5",
+    "name": "赵琳",
+    "ntrp": 4.5,
+    "place": "太湖",
+    "rating": 9.7,
+    "seed": 9.7,
+    "wins": 3,
+    "losses": 0,
+    "played": true,
+    "lastResult": "win",
+    "lastName": "周宁",
+    "rank": 1
+  },
+  {
+    "id": "f3",
+    "name": "周宁",
+    "ntrp": 4.0,
+    "place": "太湖",
+    "rating": 8.6,
+    "seed": 8.6,
+    "wins": 2,
+    "losses": 2,
+    "played": true,
+    "lastResult": "win",
+    "lastName": "孙凯",
+    "rank": 2
+  },
+  {
+    "id": "f6",
+    "name": "孙凯",
+    "ntrp": 3.5,
+    "place": "新吴",
+    "rating": 7.5,
+    "seed": 7.5,
+    "wins": 2,
+    "losses": 3,
+    "played": true,
+    "lastResult": "loss",
+    "lastName": "周宁",
+    "rank": 3
+  },
+  {
+    "id": "f1",
+    "name": "陈晓",
+    "ntrp": 3.5,
+    "place": "无锡体育中心",
+    "rating": 7.5,
+    "seed": 7.5,
+    "wins": 2,
+    "losses": 2,
+    "played": true,
+    "lastResult": "win",
+    "lastName": "周宁",
+    "rank": 4
+  },
+  {
+    "id": "f4",
+    "name": "王硕",
+    "ntrp": 3.0,
+    "place": "梁溪",
+    "rating": 6.4,
+    "seed": 6.4,
+    "wins": 2,
+    "losses": 1,
+    "played": true,
+    "lastResult": "win",
+    "lastName": "孙凯",
+    "rank": 5
+  },
+  {
+    "id": "f7",
+    "name": "钱芳",
+    "ntrp": 3.0,
+    "place": "无锡体育中心",
+    "rating": 6.4,
+    "seed": 6.4,
+    "wins": 1,
+    "losses": 2,
+    "played": true,
+    "lastResult": "loss",
+    "lastName": "周宁",
+    "rank": 6
+  },
+  {
+    "id": "f8",
+    "name": "吴迪",
+    "ntrp": 2.5,
+    "place": "惠山",
+    "rating": 5.4,
+    "seed": 5.4,
+    "wins": 0,
+    "losses": 0,
+    "played": false,
+    "lastResult": null,
+    "lastName": null,
+    "rank": 7
+  },
+  {
+    "id": "f2",
+    "name": "李佳",
+    "ntrp": 2.5,
+    "place": "滨湖",
+    "rating": 5.4,
+    "seed": 5.4,
+    "wins": 0,
+    "losses": 2,
+    "played": true,
+    "lastResult": "loss",
+    "lastName": "孙凯",
+    "rank": 8
+  }
+]
+  </script>
+  <script>
+    const copy = {
+      zh: {
+        lead: "本地排行 · 类 UTR 分数。无锡及附近，按战绩、对手强度和近期比赛浮动。",
+        singles: "单打",
+        doubles: "双打",
+        how: "起点是自评水平 × 2.15（类 UTR）。每场按「对这个对手该不该赢」调整。近六周权重大。双打用双方平均分，步长更小。",
+        listTitle: "球友列表",
+        form: (w, l) => `${w}–${l}`,
+        seedOnly: (n) => `UTR ${n} · 还没有比赛`,
+        beat: (n) => `胜 ${n}`,
+        lost: (n) => `负于 ${n}`,
+        note: "预览：排行与列表均展示 UTR（种子分 = 自评水平 × 2.15）。",
+      },
+      en: {
+        lead: "Local ladder · UTR-like rating. Wuxi and nearby, updated from results, opponent strength, and recent form.",
+        singles: "Singles",
+        doubles: "Doubles",
+        how: "Seed = self-level × 2.15 on a UTR-like scale. Each match shifts you by surprise vs that opponent. Last six weeks weigh more. Doubles uses pair average and a smaller step.",
+        listTitle: "Friends",
+        form: (w, l) => `${w}–${l}`,
+        seedOnly: (n) => `UTR ${n} · no matches yet`,
+        beat: (n) => `beat ${n}`,
+        lost: (n) => `lost to ${n}`,
+        note: "Preview: ladder and friend cards show UTR (seed = self-level × 2.15).",
+      },
+    };
+
+    let locale = "zh";
+    let format = "singles";
+    const singles = JSON.parse(document.getElementById("singlesData").textContent);
+    const doubles = JSON.parse(document.getElementById("doublesData").textContent);
+
+    function render() {
+      const t = copy[locale];
+      document.getElementById("lead").textContent = t.lead;
+      document.getElementById("how").textContent = t.how;
+      document.getElementById("listTitle").textContent = t.listTitle;
+      document.getElementById("note").textContent = t.note;
+      document.getElementById("tabSingles").textContent = t.singles;
+      document.getElementById("tabDoubles").textContent = t.doubles;
+      document.getElementById("zhBtn").setAttribute("aria-pressed", locale === "zh" ? "true" : "false");
+      document.getElementById("enBtn").setAttribute("aria-pressed", locale === "en" ? "true" : "false");
+      document.querySelectorAll(".tab").forEach((el) => {
+        el.setAttribute("aria-selected", el.dataset.format === format ? "true" : "false");
+      });
+
+      const rows = format === "singles" ? singles : doubles;
+      const ladder = document.getElementById("ladder");
+      ladder.innerHTML = rows.map((r, i) => {
+        const form = r.played ? t.form(r.wins, r.losses) : t.seedOnly(r.seed.toFixed(1));
+        const last = r.lastResult && r.lastName
+          ? (r.lastResult === "win" ? t.beat(r.lastName) : t.lost(r.lastName))
+          : "";
+        return `<div class="row" data-ladder-row="${r.id}" data-ladder-rank="${r.rank}">
+          <div class="rank">${r.rank}</div>
+          <div class="meta">
+            <div class="name">${r.name}<span class="badge">UTR</span></div>
+            <div class="sub">${form}${last ? " · " + last : ""}</div>
+          </div>
+          <div class="rating" data-ladder-rating="${r.rating}">${r.rating.toFixed(1)}</div>
+        </div>`;
+      }).join("");
+
+      const friends = document.getElementById("friends");
+      friends.innerHTML = singles.slice().sort((a, b) => a.name.localeCompare(b.name, "zh")).map((r) => {
+        const seed = (Math.round(10 * 2.15 * r.ntrp) / 10).toFixed(1);
+        return `<div class="friend">
+          <div class="avatar">${r.name.slice(0, 1)}</div>
+          <div class="meta">
+            <div class="name">${r.name}</div>
+            <div class="sub">UTR ${seed} · ${r.place}</div>
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    document.querySelectorAll(".tab").forEach((el) => {
+      el.addEventListener("click", () => { format = el.dataset.format; render(); });
+    });
+    document.getElementById("zhBtn").addEventListener("click", () => { locale = "zh"; render(); });
+    document.getElementById("enBtn").addEventListener("click", () => { locale = "en"; render(); });
+    render();
+  </script>
+</body>
+</html>

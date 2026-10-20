@@ -1,0 +1,66 @@
+[
+  [
+    "rankLead:\"Wuxi and nearby. Seeded from NTRP, then moved by results, opponent strength, and recent form.\"",
+    "rankLead:\"Wuxi and nearby. Ranked by a UTR-like rating, updated from match results, opponent strength, and recent form.\""
+  ],
+  [
+    "rankLead:\"无锡及附近。先按 NTRP 定级，再按战绩、对手强度和近期比赛上下浮动。\"",
+    "rankLead:\"无锡及附近。按类 UTR 分数排名，再按战绩、对手强度和近期比赛浮动。\""
+  ],
+  [
+    "seedOnly:\"Seed from NTRP {n} · no matches yet\"",
+    "seedOnly:\"UTR {n} · no matches yet\""
+  ],
+  [
+    "seedOnly:\"NTRP {n} 种子分 · 还没有比赛\"",
+    "seedOnly:\"UTR {n} · 还没有比赛\""
+  ],
+  [
+    "emptyRankDesc:\"After the first local match, ratings move off the NTRP seed.\"",
+    "emptyRankDesc:\"After the first local match, ratings move off the UTR seed.\""
+  ],
+  [
+    "emptyRankDesc:\"有了第一场本地比赛后，分数会离开 NTRP 种子分。\"",
+    "emptyRankDesc:\"有了第一场本地比赛后，分数会离开 UTR 种子分。\""
+  ],
+  [
+    "howBody:\"Start from NTRP × 2.15. Each match shifts you by how surprising the result was versus that opponent. The last six weeks count more. Doubles uses the pair average and a smaller step.\"",
+    "howBody:\"Seed = self-level × 2.15 on a UTR-like scale. Each match shifts you by how surprising the result was versus that opponent. The last six weeks count more. Doubles uses the pair average and a smaller step.\""
+  ],
+  [
+    "howBody:\"起点是 NTRP × 2.15。每场按「对这个对手该不该赢」调整。近六周权重大。双打用双方平均分，步长更小。\"",
+    "howBody:\"起点是自评水平 × 2.15（类 UTR）。每场按「对这个对手该不该赢」调整。近六周权重大。双打用双方平均分，步长更小。\""
+  ],
+  [
+    "rankLead: \"Wuxi and nearby. Seeded from NTRP, then moved by results, opponent strength, and recent form.\"",
+    "rankLead: \"Wuxi and nearby. Ranked by a UTR-like rating, updated from match results, opponent strength, and recent form.\""
+  ],
+  [
+    "rankLead: \"无锡及附近。先按 NTRP 定级，再按战绩、对手强度和近期比赛上下浮动。\"",
+    "rankLead: \"无锡及附近。按类 UTR 分数排名，再按战绩、对手强度和近期比赛浮动。\""
+  ],
+  [
+    "seedOnly: \"Seed from NTRP {n} · no matches yet\"",
+    "seedOnly: \"UTR {n} · no matches yet\""
+  ],
+  [
+    "seedOnly: \"NTRP {n} 种子分 · 还没有比赛\"",
+    "seedOnly: \"UTR {n} · 还没有比赛\""
+  ],
+  [
+    "emptyRankDesc: \"After the first local match, ratings move off the NTRP seed.\"",
+    "emptyRankDesc: \"After the first local match, ratings move off the UTR seed.\""
+  ],
+  [
+    "emptyRankDesc: \"有了第一场本地比赛后，分数会离开 NTRP 种子分。\"",
+    "emptyRankDesc: \"有了第一场本地比赛后，分数会离开 UTR 种子分。\""
+  ],
+  [
+    "howBody: \"Start from NTRP × 2.15. Each match shifts you by how surprising the result was versus that opponent. The last six weeks count more. Doubles uses the pair average and a smaller step.\"",
+    "howBody: \"Seed = self-level × 2.15 on a UTR-like scale. Each match shifts you by how surprising the result was versus that opponent. The last six weeks count more. Doubles uses the pair average and a smaller step.\""
+  ],
+  [
+    "howBody: \"起点是 NTRP × 2.15。每场按「对这个对手该不该赢」调整。近六周权重大。双打用双方平均分，步长更小。\"",
+    "howBody: \"起点是自评水平 × 2.15（类 UTR）。每场按「对这个对手该不该赢」调整。近六周权重大。双打用双方平均分，步长更小。\""
+  ]
+]

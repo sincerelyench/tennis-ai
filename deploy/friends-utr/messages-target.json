@@ -1,0 +1,32 @@
+{
+  "en": {
+    "friends": {
+      "rankTitle": "Local ladder",
+      "rankLead": "Wuxi and nearby. Ranked by a UTR-like rating, updated from match results, opponent strength, and recent form.",
+      "singles": "Singles",
+      "doubles": "Doubles",
+      "form": "{w}–{l}",
+      "beat": "beat {name}",
+      "lost": "lost to {name}",
+      "seedOnly": "UTR {n} · no matches yet",
+      "emptyRank": "No ranking yet",
+      "emptyRankDesc": "After the first local match, ratings move off the UTR seed.",
+      "howBody": "Seed = self-level × 2.15 on a UTR-like scale. Each match shifts you by how surprising the result was versus that opponent. The last six weeks count more. Doubles uses the pair average and a smaller step."
+    }
+  },
+  "zh": {
+    "friends": {
+      "rankTitle": "本地排行",
+      "rankLead": "无锡及附近。按类 UTR 分数排名，再按战绩、对手强度和近期比赛浮动。",
+      "singles": "单打",
+      "doubles": "双打",
+      "form": "{w}–{l}",
+      "beat": "胜 {name}",
+      "lost": "负于 {name}",
+      "seedOnly": "UTR {n} · 还没有比赛",
+      "emptyRank": "还没有排行",
+      "emptyRankDesc": "有了第一场本地比赛后，分数会离开 UTR 种子分。",
+      "howBody": "起点是自评水平 × 2.15（类 UTR）。每场按「对这个对手该不该赢」调整。近六周权重大。双打用双方平均分，步长更小。"
+    }
+  }
+}
