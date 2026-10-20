@@ -9,6 +9,7 @@ import queue
 import shutil
 import sys
 import threading
+import time
 import traceback
 import uuid
 from datetime import datetime, timezone
@@ -60,6 +61,9 @@ _lock = threading.Lock()
 _queue: queue.Queue[str] = queue.Queue()
 _worker_started = False
 _TERMINAL = {"done", "error", "cancelled"}
+# Running/queued jobs with no progress update for this long are treated as dead
+# so a crashed worker cannot leave /api/analyze stuck returning 409 forever.
+STALE_JOB_S = int(os.environ.get("TAI_STALE_JOB_S", "1200"))
 
 
 def _sample_path() -> Path | None:
@@ -211,6 +215,66 @@ def _busy_job() -> dict | None:
             if job.get("status") in ("queued", "running"):
                 return job
     return None
+
+
+def _parse_job_ts(value: object) -> float | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return datetime.fromisoformat(value).timestamp()
+    except ValueError:
+        return None
+
+
+def _busy_snapshot(job: dict | None = None) -> dict | None:
+    """Public fields for health/409 so clients can show why submit is blocked."""
+    current = job if job is not None else _busy_job()
+    if current is None:
+        return None
+    eta = _eta_fields(current)
+    return {
+        "id": current.get("id"),
+        "status": current.get("status"),
+        "progress": current.get("progress"),
+        "step": current.get("step"),
+        "step_name": current.get("step_name"),
+        "message": current.get("message"),
+        "updated_at": current.get("updated_at") or current.get("created_at"),
+        "eta_hint": eta.get("eta_hint"),
+        "eta_remaining_s": eta.get("eta_remaining_s"),
+    }
+
+
+def _raise_busy() -> None:
+    snap = _busy_snapshot()
+    raise CodedHTTPException(
+        409,
+        "busy",
+        "正在分析其他录像，请稍后再试",
+        extra={"busy_job": snap} if snap else None,
+    )
+
+
+def _reap_stale_jobs() -> list[str]:
+    """Mark zombie queued/running jobs as error so the single worker slot frees."""
+    if STALE_JOB_S <= 0:
+        return []
+    now = time.time()
+    reaped: list[str] = []
+    with _lock:
+        for job_id, job in list(_jobs.items()):
+            if job.get("status") not in ("queued", "running"):
+                continue
+            ts = _parse_job_ts(job.get("updated_at")) or _parse_job_ts(job.get("created_at"))
+            if ts is None or (now - ts) < STALE_JOB_S:
+                continue
+            job["status"] = "error"
+            job["message"] = "分析超时未完成，请重新提交"
+            job["error"] = "stale_job"
+            job["updated_at"] = _now()
+            _write_status(job_id)
+            reaped.append(job_id)
+    return reaped
 
 
 def _recover_jobs() -> None:
@@ -447,6 +511,7 @@ else:
 
 @app.get("/api/health")
 def health():
+    _reap_stale_jobs()
     sample = _sample_path()
     gpu = False
     try:
@@ -455,12 +520,14 @@ def health():
         gpu = bool(torch.cuda.is_available())
     except Exception:
         gpu = False
+    busy = _busy_snapshot()
     return {
         "ok": True,
         "sample": bool(sample),
         "gpu": gpu,
         "version": "2.0",
-        "busy": bool(_busy_job()),
+        "busy": bool(busy),
+        "busy_job": busy,
         "levels": public_levels(),
         "default_level": DEFAULT_LEVEL,
     }
@@ -592,8 +659,9 @@ async def analyze(
             _save_progress(job_id)
             return {"job_id": job_id, "cached": True}
 
+    _reap_stale_jobs()
     if _busy_job():
-        raise CodedHTTPException(409, "busy", "正在分析其他录像，请稍后再试")
+        _raise_busy()
 
     if use_sample and force_refresh and src is not None:
         _clear_sample_cache(src, stroke, player_level)
@@ -626,7 +694,13 @@ async def analyze(
         for job in _jobs.values():
             if job.get("status") in ("queued", "running"):
                 shutil.rmtree(out_dir, ignore_errors=True)
-                raise CodedHTTPException(409, "busy", "正在分析其他录像，请稍后再试")
+                snap = _busy_snapshot(job)
+                raise CodedHTTPException(
+                    409,
+                    "busy",
+                    "正在分析其他录像，请稍后再试",
+                    extra={"busy_job": snap} if snap else None,
+                )
         record = {
             "id": job_id,
             "status": "queued",
