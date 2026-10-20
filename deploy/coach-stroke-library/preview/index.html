@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 掌球教练动作库</title>
+  <style>
+    :root {
+      --bg: #f4f7f5;
+      --card: #ffffff;
+      --fg: #14201a;
+      --muted: #5b6b63;
+      --primary: #1f7a4c;
+      --line: #d7e3dc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #e8f2ec 0%, var(--bg) 40%, #eef3f0 100%);
+      color: var(--fg);
+      min-height: 100vh;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(8px);
+    }
+    .brand { font-weight: 800; font-size: 18px; }
+    .lang {
+      border: 0;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-weight: 700;
+      font-size: 12px;
+      background: #e9f7ef;
+      color: var(--primary);
+      cursor: pointer;
+    }
+    main { max-width: 440px; margin: 0 auto; padding: 24px 16px 64px; }
+    .coach { color: var(--primary); font-size: 12px; font-weight: 700; }
+    h1 { font-size: 22px; margin: 6px 0 8px; }
+    .lead { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0 0 16px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .chip {
+      border: 0;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #eef3f0;
+      color: var(--fg);
+      cursor: pointer;
+    }
+    .chip.on { background: var(--primary); color: #fff; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 6px; }
+    textarea, input[type=text], input[type=url] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      font: inherit;
+      background: #fff;
+    }
+    textarea { min-height: 110px; resize: vertical; }
+    video {
+      width: 100%;
+      border-radius: 10px;
+      background: #000;
+      margin-top: 6px;
+      max-height: 220px;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn.primary { background: var(--primary); color: #fff; }
+    .btn.ghost { background: #eef3f0; color: var(--fg); }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .ok { color: var(--primary); font-size: 12px; font-weight: 700; }
+    .empty { font-size: 12px; color: var(--muted); padding: 18px 0; }
+    .nav {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      display: flex; justify-content: space-around;
+      background: rgba(255,255,255,0.92);
+      border-top: 1px solid var(--line);
+      padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
+      font-size: 11px; font-weight: 700; color: var(--muted);
+    }
+    .nav .on { color: var(--primary); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">涨球</div>
+    <button class="lang" id="langBtn" type="button">EN</button>
+  </header>
+  <main data-coach-library="true">
+    <div class="coach" id="coachName">掌球教练</div>
+    <h1 id="title">动作库 / 我的示范</h1>
+    <p class="lead" id="lead">为每一项技术上传讲解文字与正确动作示范视频。学员与分析会优先使用你的材料。</p>
+    <div class="chips" id="chips"></div>
+    <section class="panel">
+      <label for="prompt" id="lblPrompt">讲解 / 分析提示</label>
+      <textarea id="prompt" placeholder="写出你教这项技术时的要点…"></textarea>
+      <label for="demoTitle" id="lblTitle">示范标题</label>
+      <input id="demoTitle" type="text" placeholder="掌球教练 · 正手上旋" />
+      <label id="lblVideo">示范视频</label>
+      <div id="videoSlot" class="empty">尚未上传</div>
+      <div class="row">
+        <label class="btn ghost" id="uploadLabel">上传视频
+          <input id="file" type="file" accept="video/*" hidden />
+        </label>
+        <button class="btn primary" id="saveBtn" type="button">保存此项</button>
+        <span class="ok" id="flash"></span>
+      </div>
+      <label for="url" id="lblUrl">或粘贴可播放链接</label>
+      <input id="url" type="url" placeholder="https://…" />
+      <p class="hint" id="fileHint">支持本地视频文件；保存写入 localStorage（键 tennis-coach-stroke-library-v1），并尝试同步线上 /tennis/api/coach/library。</p>
+    </section>
+  </main>
+  <nav class="nav" aria-label="coach">
+    <span>学员分析</span>
+    <span>消息</span>
+    <span class="on">动作库</span>
+    <span>我的</span>
+  </nav>
+  <script>
+    const STROKES = ["fh-topspin","fh-slice","fh-volley","bh-topspin","bh-slice","bh-volley","serve","smash"];
+    const LABELS = {
+      zh: {"fh-topspin":"正手上旋","fh-slice":"正手切削","fh-volley":"正手截击","bh-topspin":"反手上旋","bh-slice":"反手切削","bh-volley":"反手截击",serve:"发球",smash:"高压球"},
+      en: {"fh-topspin":"Forehand topspin","fh-slice":"Forehand slice","fh-volley":"Forehand volley","bh-topspin":"Backhand topspin","bh-slice":"Backhand slice","bh-volley":"Backhand volley",serve:"Serve",smash:"Overhead smash"}
+    };
+    const KEY = "tennis-coach-stroke-library-v1";
+    const COACH = { zh: "掌球教练", en: "Zhangqiu Coach" };
+    let locale = "zh";
+    let strokeId = "fh-topspin";
+    let lib = { coachId: "poppy", coachName: "掌球教练", entries: {}, updatedAt: new Date().toISOString() };
+
+    function read() {
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (raw) lib = Object.assign(lib, JSON.parse(raw));
+      } catch {}
+      lib.coachName = "掌球教练";
+    }
+    function write() {
+      lib.updatedAt = new Date().toISOString();
+      lib.coachName = "掌球教练";
+      localStorage.setItem(KEY, JSON.stringify(lib));
+    }
+    function entry() { return lib.entries[strokeId] || { strokeId, prompt: "", title: "", videoUrl: "", updatedAt: "" }; }
+    function filled(id) {
+      const e = lib.entries[id];
+      return !!(e && ((e.prompt||"").trim() || (e.videoUrl||"").trim()));
+    }
+    function renderChips() {
+      const el = document.getElementById("chips");
+      el.innerHTML = "";
+      STROKES.forEach((id) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "chip" + (id === strokeId ? " on" : "");
+        b.dataset.stroke = id;
+        b.textContent = LABELS[locale][id] + (filled(id) ? " · ✓" : "");
+        b.onclick = () => { strokeId = id; apply(); renderChips(); };
+        el.appendChild(b);
+      });
+    }
+    function apply() {
+      const e = entry();
+      document.getElementById("prompt").value = e.prompt || "";
+      document.getElementById("demoTitle").value = e.title || "";
+      document.getElementById("url").value = (e.videoUrl || "").startsWith("blob:") ? "" : (e.videoUrl || "");
+      const slot = document.getElementById("videoSlot");
+      if (e.videoUrl) {
+        slot.className = "";
+        slot.innerHTML = `<video data-demo-video="true" src="${e.videoUrl}" controls playsinline></video>`;
+      } else {
+        slot.className = "empty";
+        slot.textContent = locale === "zh" ? "尚未上传" : "No demo yet";
+      }
+    }
+    function i18n() {
+      document.getElementById("coachName").textContent = COACH[locale];
+      document.getElementById("title").textContent = locale === "zh" ? "动作库 / 我的示范" : "Stroke library / My demos";
+      document.getElementById("lead").textContent = locale === "zh"
+        ? "为每一项技术上传讲解文字与正确动作示范视频。学员与分析会优先使用你的材料。"
+        : "Upload teaching copy and a correct-motion demo for every stroke. Players and analysis prefer your materials.";
+      document.getElementById("lblPrompt").textContent = locale === "zh" ? "讲解 / 分析提示" : "Teaching text / analysis prompt";
+      document.getElementById("lblTitle").textContent = locale === "zh" ? "示范标题" : "Demo title";
+      document.getElementById("lblVideo").textContent = locale === "zh" ? "示范视频" : "Demo video";
+      document.getElementById("lblUrl").textContent = locale === "zh" ? "或粘贴可播放链接" : "Or paste a playable URL";
+      document.getElementById("saveBtn").textContent = locale === "zh" ? "保存此项" : "Save stroke";
+      document.getElementById("uploadLabel").childNodes[0].textContent = locale === "zh" ? "上传视频" : "Upload video";
+      document.getElementById("langBtn").textContent = locale === "zh" ? "EN" : "中文";
+      renderChips();
+      apply();
+    }
+    function save() {
+      const prompt = document.getElementById("prompt").value;
+      const title = document.getElementById("demoTitle").value;
+      let videoUrl = entry().videoUrl || "";
+      const typed = document.getElementById("url").value.trim();
+      if (typed) videoUrl = typed;
+      lib.entries[strokeId] = { strokeId, prompt, title, videoUrl, updatedAt: new Date().toISOString() };
+      write();
+      document.getElementById("flash").textContent = locale === "zh" ? "已保存" : "Saved";
+      setTimeout(() => document.getElementById("flash").textContent = "", 1800);
+      renderChips();
+      apply();
+      // Best-effort live API sync (404 until server patch is applied).
+      fetch("https://yqchen.blog/tennis/api/coach/library?coachId=poppy", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ strokeId, prompt, title, videoUrl }),
+      }).catch(() => {});
+    }
+    document.getElementById("file").addEventListener("change", (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      const cur = entry();
+      lib.entries[strokeId] = {
+        strokeId,
+        prompt: document.getElementById("prompt").value || cur.prompt || "",
+        title: document.getElementById("demoTitle").value || f.name,
+        videoUrl: url,
+        updatedAt: new Date().toISOString(),
+      };
+      write();
+      document.getElementById("flash").textContent = locale === "zh" ? "已选视频" : "Video selected";
+      renderChips();
+      apply();
+    });
+    document.getElementById("saveBtn").onclick = save;
+    document.getElementById("langBtn").onclick = () => { locale = locale === "zh" ? "en" : "zh"; i18n(); };
+    read();
+    i18n();
+  </script>
+</body>
+</html>

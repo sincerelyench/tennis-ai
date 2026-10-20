@@ -4,7 +4,9 @@
     "pages/guide/guide",
     "pages/upload/upload",
     "pages/queue/queue",
-    "pages/result/result"
+    "pages/result/result",
+    "pages/coach-library/coach-library",
+    "pages/coach-picker/coach-picker"
   ],
   "window": {
     "navigationBarTitleText": "涨球",

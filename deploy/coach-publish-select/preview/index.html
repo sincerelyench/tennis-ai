@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 教练发布与选择</title>
+  <style>
+    :root {
+      --bg: #eef3f0;
+      --card: #ffffff;
+      --fg: #14201a;
+      --muted: #5b6b63;
+      --primary: #1f7a4c;
+      --line: #d7e3dc;
+      --warn: #9a6700;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif;
+      background:
+        radial-gradient(1200px 500px at 10% -10%, #d9efe3 0%, transparent 55%),
+        linear-gradient(180deg, #e3efe8 0%, var(--bg) 45%, #e8eee9 100%);
+      color: var(--fg);
+      min-height: 100vh;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.75);
+      backdrop-filter: blur(8px);
+      position: sticky; top: 0; z-index: 5;
+    }
+    .brand { font-weight: 800; font-size: 18px; letter-spacing: 0.02em; }
+    .tabs { display: flex; gap: 6px; }
+    .tab, .lang {
+      border: 0;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      background: #eef3f0;
+      color: var(--fg);
+    }
+    .tab.on { background: var(--primary); color: #fff; }
+    .lang { background: #e9f7ef; color: var(--primary); }
+    main { max-width: 460px; margin: 0 auto; padding: 22px 16px 72px; }
+    .coach { color: var(--primary); font-size: 12px; font-weight: 700; }
+    h1 { font-size: 22px; margin: 6px 0 8px; }
+    .lead { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 0 0 14px; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 6px; }
+    textarea, input[type=text] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      font: inherit;
+      background: #fff;
+    }
+    textarea { min-height: 88px; resize: vertical; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn.primary { background: var(--primary); color: #fff; }
+    .btn.ghost { background: #eef3f0; color: var(--fg); }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--primary);
+    }
+    .dot.warn { background: var(--warn); }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.45; }
+    .ok { color: var(--primary); font-size: 12px; font-weight: 700; }
+    .empty {
+      border: 1px dashed var(--line);
+      border-radius: 12px;
+      padding: 18px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .coach-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 10px;
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .coach-card.on { border-color: var(--primary); background: #eef8f2; }
+    .coach-card .name { font-weight: 800; font-size: 15px; }
+    .coach-card .style { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .progress {
+      height: 8px; border-radius: 999px; background: #e8efeA; overflow: hidden; margin-top: 8px;
+    }
+    .progress > i {
+      display: block; height: 100%; width: 0;
+      background: linear-gradient(90deg, #2d9a61, var(--primary));
+      transition: width .35s ease;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">涨球</div>
+    <div class="tabs">
+      <button class="tab on" type="button" data-view="coach" id="tabCoach">教练工作台</button>
+      <button class="tab" type="button" data-view="player" id="tabPlayer">球员选教练</button>
+      <button class="lang" type="button" id="langBtn">EN</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- COACH -->
+    <section id="viewCoach" data-coach-publish="true">
+      <div class="coach" id="coachPersona">掌球教练</div>
+      <h1 id="coachTitle">动作库 · 发布与训练</h1>
+      <p class="lead" id="coachLead">保存讲解后提交训练；就绪后申请发布。默认人格名：掌球教练。</p>
+
+      <div class="panel">
+        <label for="prompt" id="lblPrompt">讲解 / 分析提示（示例）</label>
+        <textarea id="prompt" placeholder="写出你教正手上旋的要点…"></textarea>
+        <div class="row">
+          <button class="btn ghost" type="button" id="saveLibBtn">保存到动作库</button>
+          <span class="ok" id="libFlash"></span>
+        </div>
+        <p class="hint" id="libHint">本地键 tennis-coach-stroke-library-v1 · 已填技术数 <strong id="strokeCount">0</strong></p>
+      </div>
+
+      <div class="panel" data-status-panel="true">
+        <div class="status"><span class="dot" id="statusDot"></span><span id="statusLabel">草稿</span></div>
+        <div class="progress hidden" id="progressWrap"><i id="progressBar"></i></div>
+        <p class="hint" id="trainHint">训练为异步 stub：queued → training → ready（约 8 秒）。真实 GPU 可挂同一状态。</p>
+
+        <label for="displayName" id="lblName">发布显示名</label>
+        <input id="displayName" type="text" value="掌球教练" />
+        <label for="styleTagline" id="lblStyle">风格简介</label>
+        <input id="styleTagline" type="text" placeholder="例如：稳健底线、强调随挥放松" />
+
+        <div class="row">
+          <button class="btn primary" type="button" id="trainBtn" data-action="submit-train">提交训练</button>
+          <button class="btn primary hidden" type="button" id="publishBtn" data-action="request-publish">申请发布</button>
+          <button class="btn ghost hidden" type="button" id="withdrawBtn" data-action="withdraw">撤回</button>
+          <span class="ok" id="pubFlash"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLAYER -->
+    <section id="viewPlayer" class="hidden" data-coach-picker="true">
+      <div class="coach" id="playerBrand">涨球</div>
+      <h1 id="playerTitle">选择教练</h1>
+      <p class="lead" id="playerLead">仅列出已发布教练。分析与教练页使用所选风格的讲解与示范。</p>
+      <p class="hint" id="defaultHint">默认人格：掌球教练 / Zhangqiu Coach</p>
+      <div id="coachList"></div>
+    </section>
+  </main>
+
+  <script>
+    const LIB_KEY = "tennis-coach-stroke-library-v1";
+    const PUB_KEY = "tennis-coach-publish-v1";
+    const SEL_KEY = "tennis-player-selected-coach-v1";
+    const TRAIN_MS = 8000;
+    const DEFAULT_NAME = { zh: "掌球教练", en: "Zhangqiu Coach" };
+
+    let locale = "zh";
+    let view = "coach";
+    let pollTimer = null;
+
+    function normalizeName(n) {
+      const raw = String(n || "").trim();
+      if (!raw || /poppy|东东|dongdong/i.test(raw)) return "掌球教练";
+      return raw.slice(0, 40);
+    }
+
+    function emptyProfile() {
+      return {
+        coachId: "poppy",
+        displayName: "掌球教练",
+        styleTagline: "",
+        status: "draft",
+        trainJob: null,
+        submittedAt: null,
+        publishedAt: null,
+        rejectedReason: null,
+        libraryStrokeCount: 0,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    function readLibCount() {
+      try {
+        const raw = localStorage.getItem(LIB_KEY);
+        if (!raw) return 0;
+        const lib = JSON.parse(raw);
+        let n = 0;
+        Object.values(lib.entries || {}).forEach((e) => {
+          if ((e.prompt || "").trim() || (e.videoUrl || "").trim()) n += 1;
+        });
+        return n;
+      } catch { return 0; }
+    }
+
+    function readStore() {
+      try {
+        const raw = localStorage.getItem(PUB_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch { return {}; }
+    }
+
+    function writeProfile(p) {
+      const store = readStore();
+      store[p.coachId] = p;
+      localStorage.setItem(PUB_KEY, JSON.stringify(store));
+      return p;
+    }
+
+    function advance(p, now = Date.now()) {
+      if (!p.trainJob || (p.status !== "queued" && p.status !== "training")) return p;
+      const readyAt = Date.parse(p.trainJob.readyAt);
+      const startedAt = Date.parse(p.trainJob.startedAt);
+      const elapsed = Math.max(0, now - startedAt);
+      const total = Math.max(1, readyAt - startedAt);
+      const job = { ...p.trainJob };
+      if (now >= readyAt) {
+        job.status = "ready"; job.progress = 100;
+        return { ...p, status: "ready", trainJob: job, updatedAt: new Date(now).toISOString() };
+      }
+      if (elapsed < total * 0.25) {
+        job.status = "queued"; job.progress = Math.min(15, Math.round((elapsed / total) * 40));
+        return { ...p, status: "queued", trainJob: job, updatedAt: new Date(now).toISOString() };
+      }
+      job.status = "training"; job.progress = Math.min(95, Math.round((elapsed / total) * 100));
+      return { ...p, status: "training", trainJob: job, updatedAt: new Date(now).toISOString() };
+    }
+
+    function getProfile() {
+      const store = readStore();
+      let p = store.poppy || emptyProfile();
+      p = advance({ ...emptyProfile(), ...p, displayName: normalizeName(p.displayName) });
+      p.libraryStrokeCount = readLibCount();
+      return writeProfile(p);
+    }
+
+    function statusText(s) {
+      const zh = { draft:"草稿", queued:"训练排队中", training:"训练中", ready:"可申请发布", pending_review:"待审核", published:"已发布", rejected:"已驳回" };
+      const en = { draft:"Draft", queued:"Training queued", training:"Training", ready:"Ready to publish", pending_review:"Pending review", published:"Published", rejected:"Rejected" };
+      return (locale === "en" ? en : zh)[s] || s;
+    }
+
+    function i18n() {
+      document.getElementById("langBtn").textContent = locale === "zh" ? "EN" : "中文";
+      document.getElementById("tabCoach").textContent = locale === "zh" ? "教练工作台" : "Coach desk";
+      document.getElementById("tabPlayer").textContent = locale === "zh" ? "球员选教练" : "Player pick";
+      document.getElementById("coachPersona").textContent = DEFAULT_NAME[locale];
+      document.getElementById("coachTitle").textContent = locale === "zh" ? "动作库 · 发布与训练" : "Library · Publish & train";
+      document.getElementById("coachLead").textContent = locale === "zh"
+        ? "保存讲解后提交训练；就绪后申请发布。默认人格名：掌球教练。"
+        : "Save teaching notes, submit training, then request publish. Default persona: Zhangqiu Coach.";
+      document.getElementById("lblPrompt").textContent = locale === "zh" ? "讲解 / 分析提示（示例）" : "Teaching / analysis prompt (sample)";
+      document.getElementById("saveLibBtn").textContent = locale === "zh" ? "保存到动作库" : "Save to library";
+      document.getElementById("lblName").textContent = locale === "zh" ? "发布显示名" : "Published display name";
+      document.getElementById("lblStyle").textContent = locale === "zh" ? "风格简介" : "Style blurb";
+      document.getElementById("trainBtn").textContent = locale === "zh" ? "提交训练" : "Submit for training";
+      document.getElementById("publishBtn").textContent = locale === "zh" ? "申请发布" : "Request publish";
+      document.getElementById("withdrawBtn").textContent = locale === "zh" ? "撤回" : "Withdraw";
+      document.getElementById("trainHint").textContent = locale === "zh"
+        ? "训练为异步 stub：queued → training → ready（约 8 秒）。真实 GPU 可挂同一状态。"
+        : "Async training stub: queued → training → ready (~8s). Real GPU hooks the same states.";
+      document.getElementById("playerTitle").textContent = locale === "zh" ? "选择教练" : "Choose a coach";
+      document.getElementById("playerLead").textContent = locale === "zh"
+        ? "仅列出已发布教练。分析与教练页使用所选风格的讲解与示范。"
+        : "Published coaches only. Analysis uses the selected coach’s prompts and demos.";
+      document.getElementById("defaultHint").textContent = locale === "zh"
+        ? "默认人格：掌球教练 / Zhangqiu Coach"
+        : "Default persona: 掌球教练 / Zhangqiu Coach";
+      const dn = document.getElementById("displayName");
+      if (!dn.value || /poppy|东东/i.test(dn.value) || dn.value === "掌球教练" || dn.value === "Zhangqiu Coach") {
+        dn.value = DEFAULT_NAME[locale];
+      }
+      render();
+    }
+
+    function renderCoach() {
+      const p = getProfile();
+      document.getElementById("strokeCount").textContent = String(p.libraryStrokeCount);
+      document.getElementById("statusLabel").textContent = statusText(p.status);
+      document.getElementById("statusDot").className = "dot" + (p.status === "training" || p.status === "queued" ? " warn" : "");
+      document.getElementById("displayName").value = normalizeName(p.displayName) === "掌球教练" ? DEFAULT_NAME[locale] : p.displayName;
+      document.getElementById("styleTagline").value = p.styleTagline || "";
+
+      const wrap = document.getElementById("progressWrap");
+      const bar = document.getElementById("progressBar");
+      if (p.trainJob && (p.status === "queued" || p.status === "training")) {
+        wrap.classList.remove("hidden");
+        bar.style.width = (p.trainJob.progress || 0) + "%";
+      } else {
+        wrap.classList.add("hidden");
+      }
+
+      const canTrain = p.libraryStrokeCount > 0 && (p.status === "draft" || p.status === "rejected");
+      const canPub = p.status === "ready";
+      const canWith = ["queued","training","ready","pending_review","published"].includes(p.status);
+      document.getElementById("trainBtn").classList.toggle("hidden", !canTrain);
+      document.getElementById("trainBtn").disabled = !canTrain;
+      document.getElementById("publishBtn").classList.toggle("hidden", !canPub);
+      document.getElementById("withdrawBtn").classList.toggle("hidden", !canWith);
+
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      if (p.status === "queued" || p.status === "training") {
+        pollTimer = setInterval(() => renderCoach(), 500);
+      }
+    }
+
+    function renderPlayer() {
+      const store = readStore();
+      const list = Object.values(store)
+        .map((p) => advance(p))
+        .filter((p) => p.status === "published");
+      const selected = localStorage.getItem(SEL_KEY) || "poppy";
+      const el = document.getElementById("coachList");
+      if (!list.length) {
+        el.innerHTML = `<div class="empty" data-empty="true">${locale === "zh" ? "暂无已发布教练。请先在教练工作台完成训练并发布。" : "No published coaches yet. Finish train + publish on the coach desk first."}</div>`;
+        return;
+      }
+      el.innerHTML = list.map((c) => {
+        const on = c.coachId === selected;
+        const name = normalizeName(c.displayName);
+        const shown = name === "掌球教练" ? DEFAULT_NAME[locale] : name;
+        return `<div class="coach-card ${on ? "on" : ""}" data-coach-id="${c.coachId}" data-selected="${on ? 1 : 0}">
+          <div>
+            <div class="name" data-coach-name="true">${shown}</div>
+            <div class="style">${c.styleTagline || (locale === "zh" ? "涨球风格教练" : "Zhangqiu style coach")}</div>
+          </div>
+          <button class="btn ${on ? "ghost" : "primary"}" type="button" data-pick="${c.coachId}" ${on ? "disabled" : ""}>
+            ${on ? (locale === "zh" ? "当前选用" : "Selected") : (locale === "zh" ? "选用" : "Select")}
+          </button>
+        </div>`;
+      }).join("");
+      el.querySelectorAll("[data-pick]").forEach((btn) => {
+        btn.onclick = () => {
+          localStorage.setItem(SEL_KEY, btn.getAttribute("data-pick"));
+          document.getElementById("pubFlash").textContent = "";
+          renderPlayer();
+        };
+      });
+    }
+
+    function render() {
+      document.getElementById("viewCoach").classList.toggle("hidden", view !== "coach");
+      document.getElementById("viewPlayer").classList.toggle("hidden", view !== "player");
+      document.getElementById("tabCoach").classList.toggle("on", view === "coach");
+      document.getElementById("tabPlayer").classList.toggle("on", view === "player");
+      if (view === "coach") renderCoach();
+      else renderPlayer();
+    }
+
+    document.getElementById("saveLibBtn").onclick = () => {
+      const prompt = document.getElementById("prompt").value.trim();
+      let lib = { coachId: "poppy", coachName: "掌球教练", entries: {}, updatedAt: new Date().toISOString() };
+      try {
+        const raw = localStorage.getItem(LIB_KEY);
+        if (raw) lib = Object.assign(lib, JSON.parse(raw));
+      } catch {}
+      lib.coachName = "掌球教练";
+      lib.entries["fh-topspin"] = {
+        strokeId: "fh-topspin",
+        prompt: prompt || (locale === "zh" ? "掌球教练：引拍放松，击球点在身前。" : "Zhangqiu Coach: relaxed take-back, contact out front."),
+        title: locale === "zh" ? "掌球教练 · 正手上旋" : "Zhangqiu Coach · FH topspin",
+        videoUrl: "",
+        updatedAt: new Date().toISOString(),
+      };
+      lib.updatedAt = new Date().toISOString();
+      localStorage.setItem(LIB_KEY, JSON.stringify(lib));
+      const p = getProfile();
+      p.libraryStrokeCount = readLibCount();
+      writeProfile(p);
+      document.getElementById("libFlash").textContent = locale === "zh" ? "已保存" : "Saved";
+      setTimeout(() => document.getElementById("libFlash").textContent = "", 1600);
+      renderCoach();
+    };
+
+    document.getElementById("trainBtn").onclick = () => {
+      const p = getProfile();
+      if (p.libraryStrokeCount <= 0) return;
+      const now = Date.now();
+      const next = {
+        ...p,
+        displayName: normalizeName(document.getElementById("displayName").value),
+        styleTagline: document.getElementById("styleTagline").value.slice(0, 200),
+        status: "queued",
+        submittedAt: new Date(now).toISOString(),
+        publishedAt: null,
+        rejectedReason: null,
+        trainJob: {
+          id: "train_poppy_" + now,
+          status: "queued",
+          startedAt: new Date(now).toISOString(),
+          readyAt: new Date(now + TRAIN_MS).toISOString(),
+          progress: 0,
+          note: "stub",
+        },
+        updatedAt: new Date(now).toISOString(),
+      };
+      writeProfile(next);
+      document.getElementById("pubFlash").textContent = locale === "zh" ? "已提交训练" : "Training submitted";
+      renderCoach();
+    };
+
+    document.getElementById("publishBtn").onclick = () => {
+      const p = getProfile();
+      if (p.status !== "ready") return;
+      const ts = new Date().toISOString();
+      writeProfile({
+        ...p,
+        displayName: normalizeName(document.getElementById("displayName").value),
+        styleTagline: document.getElementById("styleTagline").value.slice(0, 200),
+        status: "published",
+        publishedAt: ts,
+        rejectedReason: null,
+        updatedAt: ts,
+      });
+      document.getElementById("pubFlash").textContent = locale === "zh" ? "已发布（平台 stub 通过）" : "Published (platform stub accepted)";
+      renderCoach();
+    };
+
+    document.getElementById("withdrawBtn").onclick = () => {
+      const p = getProfile();
+      writeProfile({
+        ...p,
+        status: "draft",
+        trainJob: null,
+        publishedAt: null,
+        rejectedReason: null,
+        updatedAt: new Date().toISOString(),
+      });
+      document.getElementById("pubFlash").textContent = locale === "zh" ? "已撤回为草稿" : "Withdrawn to draft";
+      renderCoach();
+    };
+
+    document.getElementById("tabCoach").onclick = () => { view = "coach"; render(); };
+    document.getElementById("tabPlayer").onclick = () => { view = "player"; render(); };
+    document.getElementById("langBtn").onclick = () => { locale = locale === "zh" ? "en" : "zh"; i18n(); };
+
+    // Seed demo second coach style so picker can show multiple when published.
+    (function seedAlt() {
+      const store = readStore();
+      if (!store.style_a) {
+        store.style_a = {
+          coachId: "style_a",
+          displayName: "掌球教练",
+          styleTagline: "",
+          status: "draft",
+          trainJob: null,
+          submittedAt: null,
+          publishedAt: null,
+          rejectedReason: null,
+          libraryStrokeCount: 0,
+          updatedAt: new Date().toISOString(),
+        };
+        localStorage.setItem(PUB_KEY, JSON.stringify(store));
+      }
+    })();
+
+    i18n();
+  </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<view class="page" data-coach-library="true">
+  <view class="top">
+    <text class="brand">涨球</text>
+    <text class="lang" bindtap="onToggleLang">{{locale === 'en' ? '中文' : 'EN'}}</text>
+  </view>
+
+  <view class="hdr">
+    <text class="coach">{{coachName}}</text>
+    <text class="title">{{locale === 'en' ? 'Stroke library / My demos' : '动作库 / 我的示范'}}</text>
+    <text class="lead">{{locale === 'en' ? 'Upload teaching copy and a correct-motion demo for each stroke.' : '为每一项技术上传讲解文字与正确动作示范视频。'}}</text>
+  </view>
+
+  <view class="chips">
+    <view
+      wx:for="{{strokeLabels}}"
+      wx:key="id"
+      class="chip {{strokeId === item.id ? 'on' : ''}}"
+      data-id="{{item.id}}"
+      bindtap="onPickStroke"
+    >
+      {{item.label}}{{item.filled ? ' · ✓' : ''}}
+    </view>
+  </view>
+
+  <view wx:if="{{phase === 'loading'}}" class="hint">{{locale === 'en' ? 'Loading…' : '加载中…'}}</view>
+
+  <view wx:elif="{{phase === 'error'}}" class="hint err">
+    <text>{{locale === 'en' ? 'Failed to load' : '加载失败'}}</text>
+    <button size="mini" bindtap="load">{{locale === 'en' ? 'Retry' : '重试'}}</button>
+  </view>
+
+  <view wx:else class="card">
+    <text class="lbl">{{locale === 'en' ? 'Teaching text / prompt' : '讲解 / 分析提示'}}</text>
+    <textarea class="ta" value="{{prompt}}" bindinput="onPrompt" placeholder="{{locale === 'en' ? 'Teaching notes…' : '写出教学要点…'}}" />
+
+    <text class="lbl">{{locale === 'en' ? 'Demo title' : '示范标题'}}</text>
+    <input class="inp" value="{{title}}" bindinput="onTitle" placeholder="{{coachName}}" />
+
+    <text class="lbl">{{locale === 'en' ? 'Demo video' : '示范视频'}}</text>
+    <video wx:if="{{videoUrl}}" src="{{videoUrl}}" controls class="vid" data-demo-video="true"></video>
+    <text wx:else class="hint">{{locale === 'en' ? 'No demo yet' : '尚未上传'}}</text>
+
+    <button size="mini" bindtap="onChooseVideo">{{locale === 'en' ? 'Upload video' : '上传视频'}}</button>
+    <input class="inp" value="{{videoUrl}}" bindinput="onUrl" placeholder="{{locale === 'en' ? 'Or paste URL' : '或粘贴链接'}}" />
+
+    <button type="primary" loading="{{busy}}" disabled="{{busy}}" bindtap="onSave">
+      {{busy ? (locale === 'en' ? 'Saving…' : '保存中…') : (locale === 'en' ? 'Save stroke' : '保存此项')}}
+    </button>
+    <text wx:if="{{flash}}" class="ok">{{flash}}</text>
+  </view>
+
+  <view class="card publish" data-coach-publish="true" data-status="{{publishStatus}}">
+    <text class="lbl">{{locale === 'en' ? 'Publish & training' : '发布与训练'}}</text>
+    <text class="hint">{{locale === 'en' ? 'Status' : '状态'}}：{{publishStatusLabel}}</text>
+    <text wx:if="{{trainProgress !== null}}" class="hint">{{locale === 'en' ? 'Progress' : '进度'}}：{{trainProgress}}%</text>
+    <text class="lbl">{{locale === 'en' ? 'Published display name' : '发布显示名'}}</text>
+    <input class="inp" value="{{displayName}}" bindinput="onDisplayName" placeholder="{{coachName}}" />
+    <text class="lbl">{{locale === 'en' ? 'Style blurb' : '风格简介'}}</text>
+    <input class="inp" value="{{styleTagline}}" bindinput="onStyleTagline" placeholder="{{locale === 'en' ? 'Your coaching style…' : '你的教学风格…'}}" />
+    <button wx:if="{{canTrain}}" type="primary" size="mini" loading="{{pubBusy}}" bindtap="onSubmitTrain" data-action="submit-train">
+      {{locale === 'en' ? 'Submit for training' : '提交训练'}}
+    </button>
+    <button wx:if="{{canPublish}}" type="primary" size="mini" loading="{{pubBusy}}" bindtap="onRequestPublish" data-action="request-publish">
+      {{locale === 'en' ? 'Request publish' : '申请发布'}}
+    </button>
+    <button wx:if="{{canWithdraw}}" size="mini" loading="{{pubBusy}}" bindtap="onWithdraw" data-action="withdraw">
+      {{locale === 'en' ? 'Withdraw' : '撤回'}}
+    </button>
+    <text wx:if="{{pubFlash}}" class="ok">{{pubFlash}}</text>
+    <text class="hint">{{locale === 'en' ? 'Training is a stub (queued → training → ready).' : '训练为 stub：排队 → 训练中 → 就绪。'}}</text>
+  </view>
+</view>
