@@ -58,7 +58,7 @@
     "longClip": "这段比较长，排队后的分析会更慢。"
   },
   "queue": {
-    "title": "排队中",
+    "title": "分析进度",
     "queued": "排队中",
     "running": "分析中",
     "done": "分析已结束",
@@ -73,7 +73,18 @@
     "viewResult": "查看四维结果",
     "home": "返回首页",
     "retry": "重新上传",
-    "serverDetail": "服务器说明"
+    "serverDetail": "服务器说明",
+    "preview": "分析预览",
+    "currentStep": "当前步骤",
+    "leaveHint": "关掉页面也不会中断，回来可继续查看进度。",
+    "stepPct": "{{name}} · {{pct}}%",
+    "steps": {
+      "1": { "name": "读取视频", "blurb": "打开你的录像", "eta": "约 15 秒" },
+      "2": { "name": "识别动作", "blurb": "看清挥拍动作", "eta": "约 3–6 分钟" },
+      "3": { "name": "找出挥拍", "blurb": "标出每一次击球", "eta": "约 30 秒" },
+      "4": { "name": "整理数据", "blurb": "整理评分依据", "eta": "约 1 分钟" },
+      "5": { "name": "教练点评", "blurb": "涨球教练生成练习建议", "eta": "约 2 分钟，最慢" }
+    }
   },
   "errors": {
     "auth_required": "请先登录后再上传",

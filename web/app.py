@@ -24,7 +24,8 @@ if str(ROOT) not in sys.path:
 from pipeline.cursor_client import warm_agent
 from pipeline.level import DEFAULT_LEVEL, parse_level, public_levels
 from pipeline.oss import refresh_report_urls
-from pipeline.session import analyze_video, get_detector, get_estimator, json_default
+from pipeline.session import FAST_MAX_SECONDS, analyze_video, get_detector, get_estimator, json_default
+from pipeline.stroke import normalize_stroke
 from web.api_errors import CodedHTTPException, coded_handler
 from web.dev_auth import bearer_token, issue_dev_token, verify_dev_token
 from web.history import archive_report, find_archive, list_history
@@ -43,6 +44,7 @@ JOBS_DIR = ROOT / "outputs" / "jobs"
 REPORTS_DIR = ROOT / "outputs" / "reports"
 PROGRESS_DIR = ROOT / "outputs" / "progress"
 SAMPLE_CACHE_DIR = ROOT / "outputs" / "sample_cache"
+CONTENT_CACHE_DIR = ROOT / "outputs" / "content_cache"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 I18N_DIR = ROOT / "i18n"
 E1_ASSETS = {"e1.css": "text/css", "e1.js": "text/javascript"}
@@ -50,10 +52,14 @@ SAMPLE_CANDIDATES = [
     ROOT / "samples" / "demo.mp4",
 ]
 SAMPLE_CACHE_VERSION = "2.8-player-level"
+CONTENT_CACHE_VERSION = "1.0-fast"
+# Auto-pick fast path when the clip is short enough for a real ≤1s-ish result.
+AUTO_FAST_MAX_SECONDS = 6.0
 
 JOBS_DIR.mkdir(parents=True, exist_ok=True)
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 SAMPLE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+CONTENT_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 _jobs: dict[str, dict] = {}
 _lock = threading.Lock()
@@ -92,33 +98,96 @@ def _clear_sample_cache(src: Path, stroke: str, level: str = DEFAULT_LEVEL) -> N
         shutil.rmtree(cache, ignore_errors=True)
 
 
-def _save_sample_cache(job_id: str, src: Path, stroke: str, level: str = DEFAULT_LEVEL) -> None:
+def _content_fingerprint(digest: str, stroke: str, level: str, mode: str) -> str:
+    raw = f"{CONTENT_CACHE_VERSION}|{digest}|{stroke}|{level}|{mode}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:20]
+
+
+def _content_cache_dir(digest: str, stroke: str, level: str, mode: str) -> Path:
+    return CONTENT_CACHE_DIR / _content_fingerprint(digest, stroke, level, mode)
+
+
+def _load_content_cache(digest: str, stroke: str, level: str, mode: str) -> Path | None:
+    cache = _content_cache_dir(digest, stroke, level, mode)
+    if (cache / "report.json").is_file():
+        return cache
+    return None
+
+
+def _save_report_cache(job_id: str, cache: Path) -> None:
     job_dir = JOBS_DIR / job_id
     report = job_dir / "report.json"
     if not report.is_file():
         return
-    cache = _sample_cache_dir(src, stroke, level)
     cache.mkdir(parents=True, exist_ok=True)
     shutil.copy2(report, cache / "report.json")
     preview = job_dir / "preview.jpg"
     if preview.is_file():
         shutil.copy2(preview, cache / "preview.jpg")
+    cover = job_dir / "cover.jpg"
+    if cover.is_file():
+        shutil.copy2(cover, cache / "cover.jpg")
 
 
-def _install_sample_cache(job_id: str, cache: Path) -> dict:
+def _save_sample_cache(job_id: str, src: Path, stroke: str, level: str = DEFAULT_LEVEL) -> None:
+    _save_report_cache(job_id, _sample_cache_dir(src, stroke, level))
+
+
+def _install_report_cache(job_id: str, cache: Path) -> dict:
     out = JOBS_DIR / job_id
     out.mkdir(parents=True, exist_ok=True)
     shutil.copy2(cache / "report.json", out / "report.json")
-    preview = cache / "preview.jpg"
-    if preview.is_file():
-        shutil.copy2(preview, out / "preview.jpg")
+    for name in ("preview.jpg", "cover.jpg"):
+        src = cache / name
+        if src.is_file():
+            shutil.copy2(src, out / name)
     report = json.loads((out / "report.json").read_text(encoding="utf-8"))
     overall = report.get("overall") or {}
     return {
         "score": overall.get("score"),
         "n_swings": overall.get("n_swings"),
         "source_name": report.get("source_name") or "demo.mp4",
+        "report": report,
+        "analyze_mode": report.get("analyze_mode") or "full",
     }
+
+
+def _install_sample_cache(job_id: str, cache: Path) -> dict:
+    return _install_report_cache(job_id, cache)
+
+
+def _video_duration_s(path: Path) -> float:
+    try:
+        import cv2
+    except Exception:
+        return 0.0
+    cap = cv2.VideoCapture(str(path))
+    if not cap.isOpened():
+        return 0.0
+    fps = float(cap.get(cv2.CAP_PROP_FPS) or 0.0)
+    n = float(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0.0)
+    cap.release()
+    if fps > 1 and n > 0:
+        return n / fps
+    return 0.0
+
+
+def _truthy(value: str) -> bool:
+    return str(value or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def _defer_archive_and_progress(job_id: str) -> None:
+    def _run() -> None:
+        try:
+            archive_report(JOBS_DIR / job_id, REPORTS_DIR)
+        except Exception:
+            pass
+        try:
+            _save_progress(job_id)
+        except Exception:
+            pass
+
+    threading.Thread(target=_run, name=f"archive-{job_id}", daemon=True).start()
 
 
 def _now() -> str:
@@ -132,6 +201,38 @@ def _public_job(job: dict) -> dict:
 
 
 def _eta_fields(job: dict) -> dict:
+    """Honest ETAs: cached/fast use seconds; full HD multi-clip still needs minutes."""
+    mode = str(job.get("analyze_mode") or "full")
+    cached = bool(job.get("cached"))
+    if cached or job.get("status") == "done":
+        steps = [
+            {"step": 1, "name": "读取视频", "seconds": 0, "label": "已完成"},
+            {"step": 2, "name": "识别动作", "seconds": 0, "label": "已完成"},
+            {"step": 3, "name": "找出挥拍", "seconds": 0, "label": "已完成"},
+            {"step": 4, "name": "整理数据", "seconds": 0, "label": "已完成"},
+            {"step": 5, "name": "教练点评", "seconds": 0, "label": "已完成"},
+        ]
+        hint = "缓存命中，结果已就绪" if cached else "已完成"
+        return {"eta_steps": steps, "eta_remaining_s": 0, "eta_hint": hint, "analyze_mode": mode}
+
+    if mode == "fast":
+        steps = [
+            {"step": 1, "name": "读取视频", "seconds": 0.2, "label": "约 0.2 秒"},
+            {"step": 2, "name": "识别动作", "seconds": 0.5, "label": "约 0.5 秒"},
+            {"step": 3, "name": "找出挥拍", "seconds": 0.1, "label": "约 0.1 秒"},
+            {"step": 4, "name": "整理数据", "seconds": 0.1, "label": "约 0.1 秒"},
+            {"step": 5, "name": "教练点评", "seconds": 0.1, "label": "约 0.1 秒（规则引擎）"},
+        ]
+        cur = int(job.get("step") or 0)
+        remain = sum(s["seconds"] for s in steps if s["step"] >= max(cur, 1))
+        hint = "快速分析短片段，目标约 1 秒内出结果（无整段回放/长文案）。"
+        return {
+            "eta_steps": steps,
+            "eta_remaining_s": int(max(1, round(remain))),
+            "eta_hint": hint,
+            "analyze_mode": mode,
+        }
+
     duration = float(job.get("max_seconds") or 0)
     if duration <= 0:
         duration = 90.0
@@ -150,7 +251,7 @@ def _eta_fields(job: dict) -> dict:
             "step": 5,
             "name": "教练点评",
             "seconds": 150,
-            "label": "约 2 分钟，这一步最慢",
+            "label": "约 2 分钟，涨球教练这一步最慢",
         },
     ]
     cur = int(job.get("step") or 0)
@@ -161,10 +262,10 @@ def _eta_fields(job: dict) -> dict:
         remain = sum(s["seconds"] for s in steps if s["step"] >= max(cur, 1))
         mins = max(1, round(remain / 60))
         if cur >= 5:
-            hint = f"正在生成报告，大约还要 2 分钟。关掉页面也没关系，回来还能接着看。"
+            hint = "正在生成报告，大约还要 2 分钟。关掉页面也没关系，回来还能接着看。"
         else:
-            hint = f"全部大约还要 {mins} 分钟。关掉页面也不会中断，回来可继续查看进度。"
-    return {"eta_steps": steps, "eta_remaining_s": remain, "eta_hint": hint}
+            hint = f"完整分析大约还要 {mins} 分钟（含回放与涨球教练）。短片可走快速路径。"
+    return {"eta_steps": steps, "eta_remaining_s": remain, "eta_hint": hint, "analyze_mode": mode}
 
 
 def _write_status(job_id: str) -> None:
@@ -269,7 +370,10 @@ def _run_job(job_id: str) -> None:
     job = _jobs[job_id]
     out_dir = JOBS_DIR / job_id
     try:
-        _set(job_id, status="running", step=1, step_name="读取视频", progress=1, message="开始分析你的录像…")
+        mode = str(job.get("analyze_mode") or "full")
+        fast = mode == "fast"
+        msg = "快速分析短片段…" if fast else "开始分析你的录像…"
+        _set(job_id, status="running", step=1, step_name="读取视频", progress=1, message=msg)
 
         def progress(payload: dict) -> None:
             with _lock:
@@ -288,6 +392,7 @@ def _run_job(job_id: str) -> None:
             title=job.get("title") or "网球挥拍测评报告",
             player_level=job.get("player_level") or DEFAULT_LEVEL,
             progress=progress,
+            fast=fast,
         )
         _set(
             job_id,
@@ -298,18 +403,19 @@ def _run_job(job_id: str) -> None:
             message="分析完成",
             score=report["overall"]["score"],
             n_swings=report["overall"]["n_swings"],
+            analyze_mode=report.get("analyze_mode") or mode,
         )
         archive_report(out_dir, REPORTS_DIR)
         _save_progress(job_id)
+        stroke = str(job.get("stroke_mode") or "forehand")
+        level = str(job.get("player_level") or DEFAULT_LEVEL)
         if job.get("is_sample"):
             src = _sample_path()
             if src is not None:
-                _save_sample_cache(
-                    job_id,
-                    src,
-                    str(job.get("stroke_mode") or "forehand"),
-                    str(job.get("player_level") or DEFAULT_LEVEL),
-                )
+                _save_sample_cache(job_id, src, stroke, level)
+        digest = str(job.get("content_sha256") or "")
+        if digest:
+            _save_report_cache(job_id, _content_cache_dir(digest, stroke, level, mode))
     except Exception as exc:
         user_msg = str(exc) if isinstance(exc, RuntimeError) else "分析失败，请稍后重试"
         _set(
@@ -531,6 +637,60 @@ def sample_info():
     }
 
 
+def _cached_analyze_response(
+    *,
+    job_id: str,
+    meta: dict,
+    stroke: str,
+    player_level: str,
+    title: str,
+    source_name: str,
+    max_seconds: float,
+    is_sample: bool,
+    metadata: dict | None,
+    analyze_mode: str,
+) -> dict:
+    now = _now()
+    report = meta.get("report")
+    with _lock:
+        _jobs[job_id] = {
+            "id": job_id,
+            "status": "done",
+            "step": 5,
+            "step_name": "教练点评",
+            "progress": 100,
+            "message": "分析完成",
+            "max_seconds": max_seconds,
+            "stroke_mode": stroke,
+            "player_level": player_level,
+            "title": title,
+            "source_name": source_name,
+            "score": meta.get("score"),
+            "n_swings": meta.get("n_swings"),
+            "cached": True,
+            "is_sample": is_sample,
+            "analyze_mode": analyze_mode,
+            "created_at": now,
+            "updated_at": now,
+        }
+        if metadata:
+            _jobs[job_id]["metadata"] = metadata
+        _write_status(job_id)
+    _defer_archive_and_progress(job_id)
+    out = {
+        "job_id": job_id,
+        "cached": True,
+        "analyze_mode": analyze_mode,
+        "fast": analyze_mode == "fast",
+    }
+    if isinstance(report, dict):
+        out["report"] = report
+        out["status"] = "done"
+        out["progress"] = 100
+        out["score"] = meta.get("score")
+    return out
+
+
 @app.post("/api/analyze")
 async def analyze(
     video: UploadFile | None = File(default=None),
@@ -543,17 +703,19 @@ async def analyze(
     client: str = Form(default=""),
     guide_completed: str = Form(default=""),
     guide_checks: str = Form(default=""),
+    fast: str = Form(default=""),
     authorization: str | None = Header(default=None),
 ):
-    if stroke not in ("auto", "forehand", "backhand", "serve"):
-        stroke = "forehand"
+    # Product clients send fh-topspin / serve / smash / … — keep them.
+    stroke = normalize_stroke(stroke, default="forehand")
     player_level = parse_level(level).code
     _client_name, metadata = _prepare_upload_meta(
         client, guide_completed, guide_checks, authorization
     )
 
-    use_sample = sample in ("1", "true", "yes")
-    force_refresh = refresh in ("1", "true", "yes")
+    use_sample = _truthy(sample)
+    force_refresh = _truthy(refresh)
+    want_fast = _truthy(fast)
     src = _sample_path() if use_sample else None
     if use_sample:
         if src is None:
@@ -562,35 +724,19 @@ async def analyze(
         if cache is not None:
             job_id = uuid.uuid4().hex[:12]
             meta = _install_sample_cache(job_id, cache)
-            now = _now()
-            with _lock:
-                _jobs[job_id] = {
-                    "id": job_id,
-                    "status": "done",
-                    "step": 5,
-                    "step_name": "教练点评",
-                    "progress": 100,
-                    "message": "分析完成",
-                    "max_seconds": 60,
-                    "stroke_mode": stroke,
-                    "player_level": player_level,
-                    "title": title,
-                    "source_name": meta.get("source_name") or src.name,
-                    "score": meta.get("score"),
-                    "n_swings": meta.get("n_swings"),
-                    "cached": True,
-                    "is_sample": True,
-                    "created_at": now,
-                    "updated_at": now,
-                }
-                _write_status(job_id)
-            if metadata:
-                with _lock:
-                    _jobs[job_id]["metadata"] = metadata
-                    _write_status(job_id)
-            archive_report(JOBS_DIR / job_id, REPORTS_DIR)
-            _save_progress(job_id)
-            return {"job_id": job_id, "cached": True}
+            mode = str(meta.get("analyze_mode") or "full")
+            return _cached_analyze_response(
+                job_id=job_id,
+                meta=meta,
+                stroke=stroke,
+                player_level=player_level,
+                title=title,
+                source_name=str(meta.get("source_name") or src.name),
+                max_seconds=60,
+                is_sample=True,
+                metadata=metadata,
+                analyze_mode=mode,
+            )
 
     if _busy_job():
         raise CodedHTTPException(409, "busy", "正在分析其他录像，请稍后再试")
@@ -602,10 +748,13 @@ async def analyze(
     out_dir = JOBS_DIR / job_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    content_sha = ""
+    analyze_mode = "full"
     if use_sample:
         video_path = src
         source_name = src.name
-        max_seconds = 60
+        max_seconds = FAST_MAX_SECONDS if want_fast else 60
+        analyze_mode = "fast" if want_fast else "full"
     else:
         if video is None or not video.filename:
             shutil.rmtree(out_dir, ignore_errors=True)
@@ -617,10 +766,35 @@ async def analyze(
             shutil.rmtree(out_dir, ignore_errors=True)
             code, message = rejection
             raise CodedHTTPException(400, code, message)
+        content_sha = hashlib.sha256(data).hexdigest()
         video_path = out_dir / f"source{suffix}"
         video_path.write_bytes(data)
         source_name = Path(video.filename).name
-        max_seconds = 0
+        duration = _video_duration_s(video_path)
+        if want_fast or (duration > 0 and duration <= AUTO_FAST_MAX_SECONDS):
+            analyze_mode = "fast"
+            max_seconds = FAST_MAX_SECONDS if (not max_seconds or max_seconds <= 0) else min(
+                float(max_seconds), FAST_MAX_SECONDS
+            )
+        else:
+            max_seconds = float(max_seconds or 0)
+
+        if not force_refresh and content_sha:
+            cache = _load_content_cache(content_sha, stroke, player_level, analyze_mode)
+            if cache is not None:
+                meta = _install_report_cache(job_id, cache)
+                return _cached_analyze_response(
+                    job_id=job_id,
+                    meta=meta,
+                    stroke=stroke,
+                    player_level=player_level,
+                    title=title,
+                    source_name=source_name,
+                    max_seconds=max_seconds or FAST_MAX_SECONDS,
+                    is_sample=False,
+                    metadata=metadata,
+                    analyze_mode=str(meta.get("analyze_mode") or analyze_mode),
+                )
 
     with _lock:
         for job in _jobs.values():
@@ -633,7 +807,7 @@ async def analyze(
             "step": 0,
             "step_name": "准备中",
             "progress": 0,
-            "message": "开始分析…",
+            "message": "快速分析…" if analyze_mode == "fast" else "开始分析…",
             "max_seconds": max_seconds,
             "stroke_mode": stroke,
             "player_level": player_level,
@@ -641,6 +815,8 @@ async def analyze(
             "source_name": source_name,
             "video_path": str(video_path),
             "is_sample": use_sample,
+            "analyze_mode": analyze_mode,
+            "content_sha256": content_sha,
             "created_at": _now(),
         }
         if metadata:
@@ -649,7 +825,12 @@ async def analyze(
         _write_status(job_id)
 
     _queue.put(job_id)
-    return {"job_id": job_id, "cached": False}
+    return {
+        "job_id": job_id,
+        "cached": False,
+        "analyze_mode": analyze_mode,
+        "fast": analyze_mode == "fast",
+    }
 
 
 @app.get("/api/history")

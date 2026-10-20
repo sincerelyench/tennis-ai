@@ -239,6 +239,38 @@
     return text("queue.unknown");
   }
 
+  function queueStepsMarkup(job) {
+    const cur = Math.max(0, Number(job && job.step) || 0);
+    const etaSteps = (job && job.eta_steps) || [];
+    const rows = [1, 2, 3, 4, 5].map((n) => {
+      const fallback = text("queue.steps." + n + ".name");
+      const blurb = text("queue.steps." + n + ".blurb");
+      const etaFallback = text("queue.steps." + n + ".eta");
+      const fromApi = etaSteps.find((s) => Number(s.step) === n) || {};
+      const name = fromApi.name || fallback;
+      const eta = fromApi.label || etaFallback;
+      const cls = n < cur ? "done" : n === cur ? "on" : "";
+      return (
+        '<div class="step ' + cls + '">' +
+        "<b>" + n + ". " + esc(name) + "</b>" +
+        esc(blurb) +
+        '<span class="eta">' + esc(eta) + "</span>" +
+        "</div>"
+      );
+    }).join("");
+    return '<div class="steps" data-analyze-steps="true">' + rows + "</div>";
+  }
+
+  function queuePreviewMarkup(job) {
+    const id = job && job.id;
+    const rev = job && job.preview_rev;
+    if (!id || !rev) {
+      return '<p class="preview-empty">' + esc(text("queue.polling")) + "</p>";
+    }
+    const src = "/api/jobs/" + encodeURIComponent(id) + "/preview?r=" + encodeURIComponent(String(rev));
+    return '<img src="' + esc(src) + '" alt="" />';
+  }
+
   function queueView(route) {
     const job = state.job;
     const status = job && job.status ? job.status : "unknown";
@@ -250,13 +282,35 @@
     const server = job && (status === "error" || status === "cancelled") && job.message
       ? '<p class="error"><strong>' + esc(text("queue.serverDetail")) + "</strong><br />" + esc(job.message) + "</p>"
       : "";
+    const pct = Math.max(0, Math.min(100, Number(job && job.progress) || 0));
+    const stepName = (job && job.step_name) || statusLabel(status);
+    const etaHint = (job && job.eta_hint) || "";
+    const progressBlock = terminal
+      ? ""
+      : (
+        queueStepsMarkup(job) +
+        '<div class="progress-track" aria-hidden="true"><i style="width:' + pct + '%"></i></div>' +
+        '<p class="lead">' + esc(job && job.message ? job.message : statusLabel(status)) + "</p>" +
+        '<div class="live">' +
+        '<div class="mini"><h3>' + esc(text("queue.preview")) + '</h3><div class="preview-box">' +
+        queuePreviewMarkup(job) +
+        "</div></div>" +
+        '<div class="mini"><h3>' + esc(text("queue.currentStep")) + "</h3>" +
+        '<p class="sub">' + esc(job && job.source_name ? job.source_name : "") + "</p>" +
+        "<p>" + esc(text("queue.stepPct", { name: stepName, pct: pct })) + "</p>" +
+        (etaHint
+          ? '<p class="hint">' + esc(etaHint) + "</p>"
+          : '<p class="hint">' + esc(text("queue.leaveHint")) + "</p>") +
+        "</div></div>"
+      );
     return (
       header() +
-      '<section class="card">' +
+      '<section class="card" data-analyze-progress="true">' +
       '<p class="kicker">' + esc(text("queue.title")) + "</p>" +
-      "<h1>" + (terminal ? "" : '<span class="pulse"></span>') + esc(statusLabel(status)) + "</h1>" +
+      "<h1>" + (terminal ? "" : '<span class="pulse"></span>') + esc(statusLabel(status)) +
+      (terminal ? "" : " · " + pct + "%") + "</h1>" +
       '<p class="jobid">' + esc(text("queue.jobId", { id: (job && job.id) || route.job || "—" })) + "</p>" +
-      (terminal ? "" : '<p class="hint">' + esc(text("queue.polling")) + "</p>") +
+      progressBlock +
       guideLine +
       (status === "done" ? '<p class="sub">' + esc(text("queue.doneHint")) + "</p>" : "") +
       server +
@@ -476,12 +530,13 @@
         render();
         const status = state.job && state.job.status;
         if (status === "done" || status === "error" || status === "cancelled") return;
-        state.pollTimer = setTimeout(tick, 2000);
+        // Fast path / warm GPU: poll quickly so UI does not sit at ~2% idle.
+        state.pollTimer = setTimeout(tick, 250);
       } catch (e) {
         if (seq !== pollSeq) return;
         setJobErrorCode("network");
         render();
-        state.pollTimer = setTimeout(tick, 3000);
+        state.pollTimer = setTimeout(tick, 1000);
       }
     };
     tick();
@@ -624,6 +679,8 @@
     body.append("title", "涨球挥拍分析");
     body.append("guide_completed", guideDone() ? "1" : "0");
     body.append("guide_checks", JSON.stringify(state.guide));
+    // Ask server for ≤1s fast path on short clips (server also auto-detects ≤6s).
+    if (state.duration && state.duration <= 6) body.append("fast", "1");
     try {
       const res = await fetch("/api/analyze", {
         method: "POST",
@@ -640,8 +697,20 @@
         return;
       }
       state.loading = false;
-      state.job = null;
       clearJobError();
+      // Cache hit with inline report → skip queue polling lag.
+      if (payload.cached && payload.report) {
+        state.job = {
+          id: payload.job_id,
+          status: "done",
+          progress: 100,
+          cached: true,
+          analyze_mode: payload.analyze_mode || "full",
+        };
+        location.hash = "#/result?job=" + encodeURIComponent(payload.job_id);
+        return;
+      }
+      state.job = null;
       location.hash = "#/queue?job=" + encodeURIComponent(payload.job_id);
     } catch (e) {
       state.loading = false;

@@ -58,27 +58,30 @@ function jobResult(id, token) {
   return request({ path: "/api/jobs/" + encodeURIComponent(id) + "/result", token })
 }
 
-function uploadVideo({ filePath, token, stroke, guideCompleted, guideChecks }) {
+function uploadVideo({ filePath, token, stroke, guideCompleted, guideChecks, fast, duration }) {
   return new Promise((resolve, reject) => {
     if (!token) {
       reject(fail({ code: "auth_required" }, 401))
       return
     }
+    const formData = {
+      stroke: stroke || "forehand",
+      client: "miniprogram",
+      sample: "0",
+      level: "3.0",
+      title: "涨球挥拍分析",
+      guide_completed: guideCompleted ? "1" : "0",
+      guide_checks: JSON.stringify(guideChecks || {}),
+    }
+    const shortClip = fast === true || (Number(duration) > 0 && Number(duration) <= 6)
+    if (shortClip) formData.fast = "1"
     wx.uploadFile({
       url: base() + "/api/analyze",
       filePath,
       name: "video",
       timeout: 120000,
       header: { Authorization: "Bearer " + token },
-      formData: {
-        stroke: stroke || "forehand",
-        client: "miniprogram",
-        sample: "0",
-        level: "3.0",
-        title: "涨球挥拍分析",
-        guide_completed: guideCompleted ? "1" : "0",
-        guide_checks: JSON.stringify(guideChecks || {}),
-      },
+      formData,
       success(res) {
         let body = {}
         try {

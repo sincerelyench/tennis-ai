@@ -137,10 +137,17 @@ Page({
       stroke: this.data.stroke,
       guideCompleted: guide.completed(checks),
       guideChecks: checks,
+      duration: video.duration,
+      fast: Number(video.duration) > 0 && Number(video.duration) <= 6,
     }).then((body) => {
       this.setData({ loading: false })
       if (!body || !body.job_id) {
         this.showError("bad_response")
+        return
+      }
+      // Cache hit → skip queue polling lag.
+      if (body.cached) {
+        wx.navigateTo({ url: "/pages/result/result?job_id=" + encodeURIComponent(body.job_id) })
         return
       }
       wx.navigateTo({ url: "/pages/queue/queue?job_id=" + encodeURIComponent(body.job_id) })
