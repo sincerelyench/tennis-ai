@@ -150,7 +150,7 @@ def _eta_fields(job: dict) -> dict:
             "step": 5,
             "name": "教练点评",
             "seconds": 150,
-            "label": "约 2 分钟，这一步最慢",
+            "label": "约 2 分钟，涨球教练这一步最慢",
         },
     ]
     cur = int(job.get("step") or 0)

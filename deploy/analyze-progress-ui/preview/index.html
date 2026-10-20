@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 分析进度预览</title>
+  <style>
+    :root {
+      --bg: #e8f3ec;
+      --card: #fff;
+      --ink: #0f1f16;
+      --muted: #5b6b62;
+      --primary: #0d9488;
+      --primary-soft: #ccfbf1;
+      --border: #d5e0d9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #e8f3ec 0%, #f3f7f4 45%, #eef4f0 100%);
+      color: var(--ink);
+    }
+    .phone {
+      max-width: 420px;
+      margin: 20px auto 40px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(15, 31, 22, 0.08);
+      min-height: 780px;
+      display: flex;
+      flex-direction: column;
+    }
+    header.app {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 18px; }
+    .logo {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #f5e547, #16a34a 55%, #0f766e);
+    }
+    main { flex: 1; padding: 16px 16px 88px; }
+    h1 { font-size: 22px; margin: 0 0 6px; }
+    .lead { color: var(--muted); font-size: 13px; margin: 0 0 14px; line-height: 1.45; }
+    .meta { font-size: 12px; color: var(--primary); font-weight: 600; margin-bottom: 10px; }
+    .zq-analyze-progress {
+      border: 1px solid var(--border); border-radius: 16px; padding: 14px;
+      background: #fff;
+    }
+    .zq-ap-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .zq-ap-kicker {
+      margin: 0 0 4px; display: inline-flex; font-size: 11px; font-weight: 700;
+      letter-spacing: .08em; color: #0f3d36; background: var(--primary-soft);
+      border-radius: 999px; padding: 2px 8px;
+    }
+    .zq-ap-title { margin: 0; font-size: 18px; font-weight: 750; }
+    .zq-ap-msg { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+    .zq-ap-pct { font-size: 28px; font-weight: 800; color: var(--primary); line-height: 1; }
+    .zq-ap-steps {
+      list-style: none; margin: 0 0 10px; padding: 0;
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px;
+    }
+    @media (min-width: 480px) {
+      .zq-ap-steps { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    }
+    .zq-ap-step {
+      border: 1px solid var(--border); border-radius: 12px; padding: 10px 8px;
+      background: #f7faf8; color: var(--muted); font-size: 11px; line-height: 1.35;
+    }
+    .zq-ap-step b { display: block; color: var(--ink); font-size: 12px; margin-bottom: 3px; }
+    .zq-ap-step.on {
+      border-color: var(--primary); background: #f0fdfa; color: #0f766e;
+      box-shadow: 0 0 0 1px rgba(13,148,136,.2);
+    }
+    .zq-ap-step.done { border-color: #99f6e4; color: #0f766e; }
+    .zq-ap-eta { display: block; margin-top: 5px; font-size: 10px; }
+    .zq-ap-bar { height: 8px; border-radius: 99px; background: #e7eeea; overflow: hidden; margin: 0 0 12px; }
+    .zq-ap-bar > i {
+      display: block; height: 100%;
+      background: linear-gradient(90deg, #14b8a6, #0d9488, #5eead4);
+    }
+    .zq-ap-live { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .zq-ap-card { border: 1px solid var(--border); border-radius: 14px; padding: 12px; background: #fbfdfc; }
+    .zq-ap-card h3 { margin: 0 0 8px; font-size: 13px; }
+    .zq-ap-preview {
+      width: 100%; aspect-ratio: 16/10; border-radius: 10px; overflow: hidden;
+      background:
+        linear-gradient(135deg, rgba(13,148,136,.25), transparent 50%),
+        linear-gradient(180deg, #1a3a2d, #0b1712);
+      display: grid; place-items: center; color: #cfe8dc; font-size: 12px;
+    }
+    .zq-ap-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .zq-ap-file { margin: 0 0 6px; font-size: 12px; color: var(--muted); }
+    .zq-ap-step-line { margin: 0 0 8px; font-size: 14px; font-weight: 650; }
+    .zq-ap-hint { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
+    nav.tab {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--border); background: #fff; padding: 8px 0 10px;
+      font-size: 11px; text-align: center; color: var(--muted);
+    }
+    .phone { position: relative; }
+    nav.tab .on { color: var(--primary); font-weight: 700; }
+    .desktop {
+      max-width: 980px; margin: 24px auto; padding: 0 16px 40px;
+    }
+    .desktop .zq-ap-steps { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .desktop .zq-ap-live { grid-template-columns: 1.05fr .95fr; }
+    .note {
+      max-width: 980px; margin: 12px auto 0; padding: 0 16px;
+      color: var(--muted); font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <p class="note">涨球等待进度预览（参考网球测评分步信息架构，品牌为涨球 / 涨球教练；无 NTRP 选择器）。数据来自真实 <code>/tai</code> 字段映射。</p>
+
+  <section class="phone" id="mobile-waiting">
+    <header class="app">
+      <div class="brand"><span class="logo"></span>涨球</div>
+      <span style="color:var(--muted);font-size:13px">通知</span>
+    </header>
+    <main>
+      <h1>视频分析</h1>
+      <p class="lead">技术动作已选 · 正手上旋。分析进行中可离开，回来仍停在这一页。</p>
+      <p class="meta">涨球教练 · 无等级选择</p>
+      <div class="zq-analyze-progress" data-analyze-progress="true" data-progress-percent="28" data-progress-step="识别动作">
+        <div class="zq-ap-head">
+          <div>
+            <p class="zq-ap-kicker">涨球</p>
+            <h2 class="zq-ap-title">正在分析挥拍</h2>
+            <p class="zq-ap-msg">正在识别球员动作…</p>
+          </div>
+          <div class="zq-ap-pct">28%</div>
+        </div>
+        <ol class="zq-ap-steps" data-analyze-steps="true">
+          <li class="zq-ap-step done"><b>1. 读取视频</b>打开你的录像<span class="zq-ap-eta">约 15 秒</span></li>
+          <li class="zq-ap-step on"><b>2. 识别动作</b>看清挥拍动作<span class="zq-ap-eta">约 6 分钟</span></li>
+          <li class="zq-ap-step"><b>3. 找出挥拍</b>标出每一次击球<span class="zq-ap-eta">约 30 秒</span></li>
+          <li class="zq-ap-step"><b>4. 整理数据</b>整理评分依据<span class="zq-ap-eta">约 1 分钟</span></li>
+          <li class="zq-ap-step"><b>5. 教练点评</b>涨球教练生成练习建议<span class="zq-ap-eta">约 2 分钟，最慢</span></li>
+        </ol>
+        <div class="zq-ap-bar"><i style="width:28%"></i></div>
+        <div class="zq-ap-live">
+          <div class="zq-ap-card">
+            <h3>分析预览</h3>
+            <div class="zq-ap-preview">上传录像预览 · overlay.mp4</div>
+          </div>
+          <div class="zq-ap-card">
+            <h3>当前步骤</h3>
+            <p class="zq-ap-file">overlay.mp4</p>
+            <p class="zq-ap-step-line">识别动作 · 28%</p>
+            <p class="zq-ap-hint">全部大约还要 10 分钟。关掉页面也不会中断，回来可继续查看进度。</p>
+          </div>
+        </div>
+      </div>
+    </main>
+    <nav class="tab">
+      <div class="on">视频分析</div>
+      <div>AI教练</div>
+      <div>球友</div>
+      <div>我的</div>
+    </nav>
+  </section>
+
+  <section class="desktop" id="desktop-waiting">
+    <div class="zq-analyze-progress" data-analyze-progress="true" data-progress-percent="28">
+      <div class="zq-ap-head">
+        <div>
+          <p class="zq-ap-kicker">涨球</p>
+          <h2 class="zq-ap-title">正在分析挥拍</h2>
+          <p class="zq-ap-msg">正在识别球员动作…</p>
+        </div>
+        <div class="zq-ap-pct">28%</div>
+      </div>
+      <ol class="zq-ap-steps">
+        <li class="zq-ap-step done"><b>1. 读取视频</b>打开你的录像<span class="zq-ap-eta">约 15 秒</span></li>
+        <li class="zq-ap-step on"><b>2. 识别动作</b>看清挥拍动作<span class="zq-ap-eta">约 6 分钟</span></li>
+        <li class="zq-ap-step"><b>3. 找出挥拍</b>标出每一次击球<span class="zq-ap-eta">约 30 秒</span></li>
+        <li class="zq-ap-step"><b>4. 整理数据</b>整理评分依据<span class="zq-ap-eta">约 1 分钟</span></li>
+        <li class="zq-ap-step"><b>5. 教练点评</b>涨球教练生成练习建议<span class="zq-ap-eta">约 2 分钟，最慢</span></li>
+      </ol>
+      <div class="zq-ap-bar"><i style="width:28%"></i></div>
+      <div class="zq-ap-live">
+        <div class="zq-ap-card">
+          <h3>分析预览</h3>
+          <div class="zq-ap-preview">上传录像预览 · overlay.mp4</div>
+        </div>
+        <div class="zq-ap-card">
+          <h3>当前步骤</h3>
+          <p class="zq-ap-file">overlay.mp4</p>
+          <p class="zq-ap-step-line">识别动作 · 28%</p>
+          <p class="zq-ap-hint">全部大约还要 10 分钟。关掉页面也不会中断，回来可继续查看进度。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
