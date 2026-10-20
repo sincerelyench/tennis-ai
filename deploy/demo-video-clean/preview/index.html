@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 干净示范预览</title>
+  <style>
+    body { margin: 0; font-family: "PingFang SC", "Noto Sans SC", sans-serif; background: linear-gradient(160deg, #ecfeff, #f8fafc 55%); color: #0f172a; }
+    header { padding: 1rem 1.25rem; display: flex; align-items: center; gap: .6rem; }
+    .mark { width: 28px; height: 28px; border-radius: 8px; background: #0d9488; }
+    h1 { font-size: 1.15rem; margin: 0; }
+    main { max-width: 720px; margin: 0 auto; padding: 0 1rem 2rem; }
+    label { display: block; font-size: .85rem; color: #334155; margin: 1rem 0 .35rem; }
+    select { width: 100%; padding: .65rem .75rem; border-radius: 10px; border: 1px solid #99f6e4; background: #fff; font-size: 1rem; }
+    .frame { position: relative; padding-top: 56.25%; margin-top: 1rem; border-radius: 12px; overflow: hidden; background: #0b1220; }
+    .frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  </style>
+</head>
+<body>
+  <header><div class="mark"></div><h1>涨球</h1></header>
+  <main>
+    <label for="stroke">技术</label>
+    <select id="stroke">
+      <option value="BV1knqeB4EpG">正手上旋</option>
+      <option value="BV1Gy4y1a7zj">反手上旋</option>
+      <option value="BV13t411K7Kw">发球</option>
+    </select>
+    <div class="frame" data-clean-demo="1">
+      <iframe id="player" title="示范" allowfullscreen
+        src="https://player.bilibili.com/player.html?bvid=BV1knqeB4EpG&high_quality=1&danmaku=0&autoplay=0&as_wide=1"></iframe>
+    </div>
+  </main>
+  <script>
+    const sel = document.getElementById('stroke');
+    const iframe = document.getElementById('player');
+    sel.addEventListener('change', () => {
+      iframe.src = 'https://player.bilibili.com/player.html?bvid=' + sel.value + '&high_quality=1&danmaku=0&autoplay=0&as_wide=1';
+    });
+  </script>
+</body>
+</html>

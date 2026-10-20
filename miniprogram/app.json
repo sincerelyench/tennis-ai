@@ -4,7 +4,8 @@
     "pages/guide/guide",
     "pages/upload/upload",
     "pages/queue/queue",
-    "pages/result/result"
+    "pages/result/result",
+    "pages/star-demo-embed/star-demo-embed"
   ],
   "window": {
     "navigationBarTitleText": "涨球",
