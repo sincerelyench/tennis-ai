@@ -13,7 +13,7 @@ Remove the search UX only. Keep ladder + friend list.
 
 - Title + `{n} friends · Wuxi area` / `位球友 · 无锡一带`
 - Local ladder (singles/doubles) and `rateLadder`
-- Friend rows (avatar, NTRP, place, stroke chips)
+- Friend rows (avatar, UTR seed, place, stroke chips)
 - Brand **涨球**; coach name elsewhere stays **掌球教练**
 
 `apply-on-server.sh` performs the surgical edit when the file exists; this note is the human checklist.
