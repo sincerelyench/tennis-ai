@@ -1,6 +1,7 @@
 const AUTH = "zq_auth"
 const GUIDE = "zq_guide"
 const VIDEO = "zq_video"
+const DEFAULT_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
 function read(key) {
   try {
@@ -11,10 +12,14 @@ function read(key) {
 }
 
 function saveAuth(payload) {
+  const ttlSec = Number(payload.expires_in)
+  const ttlMs = ttlSec > 0 ? ttlSec * 1000 : DEFAULT_TTL_MS
   const record = {
     token: payload.token,
-    userId: payload.user && payload.user.id,
-    expiresAt: Date.now() + Number(payload.expires_in || 0) * 1000,
+    phone: payload.phone || "",
+    role: payload.role || "player",
+    userId: (payload.user && payload.user.id) || payload.phone || "",
+    expiresAt: Date.now() + ttlMs,
   }
   wx.setStorageSync(AUTH, record)
   return record

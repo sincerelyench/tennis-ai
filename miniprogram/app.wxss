@@ -48,8 +48,19 @@ page {
 }
 .primary { background: #d6e35a; color: #142117; font-weight: 700; }
 .ghost { border: 1px solid #2d4a3a; color: #eef6ee; }
-.row { display: flex; gap: 16rpx; }
+.row { display: flex; gap: 16rpx; align-items: stretch; }
 .row .ghost { flex: 1; margin-top: 20rpx; }
+.row .field.flex { flex: 1; margin: 0; }
+.row .ghost.send {
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding: 20rpx 22rpx;
+  max-width: 46%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 24rpx;
+}
 .check {
   display: flex;
   gap: 20rpx;
