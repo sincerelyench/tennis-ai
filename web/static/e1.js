@@ -239,6 +239,29 @@
     return text("queue.unknown");
   }
 
+  function queueStepsMarkup(job) {
+    const cur = Math.max(0, Number(job && job.step) || 0);
+    const etaSteps = (job && job.eta_steps) || [];
+    const rows = [1, 2, 3, 4, 5].map((n) => {
+      const fallback = text("queue.steps." + n + ".name");
+      const blurb = text("queue.steps." + n + ".blurb");
+      const etaFallback = text("queue.steps." + n + ".eta");
+      const fromApi = etaSteps.find((s) => Number(s.step) === n) || {};
+      const name = fromApi.name || fallback;
+      const eta = fromApi.label || etaFallback;
+      const cls = n < cur ? "done" : n === cur ? "on" : "";
+      return (
+        '<div class="step ' + cls + '">' +
+        "<b>" + n + ". " + esc(name) + "</b>" +
+        esc(blurb) +
+        '<span class="eta">' + esc(eta) + "</span>" +
+        "</div>"
+      );
+    }).join("");
+    return '<div class="steps" data-analyze-steps="true">' + rows + "</div>";
+  }
+
+
   function queueView(route) {
     const job = state.job;
     const status = job && job.status ? job.status : "unknown";
@@ -250,13 +273,32 @@
     const server = job && (status === "error" || status === "cancelled") && job.message
       ? '<p class="error"><strong>' + esc(text("queue.serverDetail")) + "</strong><br />" + esc(job.message) + "</p>"
       : "";
+    const pct = Math.max(0, Math.min(100, Number(job && job.progress) || 0));
+    const stepName = (job && job.step_name) || statusLabel(status);
+    const etaHint = (job && job.eta_hint) || "";
+    const progressBlock = terminal
+      ? ""
+      : (
+        queueStepsMarkup(job) +
+        '<div class="progress-track" aria-hidden="true"><i style="width:' + pct + '%"></i></div>' +
+        '<p class="lead">' + esc(job && job.message ? job.message : statusLabel(status)) + "</p>" +
+        '<div class="live">' +
+        '<div class="mini"><h3>' + esc(text("queue.currentStep")) + "</h3>" +
+        '<p class="sub">' + esc(job && job.source_name ? job.source_name : "") + "</p>" +
+        "<p>" + esc(text("queue.stepPct", { name: stepName, pct: pct })) + "</p>" +
+        (etaHint
+          ? '<p class="hint">' + esc(etaHint) + "</p>"
+          : '<p class="hint">' + esc(text("queue.leaveHint")) + "</p>") +
+        "</div></div>"
+      );
     return (
       header() +
-      '<section class="card">' +
+      '<section class="card" data-analyze-progress="true">' +
       '<p class="kicker">' + esc(text("queue.title")) + "</p>" +
-      "<h1>" + (terminal ? "" : '<span class="pulse"></span>') + esc(statusLabel(status)) + "</h1>" +
+      "<h1>" + (terminal ? "" : '<span class="pulse"></span>') + esc(statusLabel(status)) +
+      (terminal ? "" : " · " + pct + "%") + "</h1>" +
       '<p class="jobid">' + esc(text("queue.jobId", { id: (job && job.id) || route.job || "—" })) + "</p>" +
-      (terminal ? "" : '<p class="hint">' + esc(text("queue.polling")) + "</p>") +
+      progressBlock +
       guideLine +
       (status === "done" ? '<p class="sub">' + esc(text("queue.doneHint")) + "</p>" : "") +
       server +

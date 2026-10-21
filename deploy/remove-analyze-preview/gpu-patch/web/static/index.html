@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>网球挥拍测评 2.0</title>
+  <style>
+    :root {
+      --bg: #07110c;
+      --panel: rgba(18, 32, 26, .72);
+      --line: #2d4a3a;
+      --text: #eef6ee;
+      --muted: #8ea196;
+      --ball: #d4e157;
+      --ball-2: #9ccc3c;
+      --gold: #e0b25c;
+      --good: #5dcea2;
+      --warn: #e0b25c;
+      --bad: #e07a7a;
+      --paper: #f3eee3;
+      --ink: #15231c;
+      --ink-muted: #5c6b62;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font: 15px/1.6 "PingFang SC", "Noto Sans SC", "Hiragino Sans GB", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 480px at 85% -8%, rgba(212,225,87,.16), transparent 55%),
+        radial-gradient(700px 420px at -10% 110%, rgba(31,90,64,.35), transparent 50%),
+        linear-gradient(180deg, #08140e, #050a08 40%, #07110c);
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        linear-gradient(rgba(212,225,87,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(212,225,87,.05) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse at 50% 20%, #000 30%, transparent 75%);
+      animation: gridDrift 28s linear infinite;
+    }
+    @keyframes gridDrift {
+      from { background-position: 0 0, 0 0; }
+      to { background-position: 48px 48px, 48px 48px; }
+    }
+    .orb {
+      position: fixed; width: 18px; height: 18px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #f6ffb0, var(--ball) 45%, #6a8a20);
+      box-shadow: 0 0 18px rgba(212,225,87,.55);
+      pointer-events: none; z-index: 1;
+      animation: floatBall 9s ease-in-out infinite;
+    }
+    .orb.b2 { width: 10px; height: 10px; animation-duration: 13s; animation-delay: -4s; opacity: .7; }
+    @keyframes floatBall {
+      0%, 100% { transform: translate(6vw, 12vh); }
+      40% { transform: translate(78vw, 22vh); }
+      70% { transform: translate(40vw, 8vh); }
+    }
+    .wrap { position: relative; z-index: 2; max-width: 1120px; margin: 0 auto; padding: 28px 22px 80px; }
+    header.hero { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin-bottom: 28px; }
+    .brand {
+      display: inline-flex; align-items: center; gap: 8px;
+      letter-spacing: .2em; font-size: 11px; color: var(--ball); text-transform: uppercase;
+    }
+    .ver {
+      letter-spacing: .08em; font-size: 10px; color: #15200f; background: var(--ball);
+      border-radius: 999px; padding: 2px 8px; font-weight: 700;
+      box-shadow: 0 0 16px rgba(212,225,87,.45);
+    }
+    h1 { margin: 8px 0 6px; font-size: 34px; font-weight: 650; letter-spacing: -.03em; }
+    .sub { margin: 0; color: var(--muted); max-width: 640px; }
+    .ghost {
+      background: rgba(255,255,255,.04); color: var(--muted); border: 1px solid var(--line);
+      border-radius: 999px; padding: 8px 14px; cursor: pointer; font: inherit;
+      backdrop-filter: blur(8px);
+    }
+    .drop {
+      border: 1px dashed #3d5347; border-radius: 22px; padding: 40px 28px;
+      background: linear-gradient(180deg, rgba(21,40,30,.75), rgba(12,20,16,.8));
+      text-align: center; backdrop-filter: blur(14px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.28), inset 0 1px 0 rgba(212,225,87,.08);
+      transition: border-color .2s, box-shadow .2s, transform .2s;
+    }
+    .drop.over {
+      border-color: var(--ball);
+      box-shadow: 0 0 0 1px rgba(212,225,87,.35), 0 24px 70px rgba(212,225,87,.12);
+      transform: translateY(-2px);
+    }
+    .drop h2 { margin: 0 0 8px; font-size: 22px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 18px; }
+    select, .btn {
+      font: inherit; border-radius: 999px; padding: 10px 16px; border: 1px solid var(--line);
+      background: var(--panel); color: var(--text);
+    }
+    .btn.primary {
+      background: linear-gradient(180deg, #e4f36a, var(--ball));
+      color: #15200f; border-color: transparent; font-weight: 700; cursor: pointer;
+      box-shadow: 0 8px 24px rgba(212,225,87,.28);
+      animation: pulseGlow 2.6s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 8px 24px rgba(212,225,87,.25); }
+      50% { box-shadow: 0 8px 32px rgba(212,225,87,.5); }
+    }
+    .btn { cursor: pointer; }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 14px; }
+    .hist {
+      margin-top: 28px;
+    }
+    .hist-head {
+      display: flex; justify-content: space-between; gap: 16px; align-items: baseline;
+      margin-bottom: 12px;
+    }
+    .hist-head h2 { margin: 0; font-size: 18px; font-weight: 650; }
+    .hist-head p { margin: 0; color: var(--muted); font-size: 13px; }
+    .hist-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px;
+    }
+    .hist-card {
+      display: block; width: 100%; padding: 0; text-align: left; font: inherit; color: inherit;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+      cursor: pointer; backdrop-filter: blur(12px);
+    }
+    .hist-card:hover { border-color: var(--ball); box-shadow: 0 0 18px rgba(212,225,87,.12); }
+    .hist-card .thumb {
+      width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: #0a120e;
+    }
+    .hist-card .body { padding: 12px 14px 14px; }
+    .hist-card .name {
+      font-size: 13px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hist-card .meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .hist-card .row-score {
+      display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; gap: 8px;
+    }
+    .hist-card .score { font-size: 22px; font-weight: 700; color: var(--ball); letter-spacing: -.03em; }
+    .hist-card .grade { font-size: 12px; color: var(--gold); }
+    .hist-empty { color: var(--muted); font-size: 13px; padding: 18px 4px; }
+    .pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0 0; }
+    .pillar {
+      text-align: left; padding: 12px 14px; border-radius: 14px;
+      border: 1px solid rgba(45,74,58,.8); background: rgba(10,20,15,.45);
+      font-size: 12px; color: var(--muted);
+    }
+    .pillar b { display: block; color: var(--text); font-size: 13px; margin-bottom: 4px; }
+    .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 22px 0; }
+    .step {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px;
+      color: var(--muted); font-size: 12px; backdrop-filter: blur(10px);
+    }
+    .step b { display: block; color: var(--text); font-size: 13px; margin-bottom: 4px; }
+    .step.on { border-color: var(--ball); color: #cfe39a; box-shadow: 0 0 18px rgba(212,225,87,.15); }
+    .step .eta { display: block; margin-top: 6px; font-size: 11px; opacity: .85; }
+    .progress {
+      height: 8px; background: #223028; border-radius: 99px; overflow: hidden; margin: 8px 0 18px;
+    }
+    .progress > i {
+      display: block; height: 100%; width: 0;
+      background: linear-gradient(90deg, #7fa83a, var(--ball), #fff4a0);
+      background-size: 200% 100%;
+      animation: barShine 1.6s linear infinite;
+      transition: width .35s;
+    }
+    @keyframes barShine { to { background-position: 200% 0; } }
+    .live { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px;
+      backdrop-filter: blur(12px);
+    }
+    .card h3 { margin: 0 0 10px; font-size: 14px; }
+    .preview-box {
+      width: 100%; aspect-ratio: 16/10; background: #000; border-radius: 10px; overflow: hidden;
+      position: relative;
+    }
+    .preview-box::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: repeating-linear-gradient(180deg, transparent, transparent 3px, rgba(212,225,87,.04) 4px);
+      animation: scan 3.5s linear infinite;
+    }
+    @keyframes scan { from { transform: translateY(-20%); } to { transform: translateY(20%); } }
+    .preview { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .paper {
+      background: var(--paper); color: var(--ink); border-radius: 20px; padding: 36px 40px 48px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.4);
+      animation: riseIn .55s ease;
+    }
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: none; }
+    }
+    .paper h1, .paper h2, .paper h3 { color: var(--ink); }
+    .cover {
+      display: grid; grid-template-columns: 1.3fr .7fr; gap: 28px; padding-bottom: 28px;
+      border-bottom: 1px solid #ddd4c4; margin-bottom: 28px;
+    }
+    .kicker { letter-spacing: .2em; font-size: 11px; color: #8a7040; }
+    .paper h1 { font-family: Palatino, "Iowan Old Style", "Songti SC", serif; font-size: 34px; margin: 6px 0 8px; }
+    .meta { color: var(--ink-muted); font-size: 13px; }
+    .score-ring {
+      width: 176px; height: 176px; border-radius: 50%; margin: 0 auto;
+      display: grid; place-items: center; color: var(--paper);
+      background: conic-gradient(var(--gold) calc(var(--p) * 1%), #d9d0c0 0);
+      animation: spinIn 1.1s ease;
+    }
+    @keyframes spinIn { from { filter: saturate(.4); transform: scale(.92); } to { filter: none; transform: none; } }
+    .score-ring .inner {
+      width: 132px; height: 132px; border-radius: 50%; background: var(--paper); color: var(--ink);
+      display: grid; place-items: center; text-align: center;
+    }
+    .score-ring .n { font-size: 42px; font-weight: 700; line-height: 1; }
+    .score-ring .g { font-size: 12px; color: #8a7040; letter-spacing: .12em; }
+    .axis-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 8px 0 22px; }
+    .speed-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 8px 0 8px; }
+    .speed {
+      background: #fffdf8; border: 1px solid #e6dccb; border-radius: 14px; padding: 12px 14px;
+    }
+    .speed .lab { font-size: 12px; color: var(--ink-muted); }
+    .speed .val { font-size: 22px; font-weight: 700; margin: 4px 0 0; letter-spacing: -.03em; }
+    .speed .val .unit { font-size: 12px; font-weight: 600; color: var(--ink-muted); margin-left: 4px; }
+    .speed-note { color: var(--ink-muted); font-size: 12px; margin: 0 0 22px; }
+    .axis {
+      background: #fffdf8; border: 1px solid #e6dccb; border-radius: 14px; padding: 12px 14px;
+    }
+    .axis .lab { font-size: 12px; color: var(--ink-muted); }
+    .axis .val { font-size: 22px; font-weight: 700; margin: 4px 0 8px; }
+    .axis .track { height: 6px; background: #e5dccb; border-radius: 99px; overflow: hidden; }
+    .axis .track i {
+      display: block; height: 100%; width: 0; background: linear-gradient(90deg, #1f4a38, #c9a24a);
+      transition: width .8s ease;
+    }
+    .scores { display: grid; grid-template-columns: 220px 1fr; gap: 24px; margin: 8px 0 28px; }
+    .bars .bar { display: grid; grid-template-columns: 78px 1fr 36px; gap: 8px; align-items: center; margin: 8px 0; font-size: 13px; }
+    .bars .track { height: 8px; background: #e5dccb; border-radius: 99px; overflow: hidden; }
+    .bars .track i { display: block; height: 100%; background: #1f4a38; }
+    .grid2 { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; }
+    .panel {
+      background: #fffdf8; border: 1px solid #e6dccb; border-radius: 12px; padding: 14px 16px;
+    }
+    .panel h3 { margin: 0 0 8px; font-size: 14px; }
+    .improve { margin: 14px 0 18px; }
+    .improve p.focus { margin: 0 0 10px; font-weight: 650; }
+    svg.chart { width: 100%; height: 150px; display: block; }
+    ul { margin: 0; padding-left: 18px; }
+    li { margin: 6px 0; }
+    .tabs { display: flex; gap: 8px; margin: 8px 0 14px; }
+    .tab {
+      border: 1px solid #d9d0c0; background: transparent; border-radius: 999px; padding: 6px 14px;
+      cursor: pointer; font: inherit; color: var(--ink-muted);
+    }
+    .tab.on { background: #1f4a38; color: #f4efe4; border-color: #1f4a38; }
+    .swing { border: 1px solid #e6dccb; border-radius: 12px; overflow: hidden; background: #fffdf8; margin-top: 12px; }
+    .swing .barline {
+      display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 8px 12px; font-size: 12px; color: var(--ink-muted);
+      border-bottom: 1px solid #eee6d8;
+    }
+    .stroke-pick {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 8px 6px 14px; border-radius: 999px;
+      border: 1px solid var(--line); background: var(--panel);
+    }
+    .stroke-pick span { font-size: 13px; color: var(--muted); white-space: nowrap; }
+    .stroke-pick select { border: 0; background: transparent; padding: 6px 10px 6px 0; }
+    .phases { display: grid; grid-template-columns: repeat(4, 1fr); }
+    .phases figure { margin: 0; }
+    .phases img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: #111; }
+    .phases figcaption { font-size: 11px; color: var(--ink-muted); padding: 6px 8px 10px; }
+    .swing.issue { border-color: #e8b4b4; }
+    .swing.issue .barline { background: #faf2f0; }
+    .swing-media {
+      display: grid; grid-template-columns: 1.45fr .55fr; background: #111;
+    }
+    .swing-media.solo { grid-template-columns: 1fr; }
+    .swing-play { min-width: 0; }
+    video.swing-clip { width: 100%; max-height: 320px; display: block; background: #000; }
+    .clip-cap { margin: 0; padding: 6px 10px 8px; font-size: 11px; color: #c8d4c8; background: #111; }
+    .contact-still { margin: 0; background: #111; }
+    .contact-still img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; background: #111; }
+    .contact-still figcaption { font-size: 11px; color: #c8d4c8; padding: 6px 8px 10px; }
+    .pill { font-size: 11px; border: 1px solid #d9d0c0; border-radius: 999px; padding: 2px 8px; }
+    .pill.bad { color: #a33; border-color: #e8b4b4; }
+    .pill.ok { color: #1f4a38; border-color: #b7d4c4; }
+    .hit-meta { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px 10px; }
+    .legend { font-size: 12px; color: var(--ink-muted); margin: 8px 0 0; }
+    .legend b { color: #c23; }
+    .legend i { color: #1aa; font-style: normal; font-weight: 650; }
+    .actions { display: flex; gap: 8px; justify-content: flex-end; margin: 0 0 16px; }
+    .note { color: var(--ink-muted); font-size: 12px; margin-top: 22px; }
+    .hidden { display: none !important; }
+    video.overlay { width: 100%; border-radius: 12px; background: #000; max-height: 360px; }
+    @media (max-width: 860px) {
+      .cover, .scores, .grid2, .live, .steps, .phases, .pillars, .axis-grid, .speed-grid, .swing-media { grid-template-columns: 1fr 1fr; }
+      .paper { padding: 22px 16px 32px; }
+      header.hero { flex-direction: column; align-items: flex-start; }
+      .hist-grid { grid-template-columns: 1fr 1fr; }
+      .steps { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .pillars, .axis-grid, .phases, .speed-grid, .hist-grid, .swing-media { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: white; }
+      .no-print, .orb, body::before { display: none !important; }
+      .paper { box-shadow: none; padding: 0; animation: none; }
+      .wrap { padding: 0; max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb no-print"></div>
+  <div class="orb b2 no-print"></div>
+  <div class="wrap">
+    <header class="hero no-print">
+      <div>
+        <div class="brand">网球测评 <span class="ver">2.0</span></div>
+        <h1>上传视频，生成挥拍测评报告</h1>
+        <p class="sub">先选自己的水平，再上传录像。同样是击球点偏晚，2.0 和 5.0 的原因完全不同，建议会按你选的等级来写。</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="ghost" id="hist-btn" type="button">历史报告</button>
+        <button class="ghost" id="again" type="button" hidden>再分析一段</button>
+      </div>
+    </header>
+
+    <section id="upload" class="no-print">
+      <div class="drop" id="drop">
+        <h2>把训练视频拖到这里</h2>
+        <p class="sub" style="margin:0 auto">建议侧面拍摄，人尽量完整入画。先选自己的水平和这段是正手还是反手，再上传 1 分钟左右的录像。</p>
+        <div class="row">
+          <label class="stroke-pick">
+            <span>我的水平</span>
+            <select id="level">
+              <option value="2.0">2.0 入门 · 刚能打到球</option>
+              <option value="2.5">2.5 初级 · 能对打几拍</option>
+              <option value="3.0" selected>3.0 进阶初级 · 能稳定对拉</option>
+              <option value="3.5">3.5 中级 · 能变线进攻</option>
+              <option value="4.0">4.0 中高级 · 比赛有套路</option>
+              <option value="4.5">4.5 高级 · 能主动变化</option>
+              <option value="5.0">5.0 准专业 · 接近竞技</option>
+            </select>
+          </label>
+          <label class="stroke-pick">
+            <span>这段录像是</span>
+            <select id="stroke">
+              <option value="forehand" selected>正手</option>
+              <option value="backhand">反手</option>
+              <option value="auto">自动识别（容易误判）</option>
+            </select>
+          </label>
+          <button class="btn" id="pick" type="button">选择文件</button>
+          <button class="btn primary" id="sample" type="button">分析 1 分钟样例</button>
+          <button class="btn" id="sample-refresh" type="button">重新跑样例</button>
+        </div>
+        <p class="hint" id="busy" hidden></p>
+        <input id="file" type="file" accept="video/mp4,video/quicktime,video/webm" hidden />
+        <p class="hint">支持 mp4 / mov / webm。水平按 NTRP，选最接近自己的一档：2.0 刚能碰到球，3.0 能稳定对拉，5.0 接近竞技。选错等级，建议会不准。请先选正手或反手，系统按你选的来评。样例会分析前 60 秒；平常点「分析样例」会打开上次同等级结果，改算法后点「重新跑样例」，大约要 6 分钟。</p>
+        <div class="pillars">
+          <div class="pillar"><b>重心</b>越稳越好，尽量保持低重心</div>
+          <div class="pillar"><b>击球点</b>胸口高度、持拍侧稍外、身前约 45°</div>
+          <div class="pillar"><b>动力链</b>身体先动、手臂后到，避免伤病</div>
+          <div class="pillar"><b>击球效果</b>看拍头速度（画面估算）和旋转轨迹</div>
+        </div>
+      </div>
+      <section class="hist" id="history">
+        <div class="hist-head">
+          <h2>历史报告</h2>
+          <p>每次分析都会保存在本机 <code>outputs/reports</code>，方便对比不同角度和画质。</p>
+        </div>
+        <div class="hist-grid" id="history-list"><p class="hist-empty">正在读取历史报告…</p></div>
+      </section>
+    </section>
+
+    <section id="analyzing" class="hidden no-print">
+      <div class="steps" id="steps"></div>
+      <div class="progress"><i id="bar"></i></div>
+      <p id="msg" class="sub">准备中…</p>
+      <div class="live">
+        <div class="card">
+          <h3>当前步骤</h3>
+          <p id="detail" style="margin:0;color:var(--muted)"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="report" class="hidden"></section>
+  </div>
+
+  <script>
+    const STEPS = [
+      ["读取视频", "打开你的录像", "约 15 秒"],
+      ["识别动作", "看清挥拍动作", "约 3–4 分钟"],
+      ["找出挥拍", "标出每一次击球", "约 30 秒"],
+      ["整理数据", "整理评分依据", "约 1 分钟"],
+      ["教练点评", "生成练习建议", "约 2 分钟，最慢"],
+    ];
+    const JOB_KEY = "tennis-ai-active-job";
+    const LEVEL_KEY = "tennis-ai-player-level";
+    const AXES = [
+      ["重心", 25],
+      ["击球点", 20],
+      ["动力链", 30],
+      ["击球效果", 25],
+    ];
+    const $ = (id) => document.getElementById(id);
+    const upload = $("upload"), analyzing = $("analyzing"), reportEl = $("report");
+    const drop = $("drop"), file = $("file");
+
+    function paintSteps(step, etaSteps) {
+      $("steps").innerHTML = STEPS.map((s, i) => {
+        const n = i + 1;
+        const cls = n < step ? "done" : n === step ? "on" : "";
+        const eta = (etaSteps && etaSteps[i] && etaSteps[i].label) || s[2];
+        return `<div class="step ${cls}"><b>${n}. ${s[0]}</b>${s[1]}<span class="eta">${esc(eta)}</span></div>`;
+      }).join("");
+    }
+    paintSteps(0);
+
+    function saveJob(id) {
+      try { localStorage.setItem(JOB_KEY, id); } catch (e) {}
+    }
+    function clearJob() {
+      try { localStorage.removeItem(JOB_KEY); } catch (e) {}
+    }
+
+    function currentLevel() {
+      const el = $("level");
+      return el && el.value ? el.value : "3.0";
+    }
+    function restoreLevel() {
+      const el = $("level");
+      if (!el) return;
+      try {
+        const saved = localStorage.getItem(LEVEL_KEY);
+        if (saved && el.querySelector('option[value="' + saved + '"]')) el.value = saved;
+      } catch (e) {}
+      el.onchange = () => {
+        try { localStorage.setItem(LEVEL_KEY, el.value); } catch (e) {}
+      };
+    }
+    restoreLevel();
+
+    $("pick").onclick = () => file.click();
+    $("again").onclick = () => goHome();
+    $("hist-btn").onclick = () => {
+      goHome();
+      const el = $("history");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
+
+    function goHome() {
+      clearJob();
+      reportEl.classList.add("hidden");
+      analyzing.classList.add("hidden");
+      upload.classList.remove("hidden");
+      $("again").hidden = true;
+      try { history.replaceState(null, "", location.pathname); } catch (e) {}
+      loadHistory();
+    }
+    window.goHome = goHome;
+
+    function fmtWhen(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      const p = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+
+    async function loadHistory() {
+      const box = $("history-list");
+      if (!box) return;
+      try {
+        const res = await fetch("api/history");
+        if (!res.ok) throw new Error("bad");
+        const data = await res.json();
+        const items = data.items || [];
+        if (!items.length) {
+          box.innerHTML = `<p class="hist-empty">还没有历史报告。分析一段就会出现在这里，也会写入本机 outputs/reports。</p>`;
+          return;
+        }
+        box.innerHTML = items.map((it) => {
+          const score = it.score == null ? "—" : it.score;
+          const grade = [it.grade, it.grade_label].filter(Boolean).join(" · ");
+          const bits = [
+            it.player_level_label || it.player_level || "",
+            it.view_label,
+            it.handedness_label,
+            it.n_swings != null ? it.n_swings + " 拍" : "",
+          ].filter(Boolean);
+          const img = it.has_preview
+            ? `<img class="thumb" src="api/jobs/${encodeURIComponent(it.id)}/preview" alt="" />`
+            : `<div class="thumb"></div>`;
+          const sample = it.is_sample ? `<span class="pill ok">样例</span>` : "";
+          return `<button class="hist-card" type="button" data-id="${esc(it.id)}">
+            ${img}
+            <div class="body">
+              <div class="name">${esc(it.source_name || it.title || it.id)} ${sample}</div>
+              <div class="meta">${esc(bits.join(" · "))}</div>
+              <div class="row-score"><span class="score">${esc(score)}</span><span class="grade">${esc(grade)}</span></div>
+              <div class="meta">${esc(fmtWhen(it.created_at))}</div>
+            </div>
+          </button>`;
+        }).join("");
+        box.querySelectorAll(".hist-card").forEach((btn) => {
+          btn.onclick = () => openHistory(btn.dataset.id);
+        });
+      } catch (e) {
+        box.innerHTML = `<p class="hist-empty">暂时读不到历史报告。</p>`;
+      }
+    }
+
+    async function openHistory(id) {
+      if (!id) return false;
+      const r = await fetch("api/jobs/" + encodeURIComponent(id) + "/report");
+      if (!r.ok) return false;
+      try {
+        showReport(await r.json(), id);
+        return true;
+      } catch (e) {
+        reportEl.classList.remove("hidden");
+        upload.classList.add("hidden");
+        analyzing.classList.add("hidden");
+        $("again").hidden = false;
+        reportEl.innerHTML = `<div class="actions no-print"><button class="btn" type="button" onclick="window.goHome()">返回列表</button></div><p class="sub">这份报告打不开，请返回列表再试，或重新分析。</p>`;
+        return false;
+      }
+    }
+    drop.ondragleave = () => drop.classList.remove("over");
+    drop.ondrop = (e) => {
+      e.preventDefault(); drop.classList.remove("over");
+      if (e.dataTransfer.files[0]) startUpload(e.dataTransfer.files[0]);
+    };
+    file.onchange = () => { if (file.files[0]) startUpload(file.files[0]); };
+    $("sample").onclick = () => startUpload(null, true);
+    $("sample-refresh").onclick = () => startUpload(null, true, true);
+    window.rerunSample = () => startUpload(null, true, true);
+
+    async function startUpload(f, sample=false, refresh=false) {
+      const fd = new FormData();
+      fd.append("stroke", $("stroke").value);
+      fd.append("level", currentLevel());
+      fd.append("sample", sample ? "1" : "0");
+      fd.append("refresh", refresh ? "1" : "0");
+      if (f) fd.append("video", f);
+      const busy = $("busy");
+      if (busy) { busy.hidden = true; busy.textContent = ""; }
+      if (!sample || refresh) {
+        reportEl.classList.add("hidden");
+        upload.classList.add("hidden");
+        analyzing.classList.remove("hidden");
+        paintSteps(1);
+        $("msg").textContent = refresh ? "正在重新分析样例…" : "正在提交任务…";
+      }
+      const res = await fetch("api/analyze", { method: "POST", body: fd });
+      if (!res.ok) {
+        let msg = "提交失败，请稍后再试";
+        try {
+          const body = await res.json();
+          msg = body.detail || msg;
+        } catch (e) {}
+        upload.classList.remove("hidden");
+        analyzing.classList.add("hidden");
+        $("again").hidden = true;
+        if (busy) {
+          busy.hidden = false;
+          busy.textContent = msg;
+        } else {
+          $("msg").textContent = msg;
+        }
+        return;
+      }
+      const { job_id, cached } = await res.json();
+      if (cached) {
+        clearJob();
+        upload.classList.add("hidden");
+        analyzing.classList.add("hidden");
+        const r = await fetch("api/jobs/" + job_id + "/report");
+        const data = await r.json();
+        showReport(data, job_id);
+        loadHistory();
+        return;
+      }
+      saveJob(job_id);
+      upload.classList.add("hidden");
+      analyzing.classList.remove("hidden");
+      paintSteps(1);
+      $("msg").textContent = "正在提交任务…";
+      poll(job_id);
+    }
+
+    async function poll(id) {
+      saveJob(id);
+      const res = await fetch("api/jobs/" + id);
+      if (!res.ok) {
+        clearJob();
+        $("msg").textContent = "任务不存在，请重新分析";
+        $("again").hidden = false;
+        return;
+      }
+      const job = await res.json();
+      $("bar").style.width = (job.progress || 0) + "%";
+      paintSteps(job.step || 1, job.eta_steps);
+      $("msg").textContent = job.message || "";
+      $("detail").innerHTML = `
+        ${esc(job.source_name || "")}<br/>
+        ${esc(job.step_name || "分析中")} · ${job.progress || 0}%<br/>
+        <span>${esc(job.eta_hint || "")}</span>`;
+      if (job.status === "done") {
+        clearJob();
+        const r = await fetch("api/jobs/" + id + "/report");
+        const data = await r.json();
+        showReport(data, id);
+        loadHistory();
+        return;
+      }
+      if (job.status === "error" || job.status === "cancelled") {
+        clearJob();
+        $("msg").textContent = "分析失败：" + (job.message || job.error || "请稍后重试");
+        $("again").hidden = false;
+        return;
+      }
+      setTimeout(() => poll(id), 700);
+    }
+
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+    }
+
+    function radar(scores) {
+      const axes = AXES;
+      const cx = 100, cy = 100, r = 78;
+      const pts = axes.map((a, i) => {
+        const ang = -Math.PI / 2 + i * (2 * Math.PI / axes.length);
+        const v = (scores[a[0]] || 0) / a[1];
+        return [cx + Math.cos(ang) * r * v, cy + Math.sin(ang) * r * v];
+      });
+      const grid = [0.4, 0.7, 1].map((k) => {
+        const g = axes.map((a, i) => {
+          const ang = -Math.PI / 2 + i * (2 * Math.PI / axes.length);
+          return `${cx + Math.cos(ang) * r * k},${cy + Math.sin(ang) * r * k}`;
+        }).join(" ");
+        return `<polygon points="${g}" fill="none" stroke="#e5dccb" />`;
+      }).join("");
+      const labels = axes.map((a, i) => {
+        const ang = -Math.PI / 2 + i * (2 * Math.PI / axes.length);
+        const x = cx + Math.cos(ang) * 92;
+        const y = cy + Math.sin(ang) * 92;
+        return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="#5c6b62">${a[0]}</text>`;
+      }).join("");
+      return `<svg viewBox="0 0 200 200" width="220" height="220">${grid}
+        <polygon points="${pts.map(p => p.join(",")).join(" ")}" fill="rgba(31,74,56,.25)" stroke="#1f4a38" stroke-width="1.6"/>
+        ${labels}</svg>`;
+    }
+
+    function chart(series, swings) {
+      const w = 640, h = 150, pad = 18;
+      const ys = ((series && series.wrist_speed) || []).map((v) => v == null ? 0 : v);
+      if (!ys.length) return "<p class='note'>没有挥拍节奏数据</p>";
+      const max = Math.max(...ys, 1);
+      const xs = series.t;
+      const x0 = xs[0], x1 = xs[xs.length - 1] || 1;
+      const nx = (t) => pad + ((t - x0) / (x1 - x0)) * (w - pad * 2);
+      const ny = (v) => h - pad - (v / max) * (h - pad * 2);
+      let d = "";
+      ys.forEach((v, i) => { d += `${i ? "L" : "M"}${nx(xs[i]).toFixed(1)},${ny(v).toFixed(1)} `; });
+      const marks = (swings || []).map((s) => {
+        const x = nx(s.t != null ? s.t : s.contact_t);
+        const color = s.stroke === "forehand" ? "#1f4a38" : "#c9a24a";
+        return `<line x1="${x}" x2="${x}" y1="${pad}" y2="${h - pad}" stroke="${color}" stroke-width="1" opacity="0.75"/>`;
+      }).join("");
+      return `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${marks}
+        <path d="${d}" fill="none" stroke="#1f4a38" stroke-width="1.8"/></svg>
+        <div class="note">绿线为正手，金线为反手</div>`;
+    }
+
+    function fmtKmh(v) {
+      if (v == null || v === "") return "";
+      const n = Number(v);
+      if (!Number.isFinite(n)) return "";
+      return n >= 20 ? String(Math.round(n)) : n.toFixed(1);
+    }
+
+    function speedCell(lab, v) {
+      const n = fmtKmh(v);
+      const val = n ? `${n}<span class="unit"> km/h</span>` : "—";
+      return `<div class="speed"><div class="lab">${lab}</div><div class="val">${val}</div></div>`;
+    }
+
+    function speedPanel(speeds, title) {
+      if (!speeds) return "";
+      const keys = ["swing_kmh", "wrist_kmh", "hip_kmh", "ball_in_kmh", "ball_out_kmh"];
+      if (!keys.some((k) => speeds[k] != null)) return "";
+      const swingLab = speeds.swing_from === "wrist" ? "拍头·腕推算" : "拍头";
+      const maxNote = fmtKmh(speeds.swing_kmh_max);
+      return `
+        <h2 style="font-size:16px;margin:0 0 8px">${title || "速度估计"}</h2>
+        <div class="speed-grid">
+          ${speedCell(swingLab, speeds.swing_kmh)}
+          ${speedCell("手腕", speeds.wrist_kmh)}
+          ${speedCell("转髋", speeds.hip_kmh)}
+          ${speedCell("来球", speeds.ball_in_kmh)}
+          ${speedCell("出球", speeds.ball_out_kmh)}
+        </div>
+        <p class="speed-note">按身高或拍长把画面位移换成公里每小时，不是测速雷达。侧面更准，正面会偏慢。${maxNote ? "最快一拍拍头约 " + maxNote + " km/h。" : ""}</p>`;
+    }
+
+    function speedPills(s) {
+      const sp = s.speeds || {};
+      const pills = [];
+      const swing = fmtKmh(sp.swing_kmh);
+      const out = fmtKmh(sp.ball_out_kmh);
+      const hip = fmtKmh(sp.hip_kmh);
+      if (swing) pills.push(`<span class="pill ok">拍头 ${swing} km/h</span>`);
+      if (out) pills.push(`<span class="pill">出球 ${out} km/h</span>`);
+      if (hip) pills.push(`<span class="pill">转髋 ${hip} km/h</span>`);
+      return pills.join("");
+    }
+
+    function flagPills(s) {
+      const notes = s.flag_notes || [];
+      return notes.map((n) => `<span class="pill bad">${esc(n)}</span>`).join("");
+    }
+
+    function contactPill(s) {
+      const hp = s.hit_point;
+      if (hp && hp.summary) {
+        const cls = hp.ok ? "ok" : "bad";
+        return `<span class="pill ${cls}">${esc(hp.summary)}</span>`;
+      }
+      if (s.late_contact) return `<span class="pill bad">击球偏晚贴身</span>`;
+      if (s.contact_forward != null && s.contact_forward >= 0.1) return `<span class="pill ok">击球点在侧前方</span>`;
+      return `<span class="pill ok">击球时机正常</span>`;
+    }
+
+    function hitNotes(s) {
+      const hp = s.hit_point;
+      if (!hp) return "";
+      const pills = [];
+      if (hp.height_label) pills.push(`<span class="pill">高度 · ${esc(hp.height_label)}</span>`);
+      if (hp.side_label && hp.side_label.indexOf("看不清") < 0) pills.push(`<span class="pill">左右 · ${esc(hp.side_label)}</span>`);
+      if (hp.forward_label && hp.forward_label.indexOf("看不清") < 0) pills.push(`<span class="pill">前后 · ${esc(hp.forward_label)}</span>`);
+      if (hp.hand_reaches) pills.push(`<span class="pill bad">左肩应对准来球，不是左手</span>`);
+      if (hp.both_feet_off) pills.push(`<span class="pill bad">双脚同时离地</span>`);
+      if (hp.early_step) pills.push(`<span class="pill bad">随挥过肩后再上步</span>`);
+      if (!pills.length) return "";
+      return `<div class="hit-meta">${pills.join("")}</div>`;
+    }
+
+    function renderClip(clip, strokeMode) {
+      const a = clip.analysis;
+      const swings = clip.swings.map((s) => {
+        const phases = s.phases || {};
+        const seen = (s.contact_source === "ball_racket" || s.contact_source === "ball_wrist" || (s.hit_point && s.hit_point.source === "ball"))
+          ? `<span class="pill ok">已看到球</span>`
+          : "";
+        const issue = (s.flag_notes && s.flag_notes.length) || s.late_contact || (s.hit_point && s.hit_point.ok === false);
+        const issuePill = issue ? `<span class="pill bad">这一拍有问题</span>` : "";
+        const contact = phases.contact;
+        const contactFig = contact && contact.image
+          ? `<figure class="contact-still"><img src="${contact.image}" alt="击球"/><figcaption>击球定格${contact.t != null ? " · " + Number(contact.t).toFixed(2) + "s" : ""}</figcaption></figure>`
+          : "";
+        let media = "";
+        if (s.video) {
+          const t0 = s.clip_t0 != null ? Number(s.clip_t0).toFixed(1) : "";
+          const t1 = s.clip_t1 != null ? Number(s.clip_t1).toFixed(1) : "";
+          const span = t0 && t1 ? ` · ${t0}–${t1} 秒` : "";
+          const poster = contact && contact.image ? ` poster="${contact.image}"` : "";
+          media = `<div class="swing-media${contactFig ? "" : " solo"}">
+            <div class="swing-play">
+              <video class="swing-clip" src="${s.video}"${poster} controls playsinline muted loop></video>
+              <p class="clip-cap">完整挥拍${span}</p>
+            </div>
+            ${contactFig}
+          </div>`;
+        } else {
+          const figs = ["ready", "takeback", "contact", "follow"].map((k) => {
+            const p = phases[k];
+            if (!p || !p.image) return "";
+            const name = { ready: "准备", takeback: "引拍", contact: "击球", follow: "随挥" }[k];
+            const t = p.t != null ? " · " + Number(p.t).toFixed(2) + "s" : "";
+            return `<figure><img src="${p.image}" alt="${name}"/><figcaption>${name}${t}</figcaption></figure>`;
+          }).join("");
+          media = `<div class="phases">${figs}</div>`;
+        }
+        const kind = strokeMode === "auto"
+          ? (s.shot_kind === "backhand" ? `<span class="pill">反手</span>` : `<span class="pill">正手</span>`)
+          : "";
+        return `<article class="swing${issue ? " issue" : ""}">
+          <div class="barline"><span>挥拍 ${s.index} · ${s.contact_t.toFixed(1)} 秒</span>${issuePill}${kind}${seen}${contactPill(s)}${speedPills(s)}${flagPills(s)}</div>
+          ${media}
+          ${hitNotes(s)}
+        </article>`;
+      }).join("");
+      return `
+        <div class="grid2">
+          <div class="panel">
+            <h3>挥拍节奏</h3>
+            ${chart(clip.series, clip.swings.map(s => ({...s, stroke: clip.stroke})))}
+          </div>
+          <div class="panel">
+            <h3>教练点评</h3>
+            <b>优点</b>
+            <ul>${a.strengths.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+            <b>问题</b>
+            <ul>${a.problems.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>训练建议</h3>
+          <ul>${a.drills.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+        </div>
+        <div class="swings">${swings}</div>
+        <p class="legend">下面每拍是完整挥拍回放。击球定格里：<b>实心十字</b>是相对身体的击球点，<i>虚线圈</i>是理想区（胸口高度、持拍侧稍外、身前约 45°）。不判断球打在拍面哪里。</p>`;
+    }
+
+    function showReport(data, jobId) {
+      analyzing.classList.add("hidden");
+      upload.classList.add("hidden");
+      reportEl.classList.remove("hidden");
+      $("again").hidden = false;
+      if (jobId) {
+        try { history.replaceState(null, "", "?job=" + encodeURIComponent(jobId)); } catch (e) {}
+      }
+      const o = data.overall || {};
+      const sc = o.scores || {};
+      const clips = Array.isArray(data.clips) ? data.clips : [];
+      const tiles = AXES.map(([k, max]) => {
+        const v = sc[k] || 0;
+        return `<div class="axis"><div class="lab">${k} / ${max}</div><div class="val">${v}</div>
+          <div class="track"><i data-w="${(100*v/max).toFixed(1)}"></i></div></div>`;
+      }).join("");
+      const bars = AXES.map(([k, max]) => {
+        const v = sc[k] || 0;
+        return `<div class="bar"><span>${k}</span><div class="track"><i style="width:${(100*v/max).toFixed(1)}%"></i></div><b>${v}</b></div>`;
+      }).join("");
+      const modeNote = data.stroke_mode === "backhand"
+        ? " · 按反手分析"
+        : data.stroke_mode === "forehand"
+          ? " · 按正手分析"
+          : data.stroke_mode === "auto"
+            ? " · 自动识别正反手"
+            : "";
+      const levelNote = data.player_level
+        ? ` · 按 ${esc(data.player_level_label || data.player_level)} 写建议`
+        : "";
+      const pct = Math.min(100, o.score);
+      let cur = 0;
+      reportEl.innerHTML = `
+        <div class="actions no-print">
+          <button class="btn" type="button" onclick="window.goHome()">返回列表</button>
+          <button class="btn" type="button" onclick="window.rerunSample()">重新跑样例</button>
+          <button class="btn" type="button" onclick="window.print()">导出 / 打印报告</button>
+        </div>
+        <article class="paper">
+          <div class="cover">
+            <div>
+              <div class="kicker">挥拍测评报告 · 2.0${data.player_level_label ? " · " + esc(data.player_level_label) : ""}</div>
+              <h1>${esc(data.title)}</h1>
+              <p class="meta">${esc(data.source_name)} · ${data.view_label}拍摄 · ${data.handedness_label} · ${data.duration_s} 秒</p>
+              <p class="meta">识别到挥拍 ${o.n_swings} 次${modeNote}${levelNote} · 生成于 ${esc(data.generated_at)}${data.tracking && data.tracking.contact_from_ball ? " · 部分击球已按球和拍定位" : ""}</p>
+              ${data.summary ? `<p style="margin:12px 0 0">${esc(data.summary)}</p>` : ""}
+              ${data.focus ? `<p class="focus" style="margin:10px 0 0;font-weight:650">先抓：${esc(data.focus)}</p>` : ""}
+              ${data.overlay_video ? `<video class="overlay" src="${data.overlay_video}" controls playsinline style="margin-top:16px"></video>` : ""}
+            </div>
+            <div>
+              <div class="score-ring" style="--p:${pct}"><div class="inner">
+                <div><div class="n">${o.score}</div><div class="g">${o.grade} · ${o.grade_label}</div></div>
+              </div></div>
+            </div>
+          </div>
+          <h2 style="font-size:16px;margin:0 0 8px">四维评分</h2>
+          <div class="axis-grid">${tiles}</div>
+          ${speedPanel(o.speeds, "速度估计")}
+          <div class="scores">
+            <div>${radar(sc)}</div>
+            <div class="bars">${bars}</div>
+          </div>
+          ${Array.isArray(data.improvements) && data.improvements.length ? `
+          <div class="panel improve">
+            <h3>改进建议</h3>
+            <ul>${data.improvements.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+          </div>` : ""}
+          <div class="panel" style="margin-bottom:18px">
+            <h3>全程挥拍节奏</h3>
+            ${chart(data.series, data.timeline)}
+          </div>
+          <div class="tabs" id="tabs">${clips.map((c,i) =>
+            `<button class="tab ${i===0?"on":""}" data-i="${i}" type="button">${esc(c.label)} · ${c.summary.n_swings} 拍 · ${c.scores["综合"]}分</button>`
+          ).join("")}</div>
+          <div id="clip"></div>
+          <p class="note">${(data.caveats || []).map(esc).join(" ")}</p>
+        </article>`;
+      requestAnimationFrame(() => {
+        reportEl.querySelectorAll(".axis .track i").forEach((el) => {
+          el.style.width = el.dataset.w + "%";
+        });
+      });
+      const clipBox = reportEl.querySelector("#clip");
+      const paint = () => {
+        if (!clips.length) {
+          clipBox.innerHTML = "<p>没有识别到完整挥拍。</p>";
+          return;
+        }
+        clipBox.innerHTML = renderClip(clips[cur], data.stroke_mode);
+        reportEl.querySelectorAll(".tab").forEach((b) => {
+          b.classList.toggle("on", +b.dataset.i === cur);
+          b.onclick = () => { cur = +b.dataset.i; paint(); };
+        });
+      };
+      paint();
+    }
+
+    (async function boot() {
+      loadHistory();
+      const params = new URLSearchParams(location.search);
+      const fromUrl = params.get("job");
+      if (fromUrl) {
+        const ok = await openHistory(fromUrl);
+        if (ok) return;
+      }
+      let id = "";
+      try { id = localStorage.getItem(JOB_KEY) || ""; } catch (e) {}
+      if (!id) return;
+      const res = await fetch("api/jobs/" + id);
+      if (!res.ok) { clearJob(); return; }
+      const job = await res.json();
+      if (job.status === "done") {
+        const r = await fetch("api/jobs/" + id + "/report");
+        if (!r.ok) { clearJob(); return; }
+        upload.classList.add("hidden");
+        showReport(await r.json(), id);
+        clearJob();
+        return;
+      }
+      if (job.status === "error" || job.status === "cancelled") {
+        clearJob();
+        return;
+      }
+      upload.classList.add("hidden");
+      analyzing.classList.remove("hidden");
+      poll(id);
+    })();
+  </script>
+</body>
+</html>

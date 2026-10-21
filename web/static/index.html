@@ -165,23 +165,12 @@
       transition: width .35s;
     }
     @keyframes barShine { to { background-position: 200% 0; } }
-    .live { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; }
+    .live { display: grid; grid-template-columns: 1fr; gap: 16px; }
     .card {
       background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px;
       backdrop-filter: blur(12px);
     }
     .card h3 { margin: 0 0 10px; font-size: 14px; }
-    .preview-box {
-      width: 100%; aspect-ratio: 16/10; background: #000; border-radius: 10px; overflow: hidden;
-      position: relative;
-    }
-    .preview-box::after {
-      content: ""; position: absolute; inset: 0; pointer-events: none;
-      background: repeating-linear-gradient(180deg, transparent, transparent 3px, rgba(212,225,87,.04) 4px);
-      animation: scan 3.5s linear infinite;
-    }
-    @keyframes scan { from { transform: translateY(-20%); } to { transform: translateY(20%); } }
-    .preview { width: 100%; height: 100%; object-fit: cover; display: block; }
     .paper {
       background: var(--paper); color: var(--ink); border-radius: 20px; padding: 36px 40px 48px;
       box-shadow: 0 30px 80px rgba(0,0,0,.4);
@@ -377,12 +366,6 @@
       <div class="progress"><i id="bar"></i></div>
       <p id="msg" class="sub">准备中…</p>
       <div class="live">
-        <div class="card">
-          <h3>分析预览</h3>
-          <div class="preview-box">
-            <img class="preview hidden" id="preview" alt="" />
-          </div>
-        </div>
         <div class="card">
           <h3>当前步骤</h3>
           <p id="detail" style="margin:0;color:var(--muted)"></p>
@@ -614,15 +597,6 @@
         ${esc(job.source_name || "")}<br/>
         ${esc(job.step_name || "分析中")} · ${job.progress || 0}%<br/>
         <span>${esc(job.eta_hint || "")}</span>`;
-      if (job.preview_rev) {
-        const img = $("preview");
-        const next = "api/jobs/" + id + "/preview?r=" + job.preview_rev;
-        img.classList.remove("hidden");
-        if (img.dataset.rev !== String(job.preview_rev)) {
-          img.dataset.rev = String(job.preview_rev);
-          img.src = next;
-        }
-      }
       if (job.status === "done") {
         clearJob();
         const r = await fetch("api/jobs/" + id + "/report");
