@@ -1,0 +1,180 @@
+{
+  "appTitle": "涨球",
+  "lang": {
+    "zh": "中文",
+    "en": "EN"
+  },
+  "home": {
+    "lead": "拍一段挥拍，按引导上传，然后看四维结果和练法。",
+    "sub": "适合自己练球时回看动作。这里不承诺分数会变高。",
+    "devNote": "当前是开发态模拟登录，正式微信登录以后再接入。",
+    "login": "开发态登录",
+    "loggingIn": "正在登录…",
+    "continue": "查看拍摄引导",
+    "codeLabel": "登录码（可留空）",
+    "codePlaceholder": "留空会自动生成开发码",
+    "loggedIn": "已登录",
+    "localCode": "没有拿到微信登录码，已改用本地开发码。"
+  },
+  "guide": {
+    "title": "拍摄引导",
+    "intro": "勾选你已经做到的项。没勾完也可以上传，这次会记为引导未完成。",
+    "incompleteHint": "未完成的引导会写进本次任务，方便以后查看。",
+    "progress": "已勾选 {{done}}/{{total}}",
+    "continue": "去上传",
+    "items": [
+      {
+        "key": "side",
+        "title": "侧面机位",
+        "desc": "手机放在球员侧面，能看清挥拍方向。不要正对着人拍。"
+      },
+      {
+        "key": "full_body",
+        "title": "全身入镜",
+        "desc": "头、身体和脚都留在画面里。"
+      },
+      {
+        "key": "racket",
+        "title": "球拍可见",
+        "desc": "引拍、击球和随挥时，球拍尽量不要出画。"
+      }
+    ]
+  },
+  "upload": {
+    "title": "上传挥拍",
+    "intro": "选择一段视频或现在拍。一段 8 到 15 秒的挥拍就够用。",
+    "guideDone": "拍摄引导已完成",
+    "guideSkipped": "拍摄引导未完成，仍会上传并记下这个状态",
+    "strokeLabel": "这一段主要是",
+    "forehand": "正手",
+    "backhand": "反手",
+    "serve": "发球",
+    "choose": "从相册选择",
+    "record": "现在拍摄",
+    "chosen": "已选择 {{name}}（{{size}}）",
+    "none": "还没有选择视频",
+    "submit": "上传并排队",
+    "uploading": "正在上传…",
+    "longClip": "这段比较长，排队后的分析会更慢。"
+  },
+  "queue": {
+    "title": "分析进度",
+    "queued": "排队中",
+    "running": "分析中",
+    "done": "分析已结束",
+    "error": "分析没有完成",
+    "cancelled": "这次分析已取消",
+    "unknown": "正在查询状态",
+    "jobId": "任务编号 {{id}}",
+    "polling": "正在向服务器查询进度。",
+    "guideDone": "本次已完成拍摄引导。",
+    "guideSkipped": "本次拍摄引导未完成，后续结果可以据此标注。",
+    "doneHint": "分析完成。可以查看四维和中文练法。",
+    "viewResult": "查看四维结果",
+    "home": "返回首页",
+    "retry": "重新上传",
+    "serverDetail": "服务器说明",
+    "currentStep": "当前步骤",
+    "leaveHint": "关掉页面也不会中断，回来可继续查看进度。",
+    "stepPct": "{{name}} · {{pct}}%",
+    "steps": {
+      "1": {
+        "name": "读取视频",
+        "blurb": "打开你的录像",
+        "eta": "约 15 秒"
+      },
+      "2": {
+        "name": "识别动作",
+        "blurb": "看清挥拍动作",
+        "eta": "约 3–6 分钟"
+      },
+      "3": {
+        "name": "找出挥拍",
+        "blurb": "标出每一次击球",
+        "eta": "约 30 秒"
+      },
+      "4": {
+        "name": "整理数据",
+        "blurb": "整理评分依据",
+        "eta": "约 1 分钟"
+      },
+      "5": {
+        "name": "教练点评",
+        "blurb": "涨球教练生成练习建议",
+        "eta": "约 2 分钟，最慢"
+      }
+    }
+  },
+  "errors": {
+    "auth_required": "请先登录后再上传",
+    "auth_invalid": "登录已失效，请重新登录",
+    "login_code_invalid": "登录码无效，请重试",
+    "login_body_invalid": "登录请求无法识别",
+    "guide_invalid": "拍摄引导数据无法识别",
+    "guide_too_long": "拍摄引导数据过长",
+    "bad_client": "无法识别客户端",
+    "video_required": "请先选择或拍摄一段视频",
+    "video_type": "请上传 mp4、mov 或 webm 视频",
+    "video_too_small": "视频文件太小或已损坏",
+    "video_too_large": "视频超过 400MB，请剪短后再上传",
+    "busy": "正在分析其他录像，请稍后再试",
+    "network": "网络异常，请检查网络和服务器地址后重试",
+    "bad_response": "上传未完成，没有拿到任务编号",
+    "server": "服务器繁忙，请稍后重试",
+    "generic": "操作失败，请稍后重试",
+    "i18n": "文案加载失败，请确认后端已启动",
+    "result_pending": "结果还在生成，请稍后再看",
+    "result_missing": "找不到这次任务",
+    "result_unavailable": "这次分析没有完成"
+  },
+  "result": {
+    "title": "四维结果",
+    "loading": "正在读取这次分析…",
+    "intro": "这四项来自这次分析，练法可以直接照着做。拍摄角度会让数字有差别。",
+    "total": "合计 {{score}} · {{grade}}",
+    "noNumber": "—",
+    "tipLabel": "练法",
+    "focusLabel": "这次先练",
+    "guideWarning": "拍摄引导没做完：机位可能影响分数。请把这次只当作练习参考，不要当成精确测量。",
+    "serveNote": "你把这段标成了发球，进步曲线会按发球单独记。数字仍来自现有挥拍分析，供练习对照。",
+    "timelineTitle": "进步时间轴",
+    "compareTitle": "前后对比",
+    "compareNote": "下面是同一动作较早一次和较近一次的差别，只说明两次画面不同。",
+    "earlier": "较早一次",
+    "later": "较近一次",
+    "delta": "差别",
+    "contactAt": "击球约 {{t}} 秒",
+    "current": "这次",
+    "backQueue": "返回排队",
+    "home": "返回首页",
+    "axes": {
+      "balance": "重心",
+      "contact": "击球点",
+      "chain": "动力链",
+      "effect": "击球效果"
+    },
+    "bands": {
+      "high": "这项较稳",
+      "mid": "这项可以再练",
+      "low": "建议先改这项"
+    },
+    "grades": {
+      "A": "较高",
+      "B": "中上",
+      "C": "中等",
+      "D": "待练",
+      "E": "先打基础"
+    },
+    "strokes": {
+      "forehand": "正手",
+      "backhand": "反手",
+      "serve": "发球"
+    },
+    "reasons": {
+      "need_two": "同一动作至少分析 2 次后才会打开对比。现在是 {{count}} 次。",
+      "sign_in": "登录后才能看你自己的同动作进步和对比。",
+      "not_owner": "只能对比当前账号自己的同动作记录。",
+      "no_user": "这次任务没有绑定登录用户，进步时间轴无法记下。"
+    }
+  }
+}
