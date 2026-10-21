@@ -378,9 +378,10 @@ if not bak.exists():
   shutil.copy2(path, bak)
 # Common pattern: public file allow lists
 repls = [
-  (r'(analyze-progress-preview\.html)', r'\1", "remove-analyze-preview.html'),
-  (r'(demo-video-clean-preview\.html)', r'\1", "remove-analyze-preview.html'),
-  (r'(PUBLIC_FILES\s*=\s*\[)', r'\1"remove-analyze-preview.html", '),
+  # Always use absolute public path so middleware pathname match works.
+  (r'(analyze-progress-preview\.html)', r'\1", "/remove-analyze-preview.html'),
+  (r'(demo-video-clean-preview\.html)', r'\1", "/remove-analyze-preview.html'),
+  (r'(PUBLIC_FILES\s*=\s*\[)', r'\1"/remove-analyze-preview.html", '),
 ]
 new = text
 for pat, rep in repls:
