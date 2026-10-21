@@ -79,22 +79,24 @@ if [[ -n "$UNI_SRC" && -d "$UNI_SRC" ]]; then
   done
 fi
 
-if [[ -z "$LOCAL_APK" && -x "$REPO_ROOT/android/gradlew" ]]; then
-  (cd "$REPO_ROOT/android" && ./gradlew assembleRelease) && \
-    LOCAL_APK="$(ls -1t "$REPO_ROOT/android/app/build/outputs/apk/release"/*.apk 2>/dev/null | head -1 || true)"
-fi
+# APK: do NOT auto-upload zip-injected or unsigned builds.
+# Only upload when UPLOAD_SIGNED_APK=1 and LOCAL_APK points at a properly signed release.
+UPLOAD_SIGNED_APK="${UPLOAD_SIGNED_APK:-0}"
 if [[ -z "$LOCAL_IPA" && -x "$REPO_ROOT/ios/build-ipa.sh" ]]; then
   (cd "$REPO_ROOT/ios" && bash build-ipa.sh) && \
     LOCAL_IPA="$(ls -1t "$REPO_ROOT/ios"/build/*.ipa "$REPO_ROOT/ios"/*.ipa 2>/dev/null | head -1 || true)"
 fi
 
-echo "==> [4/5] upload client artifacts (APK / IPA / mp-weixin.zip)"
+echo "==> [4/5] upload client artifacts (IPA / mp-weixin.zip; APK only if signed)"
 "${SSH[@]}" "$WEB_HOST" "mkdir -p '$REMOTE_APK'"
 UPLOADED=0
-if [[ -n "$LOCAL_APK" && -f "$LOCAL_APK" ]]; then
+if [[ "$UPLOAD_SIGNED_APK" == "1" && -n "$LOCAL_APK" && -f "$LOCAL_APK" ]]; then
   chmod 644 "$LOCAL_APK" || true
   "${SCP[@]}" "$LOCAL_APK" "$WEB_HOST:$REMOTE_APK/tennis-ai.apk"
   UPLOADED=1
+  echo "  uploaded signed LOCAL_APK -> tennis-ai.apk"
+else
+  echo "  · leaving /var/www/apk/tennis-ai.apk untouched (no zip-inject; wait for signed rebuild)"
 fi
 if [[ -n "$LOCAL_IPA" && -f "$LOCAL_IPA" ]]; then
   chmod 644 "$LOCAL_IPA" || true
@@ -107,10 +109,12 @@ if [[ -n "$LOCAL_MP_ZIP" && -f "$LOCAL_MP_ZIP" ]]; then
   UPLOADED=1
 fi
 if [[ "$UPLOADED" -eq 1 ]]; then
-  "${SSH[@]}" "$WEB_HOST" "chmod 644 '$REMOTE_APK'/tennis-ai.apk '$REMOTE_APK'/tennis-ai.ipa '$REMOTE_APK'/mp-weixin.zip 2>/dev/null || true; ls -la '$REMOTE_APK'/tennis-ai.apk '$REMOTE_APK'/tennis-ai.ipa '$REMOTE_APK'/mp-weixin.zip"
+  "${SSH[@]}" "$WEB_HOST" "chmod 644 '$REMOTE_APK'/tennis-ai.ipa '$REMOTE_APK'/mp-weixin.zip 2>/dev/null || true; ls -la '$REMOTE_APK'/tennis-ai.apk '$REMOTE_APK'/tennis-ai.ipa '$REMOTE_APK'/mp-weixin.zip"
 else
-  echo "  (no local APK/IPA/mp zip — server apply still stripped archives + zipped mp when possible)"
+  echo "  (no local IPA/mp zip — server apply still refreshes mp when possible; APK preserved)"
 fi
+# Prove APK hash unchanged unless explicitly replaced
+"${SSH[@]}" "$WEB_HOST" "sha256sum '$REMOTE_APK'/tennis-ai.apk"
 
 echo "==> [5/5] verify four public URLs"
 for url in \

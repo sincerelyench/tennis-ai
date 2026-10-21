@@ -9,3 +9,7 @@ bash deploy/remove-analyze-preview/scripts/mac-four-surface-release.sh
 ```
 
 Do not regress: E1 GPU auth hotfix, star HD demos, analyze progress UI (roadmap/%/ETA), report four-dim.
+
+**APK:** scripts skip zip-inject into `tennis-ai.apk` (broken cert / install fail).  
+Reuse a properly signed release from sibling「正式签名 APK」via  
+`UPLOAD_SIGNED_APK=1 LOCAL_APK=/path/to/signed.apk bash …/mac-four-surface-release.sh`.

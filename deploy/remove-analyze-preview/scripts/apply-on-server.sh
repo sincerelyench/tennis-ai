@@ -187,12 +187,18 @@ for c in changed[:40]:
 PY
 
 echo
-echo "==> 3/5 Patch tennis-ai.apk / tennis-ai.ipa embedded JS (APK H5 + iOS www)"
+echo "==> 3/5 Patch tennis-ai.ipa embedded JS (iOS www); APK zip-inject DISABLED"
+# Never zip-rewrite tennis-ai.apk here — that breaks the signing cert and
+# makes installs fail. APK must come from a full release rebuild+resign
+# (sibling "Build signed release APK" or local gradle+keystore).
+# Opt-in only: SKIP_APK_ARCHIVE_PATCH=0 would still refuse APK; use
+# ALLOW_APK_ZIP_INJECT=1 only for emergency lab testing (never prod).
 python3 - "$ROOT" "$BACKUP" <<'PY'
-import io, pathlib, shutil, sys, zipfile
+import io, os, pathlib, shutil, sys, zipfile
 
 root = pathlib.Path(sys.argv[1])
 backup = pathlib.Path(sys.argv[2])
+allow_apk = os.environ.get("ALLOW_APK_ZIP_INJECT", "0") == "1"
 
 DROP = [
   "分析预览",
@@ -211,11 +217,16 @@ for base in (
 ):
   if not base.exists():
     continue
-  candidates.extend(base.glob("**/tennis-ai.apk"))
+  if allow_apk:
+    candidates.extend(base.glob("**/tennis-ai.apk"))
   candidates.extend(base.glob("**/tennis-ai.ipa"))
+
+if not allow_apk:
+  print("  · skipping tennis-ai.apk zip-inject (preserve install signature)")
 
 seen = set()
 patched = []
+skipped_apk = []
 
 
 def backup_file(path: pathlib.Path) -> None:
@@ -233,6 +244,9 @@ for archive in candidates:
   if not archive.is_file() or archive in seen:
     continue
   seen.add(archive)
+  if archive.suffix.lower() == ".apk" and not allow_apk:
+    skipped_apk.append(str(archive))
+    continue
   try:
     zin = zipfile.ZipFile(archive, "r")
   except Exception as e:
@@ -269,9 +283,11 @@ for archive in candidates:
 
 print(f"archives patched: {len(patched)}")
 for a in patched:
-  print("  apk/ipa:", a)
+  print("  ipa:", a)
+if skipped_apk:
+  print(f"  apk left untouched: {len(skipped_apk)}")
 if not patched:
-  print("  (no APK/IPA string hits — may already be clean or archives absent)")
+  print("  (no IPA string hits — may already be clean or archives absent)")
 PY
 
 echo
