@@ -346,11 +346,13 @@ def _prepare_upload_meta(
     token = bearer_token(authorization)
     user = None
     if client_name in E1_CLIENTS:
-        if not token:
-            raise CodedHTTPException(401, "auth_required", "请先登录后再上传")
-        user = verify_dev_token(token)
-        if not user:
-            raise CodedHTTPException(401, "auth_invalid", "登录已失效，请重新登录")
+        # Next /tennis/api/analyze strips Authorization when proxying to /tai but
+        # still forwards client=miniprogram|android|ios. Requiring a GPU
+        # dev-mock token rejected every real upload on those surfaces (401
+        # auth_required). Optional GPU token; ignore tennis_session / other
+        # non-GPU bearers so guide metadata still attaches when present.
+        if token:
+            user = verify_dev_token(token)
     elif token is not None:
         user = verify_dev_token(token) if token else None
         if not user:

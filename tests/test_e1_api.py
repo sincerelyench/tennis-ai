@@ -40,6 +40,16 @@ class E1ApiTests(unittest.TestCase):
         appmod.JOBS_DIR = self.old_jobs
         self.tmp.cleanup()
 
+    def _clear_jobs(self) -> None:
+        import shutil
+
+        with appmod._lock:
+            appmod._jobs.clear()
+        if self.jobs.is_dir():
+            for child in self.jobs.iterdir():
+                if child.is_dir():
+                    shutil.rmtree(child, ignore_errors=True)
+
     def _token(self, code="dev-user") -> str:
         res = self.client.post("/api/auth/mock", json={"code": code})
         self.assertEqual(res.status_code, 200, res.text)
@@ -91,14 +101,19 @@ class E1ApiTests(unittest.TestCase):
         self.assertIsNone(verify_dev_token(token, now=1_700_000_000 + 8 * 24 * 3600))
         self.assertIsNone(verify_dev_token(token + "x", now=1_700_000_000 + 10))
 
-    def test_miniprogram_requires_login(self):
+    def test_miniprogram_allows_upload_without_gpu_token(self):
+        # /tennis proxy strips Authorization but keeps client=miniprogram.
         res = self._upload(None)
-        self.assertEqual(res.status_code, 401)
-        self.assertEqual(res.json()["code"], "auth_required")
-        self.assertIn("登录", res.json()["detail"])
+        self.assertEqual(res.status_code, 200, res.text)
+        self.assertTrue(res.json()["job_id"])
+        job = self.client.get("/api/jobs/" + res.json()["job_id"]).json()
+        self.assertEqual(job["metadata"]["client"], "miniprogram")
+        self.assertNotIn("user_id", job["metadata"])
+        self._clear_jobs()
+        # tennis_session / other non-GPU bearers are ignored, not auth_invalid
         bad = self._upload("not-a-token")
-        self.assertEqual(bad.status_code, 401)
-        self.assertEqual(bad.json()["code"], "auth_invalid")
+        self.assertEqual(bad.status_code, 200, bad.text)
+        self.assertTrue(bad.json()["job_id"])
 
     def test_upload_stores_incomplete_guide_and_job_id(self):
         token = self._token()
@@ -138,10 +153,13 @@ class E1ApiTests(unittest.TestCase):
         self.assertEqual(android.status_code, 200, android.text)
         self.assertTrue(android.json()["job_id"])
 
-    def test_ios_client_requires_login_and_stores_metadata(self):
+    def test_ios_client_optional_login_and_stores_metadata(self):
         missing = self._upload(None, client="ios", checks={"side": True, "full_body": False, "racket": False})
-        self.assertEqual(missing.status_code, 401)
-        self.assertEqual(missing.json()["code"], "auth_required")
+        self.assertEqual(missing.status_code, 200, missing.text)
+        anon = self.client.get("/api/jobs/" + missing.json()["job_id"]).json()
+        self.assertEqual(anon["metadata"]["client"], "ios")
+        self.assertNotIn("user_id", anon["metadata"])
+        self._clear_jobs()
         token = self._token()
         res = self._upload(token, client="ios", checks={"side": True, "full_body": False, "racket": False})
         self.assertEqual(res.status_code, 200, res.text)
@@ -150,8 +168,8 @@ class E1ApiTests(unittest.TestCase):
         self.assertFalse(job["metadata"]["guide_completed"])
         self.assertEqual(job["metadata"]["guide_checks"]["side"], True)
         self.assertEqual(job["metadata"]["guide_checks"]["full_body"], False)
-        with appmod._lock:
-            appmod._jobs.clear()
+        self.assertTrue(job["metadata"]["user_id"])
+        self._clear_jobs()
         legacy = self.client.post(
             "/api/analyze",
             files={"video": ("court.mp4", b"\x00" * 1500, "video/mp4")},
