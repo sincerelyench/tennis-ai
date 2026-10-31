@@ -1,0 +1,55 @@
+<view class="page" wx:if="{{match}}" data-zq-match-mvp="1">
+  <text class="h1">{{match.title}}</text>
+  <text class="lead">{{match.format}} · {{match.finalScore}} · {{match.videoLabel}}</text>
+
+  <view class="court {{match.mode==='ground'?'ground':''}}">
+    <view class="score">{{zh ? '计分条' : 'Score'}} · {{match.finalScore}}</view>
+    <view class="trace" wx:if="{{ballTrace}}">{{zh ? '球轨迹：开（演示）' : 'Ball trace: on (demo)'}}</view>
+    <view class="heat">{{zh ? '落点热力已叠加' : 'Heatmap on'}}</view>
+  </view>
+  <text class="hint">{{match.speedDisclaimer}}</text>
+
+  <view class="row">
+    <view class="chip {{ballTrace?'on':''}}" bindtap="toggleTrace">{{zh ? '球轨迹' : 'Ball trace'}}</view>
+    <view class="chip" bindtap="onShare">{{zh ? '分享链接' : 'Share link'}}</view>
+  </view>
+  <text class="hint" wx:if="{{shareHint}}">{{shareHint}}</text>
+
+  <text class="label">{{zh ? '筛选（已剪空镜）' : 'Filters (trimmed)'}}</text>
+  <view class="row">
+    <view class="chip {{stroke==='all'?'on':''}}" data-v="all" bindtap="setStroke">All</view>
+    <view class="chip {{stroke==='forehand'?'on':''}}" data-v="forehand" bindtap="setStroke">FH</view>
+    <view class="chip {{stroke==='backhand'?'on':''}}" data-v="backhand" bindtap="setStroke">BH</view>
+    <view class="chip {{stroke==='serve'?'on':''}}" data-v="serve" bindtap="setStroke">Serve</view>
+  </view>
+  <view class="row">
+    <view class="chip {{result==='all'?'on':''}}" data-v="all" bindtap="setResult">All</view>
+    <view class="chip {{result==='winner'?'on':''}}" data-v="winner" bindtap="setResult">Winner</view>
+    <view class="chip {{result==='unforced_error'?'on':''}}" data-v="unforced_error" bindtap="setResult">UFE</view>
+    <view class="chip {{result==='ace'?'on':''}}" data-v="ace" bindtap="setResult">Ace</view>
+  </view>
+
+  <view class="list">
+    <view class="item {{activeId===item.id?'on':''}}" wx:for="{{points}}" wx:key="id" data-id="{{item.id}}" bindtap="pickPoint">
+      #{{item.index+1}} · {{item.setScore}} {{item.scoreBefore}} · {{item.result}} · {{item.rallyLength}}{{zh?'拍':' shots'}}
+    </view>
+  </view>
+
+  <text class="label">{{zh ? '击球数据' : 'Shot stats'}}</text>
+  <view class="stats">
+    <view class="stat"><text class="k">{{zh?'均速':'Avg'}}</text><text class="v">{{match.stats.avgSpeedKmh}} km/h</text></view>
+    <view class="stat"><text class="k">{{zh?'深度':'Depth'}}</text><text class="v">{{match.stats.avgDepth}}</text></view>
+    <view class="stat"><text class="k">{{zh?'回合':'Rally'}}</text><text class="v">{{match.stats.avgRally}}</text></view>
+    <view class="stat"><text class="k">{{zh?'制胜':'Winners'}}</text><text class="v">{{match.stats.winners}}</text></view>
+  </view>
+
+  <text class="label">{{zh ? '涨球教练点评' : 'Zhangqiu Coach'}}</text>
+  <view class="card" wx:for="{{match.coaching}}" wx:key="id">
+    <text class="item-title">{{zh ? item.title : item.titleEn}}</text>
+    <text class="hint">{{zh ? item.body : item.bodyEn}}</text>
+    <view class="link" data-id="{{item.jumpPointId}}" bindtap="jumpCoach">{{zh ? '跳到该分' : 'Jump to point'}}</view>
+  </view>
+</view>
+<view class="page" wx:else>
+  <text class="h1">{{zh ? '找不到比赛' : 'Match not found'}}</text>
+</view>
