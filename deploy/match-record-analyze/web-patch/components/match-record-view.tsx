@@ -32,8 +32,8 @@ export function MatchRecordView() {
       setConfirmLive(true);
       setNote(
         zh
-          ? "请先确认上方机位要点，再点「机位 OK，开始录制」。"
-          : "Confirm the framing tips above, then tap “Framing OK — start”.",
+          ? "请先确认上方机位要点，再点「确认机位，开始录制」。"
+          : "Confirm the framing tips above, then tap “Framing looks good — start”.",
       );
       return;
     }
@@ -63,17 +63,17 @@ export function MatchRecordView() {
                 kind === "upload"
                   ? zh
                     ? mode === "ground"
-                      ? "Ground Mode 上传赛"
+                      ? "地面模式上传赛"
                       : "上传比赛录像"
                     : mode === "ground"
-                      ? "Ground Mode upload"
+                      ? "Ground mode upload"
                       : "Uploaded match"
                   : zh
                     ? mode === "ground"
-                      ? "Ground Mode 录制"
+                      ? "地面模式录制"
                       : "现场录制比赛"
                     : mode === "ground"
-                      ? "Ground Mode record"
+                      ? "Ground mode record"
                       : "Live match record",
             });
       setBusy(false);
@@ -164,7 +164,7 @@ export function MatchRecordView() {
               mode === "standard" ? "border-primary bg-primary-subtle text-primary" : "border-border text-foreground",
             )}
           >
-            {zh ? "标准机位" : "Standard"}
+            {cam.standardChip}
           </button>
           <button
             type="button"
@@ -178,14 +178,14 @@ export function MatchRecordView() {
               mode === "ground" ? "border-primary bg-primary-subtle text-primary" : "border-border text-foreground",
             )}
           >
-            {zh ? "Ground Mode（手机放地上）" : "Ground Mode (phone on ground)"}
+            {cam.groundChip}
           </button>
         </div>
         {mode === "ground" ? (
           <p className="text-[11px] leading-5 text-muted-foreground" data-ground-hint="true">
             {zh
-              ? "Ground Mode：自动剪空白、按回合/击球筛选，竖屏导出以球为中心（社媒向）。真机 GPU 球心跟踪未完成时用演示裁切。"
-              : "Ground Mode: auto-cut blanks, filter by rally/shot, vertical ball-centered export. Demo crop when GPU tracking is incomplete."}
+              ? "地面模式：自动剪空白、按回合或击球筛选，竖屏导出以球为中心（适合社媒）。真机 GPU 球心跟踪未完成时用演示裁切。"
+              : "Ground mode: auto-cut blanks, filter by rally or shot, vertical ball-centered export for social. Demo crop when GPU tracking is incomplete."}
           </p>
         ) : null}
 
@@ -222,7 +222,7 @@ export function MatchRecordView() {
           </p>
         ) : null}
         <p className="text-[11px] text-muted-foreground" data-speed-disclaimer="true">
-          {zh ? "球速为估测值，误差约 ±10%。" : "Shot speed is estimated (±10%)."}
+          {zh ? "球速为估测值，误差约正负百分之十。" : "Shot speed is estimated at about plus or minus ten percent."}
         </p>
       </section>
 
@@ -246,7 +246,7 @@ export function MatchRecordView() {
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     {m.format === "doubles" ? (zh ? "双打" : "Doubles") : zh ? "单打" : "Singles"}
                     {" · "}
-                    {m.mode === "ground" ? "Ground" : zh ? "标准" : "Standard"}
+                    {m.mode === "ground" ? (zh ? "地面" : "Ground") : zh ? "标准" : "Standard"}
                     {" · "}
                     {m.pipeline === "demo" ? (zh ? "演示数据" : "demo data") : m.pipeline}
                   </p>
@@ -258,7 +258,7 @@ export function MatchRecordView() {
       </section>
 
       <p className="text-[11px] text-muted-foreground">
-        {zh ? "品牌：涨球 / 涨球教练" : "Brand: 涨球 / Zhangqiu Coach"}
+        {zh ? "品牌：涨球教练" : "Brand: Zhangqiu Coach"}
       </p>
       <Link href="/analysis/new" className={cn(buttonVariants({ variant: "outline" }), "h-9 text-xs")}>
         {zh ? "去挥拍技术分析（不回归）" : "Stroke analyze (unchanged)"}

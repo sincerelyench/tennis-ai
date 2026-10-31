@@ -27,14 +27,14 @@
     </view>
     <text class="label">{{zh ? '模式' : 'Mode'}}</text>
     <view class="row">
-      <view class="chip {{mode==='standard'?'on':''}}" data-mode="standard" bindtap="setMode">{{zh ? '标准' : 'Standard'}}</view>
-      <view class="chip {{mode==='ground'?'on':''}}" data-mode="ground" bindtap="setMode">Ground Mode</view>
+      <view class="chip {{mode==='standard'?'on':''}}" data-mode="standard" bindtap="setMode">{{standardChip}}</view>
+      <view class="chip {{mode==='ground'?'on':''}}" data-mode="ground" bindtap="setMode">{{groundChip}}</view>
     </view>
     <view class="primary" bindtap="onRecord">{{recordLabel}}</view>
     <view class="ghost" bindtap="onDemo">{{zh ? '打开演示赛' : 'Open demo match'}}</view>
     <view class="ghost" bindtap="onStroke">{{zh ? '挥拍技术分析' : 'Stroke analyze'}}</view>
     <text class="hint recording" wx:if="{{recording}}">{{duringTitle}}：{{duringText}}</text>
-    <text class="hint">{{zh ? '球速估测 ±10%。' : 'Speed estimate ±10%.'}}</text>
+    <text class="hint">{{zh ? '球速为估测值，误差约正负百分之十。' : 'Shot speed is estimated at about plus or minus ten percent.'}}</text>
     <text class="hint" wx:if="{{note}}">{{note}}</text>
   </view>
 

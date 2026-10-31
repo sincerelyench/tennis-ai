@@ -38,6 +38,8 @@ Page({
     camTips: [],
     duringTitle: "",
     duringText: "",
+    groundChip: "",
+    standardChip: "",
   },
   applyCam() {
     const zh = this.data.zh
@@ -45,11 +47,13 @@ Page({
     const cam = cameraSetupCopy(zh)
     this.setData({
       ...fields,
+      groundChip: cam.groundChip,
+      standardChip: cam.standardChip,
       recordLabel: this.data.confirmLive
         ? cam.ready
         : zh
-          ? "开始录制 / 上传流水线"
-          : "Record / upload pipeline",
+          ? "开始录制或上传"
+          : "Record or upload",
     })
   },
   onShow() {
@@ -91,8 +95,8 @@ Page({
       this.setData({
         confirmLive: true,
         note: this.data.zh
-          ? "请先确认上方机位要点，再点「机位 OK，开始录制」。"
-          : "Confirm framing tips above, then tap Framing OK — start.",
+          ? "请先确认上方机位要点，再点「确认机位，开始录制」。"
+          : "Confirm framing tips above, then tap Framing looks good — start.",
       })
       this.applyCam()
       return

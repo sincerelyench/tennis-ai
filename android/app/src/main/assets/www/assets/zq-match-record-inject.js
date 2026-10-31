@@ -85,7 +85,7 @@
     function avg(xs) { return xs.length ? xs.reduce(function (a, b) { return a + b; }, 0) / xs.length : 0; }
     return {
       id: "m-" + Date.now().toString(36),
-      title: zh() ? (mode === "ground" ? "Ground Mode 演示赛" : "涨球演示赛") : "Zhangqiu demo match",
+      title: zh() ? (mode === "ground" ? "地面模式演示赛" : "涨球演示赛") : (mode === "ground" ? "Ground mode demo" : "Zhangqiu demo match"),
       format: format || "singles",
       mode: mode || "standard",
       finalScore: gy + "-" + go,
@@ -101,7 +101,7 @@
         { id: live[0].id, title: zh() ? "发球落点偏中路" : "Serve too central", body: zh() ? "一发多落中线，下一场打宽外角。" : "Widen first-serve targets." },
         { id: (live[2] || live[0]).id, title: zh() ? "反手非受迫偏多" : "Backhand UFE", body: zh() ? "快节奏时优先打深过渡。" : "Prefer deep safety under pace." },
       ],
-      speedDisclaimer: zh() ? "球速为估测值，误差约 ±10%。" : "Speed estimate ±10%.",
+      speedDisclaimer: zh() ? "球速为估测值，误差约正负百分之十。" : "Shot speed is estimated at about plus or minus ten percent.",
     };
   }
 
@@ -109,25 +109,27 @@
   function cameraCopy() {
     var Z = zh();
     return {
-      title: Z ? "录制前 · 摄像头架设" : "Before record · camera setup",
+      title: Z ? "录制前：摄像头架设" : "Before recording: camera setup",
       subtitle: Z ? "摆好机位再开始，球速、落点与线审更稳。" : "Frame the court first for steadier speed, depth, and line calls.",
       duringTitle: Z ? "录制中请保持" : "While recording",
       during: Z ? "手机固定、勿遮挡；尽量飞行模式避免来电打断。整场都要看到双侧底线。" : "Keep the phone locked; avoid blocking the lens. Prefer airplane mode. Keep both baselines in view the whole session.",
-      standardTitle: Z ? "标准机位（围网 / 三脚架）" : "Standard (fence / tripod)",
-      groundTitle: Z ? "Ground Mode（地上）" : "Ground Mode (on the ground)",
-      ready: Z ? "机位 OK，开始录制" : "Framing OK — start",
+      standardTitle: Z ? "标准机位（围网或三脚架）" : "Standard (fence or tripod)",
+      groundTitle: Z ? "地面模式（手机放地上）" : "Ground mode (phone on the ground)",
+      ready: Z ? "确认机位，开始录制" : "Framing looks good — start",
+      groundChip: Z ? "地面模式" : "Ground mode",
+      standardChip: Z ? "标准机位" : "Standard",
       items: Z ? [
         { key: "height", label: "高度", text: "尽量架高（围网顶端最佳），但别让球网挡住远端底线。" },
         { key: "distance", label: "距离", text: "放在底线后方、靠近场地中线；单打可略偏弱侧约一脚，减少挡球。" },
         { key: "angle", label: "角度", text: "整片场地入镜：两侧底线及线后约 1–2 米；略俯拍，近端发球线落在画面偏下。" },
-        { key: "net", label: "球网 / 底线", text: "球网顶边尽量不要压住远端发球线或底线；画面居中对齐场地。" },
-        { key: "light", label: "光线 / 挡风网", text: "太阳在手机背后一侧；尽量对着没有挡风网的一侧。" }
+        { key: "net", label: "球网与底线", text: "球网顶边尽量不要压住远端发球线或底线；画面居中对齐场地。" },
+        { key: "light", label: "光线与挡风网", text: "太阳在手机背后一侧；尽量对着没有挡风网的一侧。" }
       ] : [
         { key: "height", label: "Height", text: "Mount as high as practical (fence-top preferred) without the net covering the far baseline." },
-        { key: "distance", label: "Distance", text: "Behind the baseline near center; for singles, offset ~1 ft toward the weaker side so players block less." },
+        { key: "distance", label: "Distance", text: "Behind the baseline near center; for singles, offset about one foot toward the weaker side so players block less." },
         { key: "angle", label: "Angle", text: "Fit the whole court: both baselines plus a few feet behind each; tilt down so the near service line sits in the lower third." },
-        { key: "net", label: "Net / baseline", text: "Avoid the net tape overlapping the far service or baseline; keep the court centered." },
-        { key: "light", label: "Light / windscreen", text: "Sun behind the phone; prefer the side without a windscreen." }
+        { key: "net", label: "Net and baseline", text: "Avoid the net tape overlapping the far service or baseline; keep the court centered." },
+        { key: "light", label: "Light and windscreen", text: "Sun behind the phone; prefer the side without a windscreen." }
       ],
       groundItems: Z ? [
         { key: "prop", label: "支撑", text: "在底线后中场附近放水瓶（或稳定物），手机斜靠其上。" },
@@ -136,7 +138,7 @@
       ] : [
         { key: "prop", label: "Prop", text: "Place a water bottle (or stable object) on the ground near mid-court behind the baseline; lean the phone against it." },
         { key: "aim", label: "Framing", text: "Tilt until the net tape sits in the guide box; keep both baselines and a bit of space behind them visible." },
-        { key: "stable", label: "Stable", text: "Make sure wind won’t tip it; double-check the full court before you start." }
+        { key: "stable", label: "Stable", text: "Make sure wind will not tip it; double-check the full court before you start." }
       ]
     };
   }
@@ -266,8 +268,8 @@
           '<div class="row">' +
           '<button type="button" class="chip ' + (format === "singles" ? "on" : "") + '" data-format="singles">' + (Z ? "单打" : "Singles") + "</button>" +
           '<button type="button" class="chip ' + (format === "doubles" ? "on" : "") + '" data-format="doubles">' + (Z ? "双打" : "Doubles") + "</button>" +
-          '<button type="button" class="chip ' + (mode === "standard" ? "on" : "") + '" data-mode="standard">' + (Z ? "标准" : "Standard") + "</button>" +
-          '<button type="button" class="chip ' + (mode === "ground" ? "on" : "") + '" data-mode="ground">Ground</button>' +
+          '<button type="button" class="chip ' + (mode === "standard" ? "on" : "") + '" data-mode="standard">' + cam.standardChip + "</button>" +
+          '<button type="button" class="chip ' + (mode === "ground" ? "on" : "") + '" data-mode="ground">' + cam.groundChip + '</button>' +
           "</div>" +
           cameraSetupHtml(mode) +
           '<div class="row">' +
@@ -306,14 +308,14 @@
         '<button type="button" class="act" data-close="1">' + (Z ? "关闭" : "Close") + "</button>" +
         "<h1 style='margin-top:10px'>" + match.title + "</h1>" +
         '<p class="muted">' + (match.format === "doubles" ? (Z ? "双打" : "Doubles") : (Z ? "单打" : "Singles")) +
-        " · " + match.finalScore + " · " + (mode === "ground" ? "Ground Mode" : (Z ? "标准" : "Standard")) + "</p>" +
+        " · " + match.finalScore + " · " + (mode === "ground" ? cam.groundChip : cam.standardChip) + "</p>" +
         (recordingBanner ? ('<p class="zq-cam-banner" data-recording-banner="1">' + cam.duringTitle + "：" + cam.during + "</p>") : "") +
         cameraSetupHtml(mode) +
         '<div class="row">' +
         '<button type="button" class="chip ' + (format === "singles" ? "on" : "") + '" data-format="singles">' + (Z ? "单打" : "Singles") + "</button>" +
         '<button type="button" class="chip ' + (format === "doubles" ? "on" : "") + '" data-format="doubles">' + (Z ? "双打" : "Doubles") + "</button>" +
-        '<button type="button" class="chip ' + (mode === "standard" ? "on" : "") + '" data-mode="standard">' + (Z ? "标准" : "Standard") + "</button>" +
-        '<button type="button" class="chip ' + (mode === "ground" ? "on" : "") + '" data-mode="ground">Ground</button>' +
+        '<button type="button" class="chip ' + (mode === "standard" ? "on" : "") + '" data-mode="standard">' + cam.standardChip + "</button>" +
+        '<button type="button" class="chip ' + (mode === "ground" ? "on" : "") + '" data-mode="ground">' + cam.groundChip + '</button>' +
         "</div>" +
         '<div class="row">' +
         '<button type="button" class="act primary" data-rebuild="1">' + (Z ? "重新生成演示赛" : "Rebuild demo") + "</button>" +
@@ -337,7 +339,7 @@
           return '<div class="coach"><b>' + c.title + "</b><div class='muted'>" + c.body + '</div><button type="button" class="act" style="margin-top:8px" data-jump="' + c.id + '">' + (Z ? "跳到该分" : "Jump") + "</button></div>";
         }).join("") +
         '<p class="muted" style="margin-top:12px">' + (Z ? "访客分享走 https://yqchen.blog/tennis/share/m/…（无需会员）。教练复盘钩子对接消息。" : "Viewer share: https://yqchen.blog/tennis/share/m/… Coach review via inbox.") + "</p>" +
-        '<p class="muted">涨球 / 涨球教练 · stroke analyze unchanged</p>';
+        '<p class="muted">' + (Z ? "涨球教练 · 挥拍技术分析不变" : "Zhangqiu Coach · stroke analyze unchanged") + '</p>';
 
       var canvas = box.querySelector("#zq-mr-canvas");
       draw(canvas);
@@ -397,8 +399,8 @@
     wrap.innerHTML =
       '<button type="button" class="zq-mr-btn" data-zq-open-match="1">' + (zh() ? "比赛录制 / 分析" : "Match record / analyze") + "</button>" +
       '<p class="zq-mr-hint">' + (zh()
-        ? "涨球比赛录制：先架摄像头（高度/距离/角度），再开录。挥拍技术分析不变。球速 ±10%。"
-        : "Zhangqiu match analyze: set camera height/distance/angle first. Stroke analyze unchanged. Speed ±10%.") + "</p>";
+        ? "涨球比赛录制：先架摄像头（高度、距离、角度），再开录。挥拍技术分析不变。球速约正负百分之十。"
+        : "Zhangqiu match analyze: set camera height, distance, and angle first. Stroke analyze unchanged. Speed estimate plus or minus 10%.") + "</p>";
     // Prefer inserting near top of analysis content
     if (host.firstChild) host.insertBefore(wrap, host.firstChild);
     else host.appendChild(wrap);
