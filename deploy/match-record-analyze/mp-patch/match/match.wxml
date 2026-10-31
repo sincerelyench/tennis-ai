@@ -1,0 +1,51 @@
+<view class="page" data-zq-match-mvp="1">
+  <view class="top">
+    <text class="brand">涨球</text>
+    <text class="h1">{{zh ? '比赛录制 · 分析' : 'Match record · analyze'}}</text>
+    <text class="lead">{{zh ? '涨球比赛录制：剪空镜、计分、球速热力、赛后点评。挥拍分析仍可用。' : 'Zhangqiu match analyze: trim dead time, scoring, speed heatmap, post-match notes. Stroke analyze still available.'}}</text>
+  </view>
+
+  <view class="card" data-section="camera-setup">
+    <text class="label">{{camTitle}}</text>
+    <text class="hint">{{camSubtitle}}</text>
+    <text class="label mode-title">{{camModeTitle}}</text>
+    <view class="tip" wx:for="{{camTips}}" wx:key="key" data-tip="{{item.key}}">
+      <text class="tip-label">{{item.label}}</text>
+      <text class="hint">{{item.text}}</text>
+    </view>
+    <view class="during" data-during-tip="true">
+      <text class="tip-label">{{duringTitle}}</text>
+      <text class="hint">{{duringText}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <text class="label">{{zh ? '赛制' : 'Format'}}</text>
+    <view class="row">
+      <view class="chip {{format==='singles'?'on':''}}" data-format="singles" bindtap="setFormat">{{zh ? '单打' : 'Singles'}}</view>
+      <view class="chip {{format==='doubles'?'on':''}}" data-format="doubles" bindtap="setFormat">{{zh ? '双打' : 'Doubles'}}</view>
+    </view>
+    <text class="label">{{zh ? '模式' : 'Mode'}}</text>
+    <view class="row">
+      <view class="chip {{mode==='standard'?'on':''}}" data-mode="standard" bindtap="setMode">{{standardChip}}</view>
+      <view class="chip {{mode==='ground'?'on':''}}" data-mode="ground" bindtap="setMode">{{groundChip}}</view>
+    </view>
+    <view class="primary" bindtap="onRecord">{{recordLabel}}</view>
+    <view class="ghost" bindtap="onDemo">{{zh ? '打开演示赛' : 'Open demo match'}}</view>
+    <view class="ghost" bindtap="onStroke">{{zh ? '挥拍技术分析' : 'Stroke analyze'}}</view>
+    <text class="hint recording" wx:if="{{recording}}">{{duringTitle}}：{{duringText}}</text>
+    <text class="hint">{{zh ? '球速估测 ±10%。' : 'Speed estimate ±10%.'}}</text>
+    <text class="hint" wx:if="{{note}}">{{note}}</text>
+  </view>
+
+  <view class="card">
+    <text class="label">{{zh ? '本机比赛' : 'Saved matches'}}</text>
+    <block wx:if="{{records.length}}">
+      <view class="item" wx:for="{{records}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpen">
+        <text class="item-title">{{item.title}} · {{item.finalScore}}</text>
+        <text class="hint">{{item.format}} · {{item.mode}} · {{item.pipeline}}</text>
+      </view>
+    </block>
+    <text class="hint" wx:else>{{zh ? '还没有比赛' : 'No matches yet'}}</text>
+  </view>
+</view>

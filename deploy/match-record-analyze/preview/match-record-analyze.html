@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>比赛录制 / 分析 · 涨球</title>
+  <style>
+    :root { --bg:#07140e; --card:#123226; --ink:#f4efe4; --muted:#b7c7bd; --line:rgba(244,239,228,.16); --accent:#2f7a56; --hi:#7dd3a0; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: "PingFang SC","Noto Sans SC",ui-sans-serif,system-ui,sans-serif; background:radial-gradient(1200px 600px at 10% -10%,#1a3d2c,transparent),var(--bg); color:var(--ink); }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+    .brand { font-size: 13px; letter-spacing: .08em; opacity: .8; }
+    h1 { margin: 8px 0 0; font-size: 28px; }
+    .lead { color: var(--muted); font-size: 14px; line-height: 1.55; margin-top: 8px; }
+    .row { display:flex; flex-wrap:wrap; gap:8px; margin-top: 14px; }
+    .chip, .btn { border:1px solid var(--line); background:transparent; color:var(--ink); border-radius:10px; padding:10px 14px; font-size:13px; cursor:pointer; }
+    .chip.on, .btn.primary { background: var(--accent); border-color: var(--hi); }
+    .card { margin-top:16px; border:1px solid var(--line); background:rgba(18,50,38,.72); border-radius:14px; padding:14px; }
+    .grid { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:8px; }
+    @media (min-width:640px){ .grid{ grid-template-columns: repeat(4,minmax(0,1fr)); } }
+    .stat { border:1px solid var(--line); border-radius:10px; padding:10px; background:rgba(0,0,0,.15); }
+    .stat b { display:block; margin-top:4px; font-size:16px; }
+    .stat span { font-size:11px; color:var(--muted); }
+    canvas { width:100%; height:auto; border-radius:12px; display:block; background:#1f4a38; }
+    .list { max-height: 200px; overflow:auto; border:1px solid var(--line); border-radius:10px; }
+    .item { padding:8px 10px; font-size:12px; border-bottom:1px solid var(--line); cursor:pointer; }
+    .item.on { background: rgba(125,211,160,.12); color: var(--hi); }
+    .hint { font-size:11px; color:var(--muted); margin-top:8px; line-height:1.45; }
+    .coach { border-top:1px solid var(--line); margin-top:10px; padding-top:10px; }
+    .tabs { display:flex; gap:8px; margin-top:18px; }
+    .tab { flex:1; text-align:center; padding:10px; border-radius:10px; border:1px solid var(--line); font-size:12px; opacity:.7; }
+    .tab.on { opacity:1; border-color:var(--hi); color:var(--hi); }
+  </style>
+</head>
+<body data-zq-match-mvp="1">
+  <div class="wrap">
+    <div class="brand" id="brand"></div>
+    <h1 id="pageTitle"></h1>
+    <p class="lead" id="lead"></p>
+    <div class="row" id="setup">
+      <button class="chip on" data-format="singles" id="fmtSingles"></button>
+      <button class="chip" data-format="doubles" id="fmtDoubles"></button>
+      <button class="chip on" data-mode="standard" id="modeStandard"></button>
+      <button class="chip" data-mode="ground" id="modeGround"></button>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="demo"></button>
+      <button class="btn" id="traceBtn"></button>
+      <button class="btn" id="voiceBtn"></button>
+    </div>
+    <section class="card" data-section="camera-setup" id="cameraSetup">
+      <div class="label" style="font-weight:700" id="camTitle"></div>
+      <p class="hint" id="camSubtitle"></p>
+      <div class="label" style="margin-top:10px;font-weight:600" id="camModeTitle"></div>
+      <div id="camTips"></div>
+      <p class="hint" data-during-tip="true" style="margin-top:10px;padding:10px;border:1px solid rgba(125,211,160,.35);border-radius:8px;background:rgba(47,122,86,.22)" id="duringTip"></p>
+    </section>
+    <p class="hint" data-speed-disclaimer="true" id="speedHint"></p>
+
+    <div class="card">
+      <canvas id="court" width="640" height="360" data-ball-trace="on"></canvas>
+      <div class="grid" style="margin-top:12px" id="stats"></div>
+    </div>
+
+    <div class="card">
+      <div class="row" id="filters"></div>
+      <div class="list" id="points"></div>
+      <div class="coach" id="coach"></div>
+      <p class="hint" id="share"></p>
+    </div>
+
+    <div class="tabs">
+      <div class="tab on" id="tabAnalyze"></div>
+      <div class="tab" id="tabCoach"></div>
+      <div class="tab" id="tabFriends"></div>
+      <div class="tab" id="tabMe"></div>
+    </div>
+  </div>
+  <script>
+    function zh(){
+      try{
+        var loc=localStorage.getItem('tennis-locale')||'';
+        if(loc==='en') return false;
+        if(loc==='zh') return true;
+      }catch(e){}
+      var q=new URLSearchParams(location.search).get('lang');
+      if(q==='en') return false;
+      if(q==='zh') return true;
+      return (navigator.language||'').toLowerCase().indexOf('zh')===0;
+    }
+    function mulberry32(a){return function(){var t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+    function build(){
+      const Z=zh();
+      const rand=mulberry32(1083); const points=[]; let t=0, gy=0, go=0, py=0, po=0, idx=0;
+      const heat=Array.from({length:8},()=>[0,0,0,0]);
+      while(idx<18){
+        if(rand()<0.2){points.push({id:'d'+idx,index:idx++,dead:true,rallyLength:0,setScore:gy+'-'+go,scoreBefore:'40-30',scoreAfter:'40-30',result:'forced_error',shots:[]}); t+=5; continue;}
+        const rally=1+Math.floor(rand()*7); const shots=[]; const start=t;
+        for(let s=0;s<rally;s++){
+          const x=.15+rand()*.7,y=.2+rand()*.6; heat[Math.min(7,Math.floor(x*8))][Math.min(3,Math.floor(y*4))]++;
+          const path=[]; for(let i=0;i<=6;i++){const u=i/6;path.push({x:.5+(x-.5)*u,y:.85+(y-.85)*u});}
+          shots.push({side:s%2?'opp':'you',stroke:s? 'forehand':'serve',speedKmh:Math.round(70+rand()*80),ballPath:path,x,y});
+          t+=.9;
+        }
+        const winner=rand()>.5?'you':'opp'; if(winner==='you')py++; else po++;
+        if((py>=4||po>=4)&&Math.abs(py-po)>=2){ if(py>po)gy++; else go++; py=po=0; }
+        points.push({id:'p'+idx,index:idx++,start,end:t,setScore:gy+'-'+go,scoreBefore:'30-15',scoreAfter:'40-15',result:['winner','unforced_error','ace'][Math.floor(rand()*3)],rallyLength:rally,shots,winner,dead:false,lineCall:{call:rand()>.7?'out':'in',confidence:.8}});
+        t+=1.2;
+      }
+      const live=points.filter(p=>!p.dead); const you=live.flatMap(p=>p.shots.filter(s=>s.side==='you'));
+      const avg=a=>a.reduce((x,y)=>x+y,0)/(a.length||1);
+      return {
+        title: Z ? '涨球演示赛' : 'Zhangqiu demo match',
+        finalScore:gy+'-'+go,points,heatmap:heat,
+        stats:{avgSpeedKmh:Math.round(avg(you.map(s=>s.speedKmh))),avgRally:Math.round(avg(live.map(p=>p.rallyLength))*10)/10,winners:live.filter(p=>p.result==='winner').length,unforced:3},
+        coaching: Z
+          ? [{title:'发球落点偏中路',body:'一发多落中线，下一场打宽外角。',id:live[0].id},{title:'反手非受迫偏多',body:'快节奏时优先打深过渡。',id:live[1].id}]
+          : [{title:'Serve too central',body:'Widen first-serve targets next session.',id:live[0].id},{title:'Backhand unforced errors',body:'Prefer deep safety balls under pace.',id:live[1].id}]
+      };
+    }
+    let match=build(), active=match.points.find(p=>!p.dead), ballTrace=true, voice=false, mode='standard';
+    const canvas=document.getElementById('court'); const ctx=canvas.getContext('2d');
+    function draw(){
+      const w=canvas.width,h=canvas.height; ctx.clearRect(0,0,w,h); ctx.fillStyle='#1f4a38'; ctx.fillRect(0,0,w,h);
+      ctx.strokeStyle='rgba(244,239,228,.85)'; ctx.strokeRect(w*.08,h*.08,w*.84,h*.84);
+      ctx.beginPath(); ctx.moveTo(w*.5,h*.08); ctx.lineTo(w*.5,h*.92); ctx.moveTo(w*.08,h*.5); ctx.lineTo(w*.92,h*.5); ctx.stroke();
+      match.heatmap.forEach((col,x)=>col.forEach((v,y)=>{ if(!v)return; ctx.fillStyle=`rgba(250,204,21,${Math.min(.5,v*.1)})`; ctx.fillRect(w*(.08+x/8*.84),h*(.08+y/4*.84),w*.1,h*.2); }));
+      if(ballTrace&&active){ active.shots.forEach(shot=>{ ctx.beginPath(); shot.ballPath.forEach((p,i)=>{const x=w*(.08+p.x*.84),y=h*(.08+p.y*.84); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.strokeStyle=shot.side==='you'?'#7dd3fc':'#fda4af'; ctx.stroke(); }); }
+      ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,w,28); ctx.fillStyle='#f4efe4'; ctx.font='600 13px sans-serif';
+      ctx.fillText((active? (active.setScore+' · '+active.scoreBefore): match.finalScore),10,18);
+    }
+    function camTipsFor(mode){
+      const Z=zh();
+      if(mode==='ground'){
+        return Z ? [
+          ['支撑','在底线后中场放水瓶，手机斜靠。'],
+          ['取景','球网白边落在提示框内；双侧底线可见。'],
+          ['稳定','防风吹倒；开录前确认整场可见。']
+        ] : [
+          ['Prop','Lean the phone on a water bottle mid-court behind the baseline.'],
+          ['Framing','Keep net tape in the guide box; both baselines visible.'],
+          ['Stable','Keep it steady against wind; confirm the full court before start.']
+        ];
+      }
+      return Z ? [
+        ['高度','尽量架高（围网顶端最佳），别让球网挡住远端底线。'],
+        ['距离','底线后方靠近中线；单打可略偏弱侧约一脚。'],
+        ['角度','两侧底线及线后约1至2米入镜；略俯拍。'],
+        ['球网与底线','球网顶边勿压远端线；画面居中。'],
+        ['光线与挡风网','太阳在手机背后；尽量对无挡风网一侧。']
+      ] : [
+        ['Height','Mount high without the net covering the far baseline.'],
+        ['Distance','Behind baseline near center; for singles offset about one foot.'],
+        ['Angle','Both baselines plus a few feet behind; tilt down slightly.'],
+        ['Net and baseline','Avoid net tape on far lines; center the court.'],
+        ['Light and windscreen','Sun behind the phone; prefer the side without a windscreen.']
+      ];
+    }
+    function paintChrome(){
+      const Z=zh();
+      document.title = Z ? '比赛录制分析 · 涨球' : 'Match record analyze · Zhangqiu';
+      document.getElementById('brand').textContent = Z ? '涨球教练' : 'Zhangqiu Coach';
+      document.getElementById('pageTitle').textContent = Z ? '比赛录制 · 分析' : 'Match record · analyze';
+      document.getElementById('lead').textContent = Z
+        ? '涨球比赛录制：先架摄像头，再开录。剪空镜、计分条、球速与落点热力、球轨迹、赛后点评、地面模式、分享访客链接。挥拍技术分析入口保留。'
+        : 'Zhangqiu match record: set the camera first, then record. Trim dead time, score bar, speed and depth heatmap, ball path, post-match notes, ground mode, and visitor share. Stroke analyze stays available.';
+      document.getElementById('fmtSingles').textContent = Z ? '单打' : 'Singles';
+      document.getElementById('fmtDoubles').textContent = Z ? '双打' : 'Doubles';
+      document.getElementById('modeStandard').textContent = Z ? '标准机位' : 'Standard';
+      document.getElementById('modeGround').textContent = Z ? '地面模式' : 'Ground mode';
+      document.getElementById('demo').textContent = Z ? '打开演示赛' : 'Open demo match';
+      document.getElementById('traceBtn').textContent = Z ? ('球轨迹 ' + (ballTrace ? '开' : '关')) : ('Ball path ' + (ballTrace ? 'on' : 'off'));
+      document.getElementById('voiceBtn').textContent = Z ? ('语音喊判 ' + (voice ? '开' : '关')) : ('Voice calls ' + (voice ? 'on' : 'off'));
+      document.getElementById('camTitle').textContent = Z ? '录制前：摄像头架设' : 'Before recording: camera setup';
+      document.getElementById('camSubtitle').textContent = Z
+        ? '摆好机位再开始，球速、落点与线审更稳。'
+        : 'Frame the court first for steadier tracking.';
+      document.getElementById('camModeTitle').textContent = mode==='ground'
+        ? (Z ? '地面模式（手机放地上）' : 'Ground mode (phone on the ground)')
+        : (Z ? '标准机位（围网或三脚架）' : 'Standard (fence or tripod)');
+      document.getElementById('duringTip').innerHTML = Z
+        ? '<b>录制中请保持</b><br/>手机固定、勿遮挡；尽量飞行模式。双侧底线始终在画面里。'
+        : '<b>While recording</b><br/>Keep the phone locked; avoid blocking the lens. Prefer airplane mode. Keep both baselines in view.';
+      document.getElementById('speedHint').textContent = Z ? '球速为估测值，误差约正负百分之十。' : 'Shot speed is estimated (about plus or minus 10%).';
+      document.getElementById('share').textContent = Z
+        ? '分享：访客可打开分享页（无需会员）；教练复盘钩子对接消息或学员。'
+        : 'Share: visitors can open the share page without membership; coach review hooks into inbox or students.';
+      document.getElementById('tabAnalyze').textContent = Z ? '分析' : 'Analyze';
+      document.getElementById('tabCoach').textContent = Z ? '教练' : 'Coach';
+      document.getElementById('tabFriends').textContent = Z ? '球友' : 'Friends';
+      document.getElementById('tabMe').textContent = Z ? '我的' : 'Me';
+    }
+    function paintCam(){
+      const list = camTipsFor(mode);
+      document.getElementById('camTips').innerHTML = list.map(([k,v])=>`<div class="stat" style="margin-top:8px" data-tip="${k}"><span>${k}</span><b style="font-size:12px;font-weight:500">${v}</b></div>`).join('');
+      document.getElementById('camModeTitle').textContent = mode==='ground'
+        ? (zh() ? '地面模式（手机放地上）' : 'Ground mode (phone on the ground)')
+        : (zh() ? '标准机位（围网或三脚架）' : 'Standard (fence or tripod)');
+    }
+    function render(){
+      const Z=zh();
+      paintChrome();
+      paintCam();
+      document.getElementById('stats').innerHTML=(Z
+        ? [['均速',match.stats.avgSpeedKmh+' km/h'],['回合',match.stats.avgRally],['制胜分',match.stats.winners],['比分',match.finalScore]]
+        : [['Avg speed',match.stats.avgSpeedKmh+' km/h'],['Rally',match.stats.avgRally],['Winners',match.stats.winners],['Score',match.finalScore]]
+      ).map(([k,v])=>`<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
+      const live=match.points.filter(p=>!p.dead);
+      document.getElementById('points').innerHTML=live.map(p=>`<div class="item ${p.id===active.id?'on':''}" data-id="${p.id}">#${p.index+1} · ${p.setScore} ${p.scoreBefore} · ${p.result} · ${p.rallyLength}${Z?'拍':' shots'}</div>`).join('');
+      document.getElementById('coach').innerHTML=match.coaching.map(c=>`<div><strong>${c.title}</strong><div class="hint">${c.body}</div><button class="btn" data-jump="${c.id}" style="margin-top:6px">${Z?'跳到该分':'Jump'}</button></div>`).join('');
+      draw();
+    }
+    document.getElementById('points').onclick=e=>{ const id=e.target.dataset.id; if(!id)return; active=match.points.find(p=>p.id===id)||active; if(voice&&speechSynthesis){ const Z=zh(); const u=new SpeechSynthesisUtterance(active.setScore+(Z?'。':' ')+(active.lineCall&&active.lineCall.call==='out'?(Z?'出界':'Out'):(Z?'界内':'In'))); u.lang=Z?'zh-CN':'en-US'; speechSynthesis.speak(u);} render(); };
+    document.getElementById('coach').onclick=e=>{ const id=e.target.dataset.jump; if(!id)return; active=match.points.find(p=>p.id===id)||active; render(); };
+    document.getElementById('traceBtn').onclick=()=>{ ballTrace=!ballTrace; canvas.dataset.ballTrace=ballTrace?'on':'off'; render(); };
+    document.getElementById('voiceBtn').onclick=()=>{ voice=!voice; render(); };
+    document.getElementById('demo').onclick=()=>{ match=build(); active=match.points.find(p=>!p.dead); render(); };
+    document.querySelectorAll('[data-mode]').forEach(btn=>btn.onclick=()=>{ document.querySelectorAll('[data-mode]').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); mode=btn.dataset.mode; if(mode==='ground'){ canvas.width=320; canvas.height=560; } else { canvas.width=640; canvas.height=360; } render(); });
+    document.querySelectorAll('[data-format]').forEach(btn=>btn.onclick=()=>{ document.querySelectorAll('[data-format]').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); });
+    render();
+  </script>
+</body>
+</html>
