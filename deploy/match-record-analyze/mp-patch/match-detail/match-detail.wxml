@@ -8,7 +8,6 @@
     <view class="heat">{{zh ? '落点热力已叠加' : 'Heatmap on'}}</view>
   </view>
   <text class="hint">{{match.speedDisclaimer}}</text>
-  <text class="hint">{{match.watchNote}}</text>
 
   <view class="row">
     <view class="chip {{ballTrace?'on':''}}" bindtap="toggleTrace">{{zh ? '球轨迹' : 'Ball trace'}}</view>

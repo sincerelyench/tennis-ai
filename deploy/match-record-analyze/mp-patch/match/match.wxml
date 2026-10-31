@@ -2,7 +2,7 @@
   <view class="top">
     <text class="brand">涨球</text>
     <text class="h1">{{zh ? '比赛录制 · 分析' : 'Match record · analyze'}}</text>
-    <text class="lead">{{zh ? 'SwingVision 向：剪空镜、计分、球速热力、赛后点评。挥拍分析仍可用。' : 'SwingVision-inspired match analyze. Stroke analyze still available.'}}</text>
+    <text class="lead">{{zh ? '涨球比赛录制：剪空镜、计分、球速热力、赛后点评。挥拍分析仍可用。' : 'Zhangqiu match analyze: trim dead time, scoring, speed heatmap, post-match notes. Stroke analyze still available.'}}</text>
   </view>
 
   <view class="card">
@@ -19,7 +19,7 @@
     <view class="primary" bindtap="onRecord">{{zh ? '开始录制 / 上传流水线' : 'Record / upload pipeline'}}</view>
     <view class="ghost" bindtap="onDemo">{{zh ? '打开演示赛' : 'Open demo match'}}</view>
     <view class="ghost" bindtap="onStroke">{{zh ? '挥拍技术分析' : 'Stroke analyze'}}</view>
-    <text class="hint">{{zh ? '球速估测 ±10%。Watch 挑战喊判：coming。' : 'Speed ±10%. Watch callouts: coming.'}}</text>
+    <text class="hint">{{zh ? '球速估测 ±10%。' : 'Speed estimate ±10%.'}}</text>
     <text class="hint" wx:if="{{note}}">{{note}}</text>
   </view>
 

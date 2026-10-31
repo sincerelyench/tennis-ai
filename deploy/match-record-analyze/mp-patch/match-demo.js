@@ -171,7 +171,6 @@ function buildDemoMatch(opts) {
     videoLabel: mode === "ground" ? "竖屏球心演示" : "比赛录像演示",
     pipeline: "demo",
     speedDisclaimer: "球速为估测值，误差约 ±10%。",
-    watchNote: "Apple Watch 挑战喊判：coming（iOS 后续）。",
   }
 }
 
