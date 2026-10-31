@@ -13,6 +13,7 @@ import {
   playerSideLabel,
   scoreBarLabel,
   shotRallyLabel,
+  speedUnitLabel,
   type PointResult,
   type StrokeKind,
 } from "@/lib/match-demo";
@@ -46,7 +47,7 @@ function labelResult(zh: boolean, r: PointResult | "all") {
     winner: ["制胜分", "Winner"],
     forced_error: ["压迫失误", "Forced error"],
     unforced_error: ["非受迫", "Unforced"],
-    ace: ["Ace", "Ace"],
+    ace: ["发球直接得分", "Ace"],
     double_fault: ["双误", "Double fault"],
   };
   return zh ? map[r][0] : map[r][1];
@@ -116,29 +117,32 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
     const w = canvas.width;
     const h = canvas.height;
     ctx.clearRect(0, 0, w, h);
-    // court
+    // court — solid green only; keep lines; no heatmap / color patches
+    // Inset vertically so baselines sit between score bar and legend (full depth visible).
+    const x0 = w * 0.08, x1 = w * 0.92, xm = w * 0.5;
+    const y0 = h * 0.14, y1 = h * 0.82, ym = (y0 + y1) / 2;
+    const mapX = (px: number) => x0 + px * (x1 - x0);
+    const mapY = (py: number) => y0 + py * (y1 - y0);
     ctx.fillStyle = "#1f4a38";
     ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = "rgba(244,239,228,0.85)";
     ctx.lineWidth = 2;
-    ctx.strokeRect(w * 0.08, h * 0.08, w * 0.84, h * 0.84);
+    ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
     ctx.beginPath();
-    ctx.moveTo(w * 0.5, h * 0.08);
-    ctx.lineTo(w * 0.5, h * 0.92);
-    ctx.moveTo(w * 0.08, h * 0.5);
-    ctx.lineTo(w * 0.92, h * 0.5);
+    ctx.moveTo(xm, y0);
+    ctx.lineTo(xm, y1);
+    ctx.moveTo(x0, ym);
+    ctx.lineTo(x1, ym);
+    // service boxes
+    const ySvcNear = mapY(0.25);
+    const ySvcFar = mapY(0.75);
+    ctx.moveTo(x0, ySvcNear);
+    ctx.lineTo(x1, ySvcNear);
+    ctx.moveTo(x0, ySvcFar);
+    ctx.lineTo(x1, ySvcFar);
+    ctx.moveTo(xm, ySvcNear);
+    ctx.lineTo(xm, ySvcFar);
     ctx.stroke();
-
-    // heatmap soft blobs
-    const heat = match.stats.heatmap;
-    for (let x = 0; x < 8; x++) {
-      for (let y = 0; y < 4; y++) {
-        const v = heat[x][y];
-        if (!v) continue;
-        ctx.fillStyle = `rgba(250, 204, 21, ${Math.min(0.55, v * 0.08)})`;
-        ctx.fillRect(w * (0.08 + (x / 8) * 0.84), h * (0.08 + (y / 4) * 0.84), w * 0.105, h * 0.21);
-      }
-    }
 
     if (ballTrace && active) {
       active.shots.forEach((shot, i) => {
@@ -146,8 +150,8 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
         const shotN = shot.shotIndex || i + 1;
         ctx.beginPath();
         shot.ballPath.forEach((p, pi) => {
-          const px = w * (0.08 + p.x * 0.84);
-          const py = h * (0.08 + p.y * 0.84);
+          const px = mapX(p.x);
+          const py = mapY(p.y);
           if (pi === 0) ctx.moveTo(px, py);
           else ctx.lineTo(px, py);
         });
@@ -155,8 +159,8 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
         ctx.lineWidth = 2.5;
         ctx.stroke();
         const last = shot.ballPath[shot.ballPath.length - 1] || { x: shot.x, y: shot.y };
-        const lx = w * (0.08 + last.x * 0.84);
-        const ly = h * (0.08 + last.y * 0.84);
+        const lx = mapX(last.x);
+        const ly = mapY(last.y);
         ctx.beginPath();
         ctx.arc(lx, ly, 5, 0, Math.PI * 2);
         ctx.fillStyle = color;
@@ -164,9 +168,9 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
         ctx.strokeStyle = "rgba(7,20,14,0.85)";
         ctx.lineWidth = 1;
         ctx.stroke();
-        // Landing = which hit in the rally + per-shot speed
+        // Landing = which hit in the rally + per-shot speed (locale-only copy)
         const rallyTxt = shotRallyLabel(zh, shotN);
-        const speedTxt = `${shot.speedKmh} km/h`;
+        const speedTxt = speedUnitLabel(zh, shot.speedKmh);
         ctx.font = "600 11px ui-sans-serif, system-ui";
         const tw = Math.max(ctx.measureText(rallyTxt).width, ctx.measureText(speedTxt).width);
         const pad = 4;
@@ -332,7 +336,7 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
                     </span>
                   </span>
                   <span className="shrink-0 font-semibold tabular-nums" style={{ color }}>
-                    {shot.speedKmh} km/h
+                    {speedUnitLabel(zh, shot.speedKmh)}
                   </span>
                 </li>
               );
@@ -368,19 +372,30 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
             onClick={exportGroundVertical}
             className="rounded-lg border border-border px-3 py-1.5 text-xs text-foreground"
           >
-            {zh ? "Ground 竖屏导出" : "Ground vertical export"}
+            {zh ? "地面机位竖屏导出" : "Ground vertical export"}
           </button>
         </div>
         {active?.lineCall ? (
           <p className="text-[11px] text-muted-foreground" data-line-call="true">
-            {zh ? "线审（尽力）" : "Line call (best-effort)"}: {active.lineCall.call} ·{" "}
+            {zh ? "线审（尽力）" : "Line call (best-effort)"}
+            {": "}
+            {zh
+              ? active.lineCall.call === "out"
+                ? "出界"
+                : active.lineCall.call === "close"
+                  ? "压线待审"
+                  : "界内"
+              : active.lineCall.call}
+            {" · "}
             {Math.round(active.lineCall.confidence * 100)}% · {active.lineCall.note}
           </p>
         ) : null}
       </section>
 
       <section className="space-y-2" data-section="filters">
-        <h2 className="text-sm font-semibold text-foreground">{zh ? "高光 / 筛选（已剪空镜）" : "Highlights / filters (dead time trimmed)"}</h2>
+        <h2 className="text-sm font-semibold text-foreground">
+          {zh ? `全部回合 ${points.length} 分（已剪空镜）` : `All rallies · ${points.length} points (dead time trimmed)`}
+        </h2>
         <div className="flex flex-wrap gap-2">
           {STROKE_OPTS.map((s) => (
             <button
@@ -425,8 +440,11 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
           />
           <span>{minRally || 0}</span>
         </label>
-        <ul className="max-h-48 space-y-1 overflow-auto rounded-lg border border-border bg-card p-2">
-          {points.map((p) => (
+        <ul
+          className="max-h-[min(60vh,520px)] space-y-1 overflow-auto rounded-lg border border-border bg-card p-2"
+          data-section="all-rallies"
+        >
+          {points.map((p, pi) => (
             <li key={p.id}>
               <button
                 type="button"
@@ -441,7 +459,7 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
                 )}
               >
                 <span>
-                  #{p.index + 1} · {scoreBarLabel(p)} · {labelResult(zh, p.result)}
+                  #{pi + 1} · {scoreBarLabel(p)} · {labelResult(zh, p.result)}
                 </span>
                 <span className="text-[10px] text-muted-foreground">
                   {p.rallyLength}
@@ -457,8 +475,8 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
         <h2 className="text-sm font-semibold text-foreground">{zh ? "击球数据" : "Shot stats"}</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
-            [zh ? "均速" : "Avg speed", `${match.stats.avgSpeedKmh} km/h`],
-            [zh ? "最快" : "Max speed", `${match.stats.maxSpeedKmh} km/h`],
+            [zh ? "均速" : "Avg speed", speedUnitLabel(zh, match.stats.avgSpeedKmh)],
+            [zh ? "最快" : "Max speed", speedUnitLabel(zh, match.stats.maxSpeedKmh)],
             [zh ? "深度" : "Depth", `${Math.round(match.stats.avgDepth * 100)}%`],
             [zh ? "精准" : "Accuracy", `${Math.round(match.stats.avgAccuracy * 100)}%`],
             [zh ? "回合均长" : "Avg rally", String(match.stats.avgRally)],
@@ -473,7 +491,9 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
           ))}
         </div>
         <p className="text-[11px] text-muted-foreground" data-speed-disclaimer="true">
-          {zh ? "球速估测，约 ±10%。落点热力见上方球场图。" : "Speed estimate ±10%. Heatmap drawn on the court above."}
+          {zh
+            ? "球速估测，约 ±10%。蓝红轨迹为底线到对面底线全场深度。"
+            : "Speed estimate ±10%. Blue/red traces span baseline to baseline."}
         </p>
       </section>
 

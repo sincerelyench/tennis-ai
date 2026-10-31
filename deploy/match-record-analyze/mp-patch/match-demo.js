@@ -36,7 +36,7 @@ function buildDemoMatch(opts) {
 
   while ((gamesYou < 6 && gamesOpp < 6) || Math.abs(gamesYou - gamesOpp) < 2) {
     if (gamesYou >= 6 && gamesOpp >= 6 && Math.abs(gamesYou - gamesOpp) >= 2) break
-    if (gamesYou === 7 || gamesOpp === 7 || pointIndex > 24) break
+    if (gamesYou === 7 || gamesOpp === 7 || pointIndex > 400) break
     if (rand() < 0.15) {
       const deadLen = 4 + Math.floor(rand() * 5)
       points.push({
@@ -63,15 +63,18 @@ function buildDemoMatch(opts) {
     for (let s = 0; s < rally; s++) {
       const stroke = s === 0 ? "serve" : ["forehand", "backhand", "volley"][Math.floor(rand() * 3)]
       const side = s % 2 === 0 ? server : server === "you" ? "opp" : "you"
-      const x = 0.15 + rand() * 0.7
-      const y = 0.2 + rand() * 0.6
-      heat[Math.min(7, Math.floor(x * 8))][Math.min(3, Math.floor(y * 4))] += 1
+      const endX = 0.15 + rand() * 0.7
+      const y0 = side === "you" ? 0.95 : 0.05
+      const y1 = side === "you" ? 0.05 : 0.95
+      const x0 = 0.32 + rand() * 0.36
       const dur = 0.8 + rand() * 0.7
       const path = []
-      for (let i = 0; i <= 6; i++) {
-        const u = i / 6
-        path.push({ x: 0.5 + (x - 0.5) * u, y: (side === "you" ? 0.85 : 0.15) + (y - (side === "you" ? 0.85 : 0.15)) * u })
+      for (let i = 0; i <= 10; i++) {
+        const u = i / 10
+        path.push({ x: x0 + (endX - x0) * u, y: y0 + (y1 - y0) * u })
       }
+      const end = path[path.length - 1]
+      heat[Math.min(7, Math.floor(end.x * 8))][Math.min(3, Math.floor(end.y * 4))] += 1
       shots.push({
         id: "s-" + pointIndex + "-" + s,
         t: t,
@@ -83,8 +86,8 @@ function buildDemoMatch(opts) {
         depth: Math.round((0.4 + rand() * 0.5) * 100) / 100,
         accuracy: Math.round((0.45 + rand() * 0.5) * 100) / 100,
         in: rand() > 0.12,
-        x: x,
-        y: y,
+        x: end.x,
+        y: end.y,
         ballPath: path,
       })
       t += dur

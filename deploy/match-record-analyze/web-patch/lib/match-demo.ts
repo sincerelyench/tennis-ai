@@ -91,18 +91,29 @@ function mulberry32(seed: number) {
   };
 }
 
-function ballPath(x: number, y: number, rand: () => number): { x: number; y: number }[] {
+/** Full-court depth: one baseline → other baseline (not mid-court stubs). */
+function ballPath(side: "you" | "opp", endX: number, rand: () => number): { x: number; y: number }[] {
   const pts: { x: number; y: number }[] = [];
-  const sx = 0.5 + (rand() - 0.5) * 0.1;
-  const sy = y > 0.5 ? 0.92 : 0.08;
-  for (let i = 0; i <= 8; i++) {
-    const u = i / 8;
+  const y0 = side === "you" ? 0.95 : 0.05;
+  const y1 = side === "you" ? 0.05 : 0.95;
+  const x0 = 0.32 + rand() * 0.36;
+  const x1 = Math.min(0.9, Math.max(0.1, endX));
+  for (let i = 0; i <= 10; i++) {
+    const u = i / 10;
     pts.push({
-      x: sx + (x - sx) * u + Math.sin(u * Math.PI) * 0.04 * (rand() - 0.5),
-      y: sy + (y - sy) * u - Math.sin(u * Math.PI) * 0.12,
+      x: x0 + (x1 - x0) * u + Math.sin(u * Math.PI) * 0.035 * (rand() - 0.5),
+      y: y0 + (y1 - y0) * u,
     });
   }
   return pts;
+}
+
+export function speedUnitLabel(zh: boolean, kmh: number): string {
+  return zh ? `${kmh} 公里/时` : `${kmh} km/h`;
+}
+
+export function groundModeLabel(zh: boolean): string {
+  return zh ? "地面机位" : "Ground mode";
 }
 
 function tennisScore(pointsYou: number, pointsOpp: number): string {
@@ -166,9 +177,12 @@ export function buildDemoMatch(opts?: {
       const stroke: StrokeKind = s === 0 ? "serve" : STROKES[1 + Math.floor(rand() * 4)];
       const side: "you" | "opp" = (s % 2 === 0 ? server : server === "you" ? "opp" : "you");
       const x = 0.12 + rand() * 0.76;
-      const y = 0.15 + rand() * 0.7;
-      const gx = Math.min(7, Math.floor(x * 8));
-      const gy = Math.min(3, Math.floor(y * 4));
+      // Land deep near the far baseline so markers match full-depth traces.
+      const y = side === "you" ? 0.06 + rand() * 0.1 : 0.84 + rand() * 0.1;
+      const path = ballPath(side, x, rand);
+      const end = path[path.length - 1] || { x, y };
+      const gx = Math.min(7, Math.floor(end.x * 8));
+      const gy = Math.min(3, Math.floor(end.y * 4));
       heat[gx][gy] += 1;
       const speed = stroke === "serve" ? 120 + rand() * 55 : 55 + rand() * 70;
       const dur = 0.7 + rand() * 0.9;
@@ -183,9 +197,9 @@ export function buildDemoMatch(opts?: {
         depth: Math.round((0.35 + rand() * 0.6) * 100) / 100,
         accuracy: Math.round((0.4 + rand() * 0.55) * 100) / 100,
         in: rand() > 0.12,
-        x,
-        y,
-        ballPath: ballPath(x, y, rand),
+        x: end.x,
+        y: end.y,
+        ballPath: path,
       });
       t += dur;
     }
@@ -235,12 +249,13 @@ export function buildDemoMatch(opts?: {
           ? {
               call: rand() > 0.7 ? "out" : rand() > 0.5 ? "close" : "in",
               confidence: Math.round((0.62 + rand() * 0.35) * 100) / 100,
-              note: "Best-effort phone camera line call (demo).",
+              note: "演示线审（尽力）",
             }
           : undefined,
     });
     t = end + 1.2 + rand() * 2;
-    if (pointIndex > 28) break;
+    // Full set: never truncate mid-match for a short sample list.
+    if (pointIndex > 400) break;
   }
 
   const liveShots = points.flatMap((p) => (p.dead ? [] : p.shots));
@@ -306,7 +321,7 @@ export function buildDemoMatch(opts?: {
   return {
     id: `m-${Date.now().toString(36)}-${Math.floor(rand() * 1e4).toString(36)}`,
     createdAt: new Date().toISOString(),
-    title: opts?.title || (mode === "ground" ? "Ground Mode 练习赛" : "周末练习赛"),
+    title: opts?.title || (mode === "ground" ? "地面机位练习赛" : "周末练习赛"),
     format,
     mode,
     durationSec: Math.round(t),

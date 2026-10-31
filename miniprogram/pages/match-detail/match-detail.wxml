@@ -1,13 +1,13 @@
 <view class="page" wx:if="{{match}}" data-zq-match-mvp="1">
   <text class="h1">{{match.title}}</text>
-  <text class="lead">{{match.format}} · {{match.finalScore}} · {{match.videoLabel}}</text>
+  <text class="lead">{{formatLabel}} · {{match.finalScore}} · {{modeLabel}} · {{match.videoLabel}}</text>
 
   <view class="court {{match.mode==='ground'?'ground':''}}">
     <view class="score">{{zh ? '计分条' : 'Score'}} · {{match.finalScore}}</view>
-    <view class="trace" wx:if="{{ballTrace}}">{{zh ? '球轨迹：开（演示）' : 'Ball trace: on (demo)'}}</view>
-    <view class="heat">{{zh ? '落点热力已叠加' : 'Heatmap on'}}</view>
+    <view class="trace" wx:if="{{ballTrace}}">{{zh ? '球轨迹：开 · 底线到对面底线' : 'Ball trace: on · baseline to baseline'}}</view>
+    <view class="trace">{{zh ? '全绿球场 · 无热力色块' : 'All-green court · no heatmap'}}</view>
   </view>
-  <text class="hint">{{match.speedDisclaimer}}</text>
+  <text class="hint">{{speedDisclaimer}}</text>
   <view class="legend" data-trace-legend="you-opp">
     <text class="you">{{legendYou}}</text>
     <text class="opp">{{legendOpp}}</text>
@@ -22,35 +22,36 @@
   <text class="label">{{zh ? '本分每球球速' : 'Per-shot speeds'}}</text>
   <view class="list" data-section="per-shot-speeds">
     <view class="item shot {{item.side}}" wx:for="{{activeShots}}" wx:key="id">
-      <text>{{item.rallyLabel}} · {{item.sideLabel}} · {{item.stroke}}</text>
-      <text class="speed">{{item.speedKmh}} km/h</text>
+      <text>{{item.rallyLabel}} · {{item.sideLabel}} · {{item.strokeLabel}}</text>
+      <text class="speed">{{item.speedLabel}}</text>
     </view>
     <text class="hint" wx:if="{{!activeShots.length}}">{{zh ? '选一分查看每拍球速与落点序号' : 'Pick a point for per-shot speed'}}</text>
   </view>
 
   <text class="label">{{zh ? '筛选（已剪空镜）' : 'Filters (trimmed)'}}</text>
   <view class="row">
-    <view class="chip {{stroke==='all'?'on':''}}" data-v="all" bindtap="setStroke">All</view>
-    <view class="chip {{stroke==='forehand'?'on':''}}" data-v="forehand" bindtap="setStroke">FH</view>
-    <view class="chip {{stroke==='backhand'?'on':''}}" data-v="backhand" bindtap="setStroke">BH</view>
-    <view class="chip {{stroke==='serve'?'on':''}}" data-v="serve" bindtap="setStroke">Serve</view>
+    <view class="chip {{stroke==='all'?'on':''}}" data-v="all" bindtap="setStroke">{{zh ? '全部技术' : 'All strokes'}}</view>
+    <view class="chip {{stroke==='forehand'?'on':''}}" data-v="forehand" bindtap="setStroke">{{zh ? '正手' : 'Forehand'}}</view>
+    <view class="chip {{stroke==='backhand'?'on':''}}" data-v="backhand" bindtap="setStroke">{{zh ? '反手' : 'Backhand'}}</view>
+    <view class="chip {{stroke==='serve'?'on':''}}" data-v="serve" bindtap="setStroke">{{zh ? '发球' : 'Serve'}}</view>
   </view>
   <view class="row">
-    <view class="chip {{result==='all'?'on':''}}" data-v="all" bindtap="setResult">All</view>
-    <view class="chip {{result==='winner'?'on':''}}" data-v="winner" bindtap="setResult">Winner</view>
-    <view class="chip {{result==='unforced_error'?'on':''}}" data-v="unforced_error" bindtap="setResult">UFE</view>
-    <view class="chip {{result==='ace'?'on':''}}" data-v="ace" bindtap="setResult">Ace</view>
+    <view class="chip {{result==='all'?'on':''}}" data-v="all" bindtap="setResult">{{zh ? '全部结果' : 'All results'}}</view>
+    <view class="chip {{result==='winner'?'on':''}}" data-v="winner" bindtap="setResult">{{zh ? '制胜分' : 'Winner'}}</view>
+    <view class="chip {{result==='unforced_error'?'on':''}}" data-v="unforced_error" bindtap="setResult">{{zh ? '非受迫' : 'Unforced'}}</view>
+    <view class="chip {{result==='ace'?'on':''}}" data-v="ace" bindtap="setResult">{{zh ? '发球直接得分' : 'Ace'}}</view>
   </view>
 
-  <view class="list">
+  <text class="label">{{zh ? ('全部回合 ' + points.length + ' 分') : ('All rallies · ' + points.length + ' points')}}</text>
+  <view class="list all-rallies" data-section="all-rallies">
     <view class="item {{activeId===item.id?'on':''}}" wx:for="{{points}}" wx:key="id" data-id="{{item.id}}" bindtap="pickPoint">
-      #{{item.index+1}} · {{item.setScore}} {{item.scoreBefore}} · {{item.result}} · {{item.rallyLength}}{{zh?'拍':' shots'}}
+      #{{index+1}} · {{item.setScore}} {{item.scoreBefore}} · {{item.resultLabel}} · {{item.rallyLength}}{{zh?'拍':' shots'}}
     </view>
   </view>
 
   <text class="label">{{zh ? '击球数据' : 'Shot stats'}}</text>
   <view class="stats">
-    <view class="stat"><text class="k">{{zh?'均速':'Avg'}}</text><text class="v">{{match.stats.avgSpeedKmh}} km/h</text></view>
+    <view class="stat"><text class="k">{{zh?'均速':'Avg'}}</text><text class="v">{{avgSpeedLabel}}</text></view>
     <view class="stat"><text class="k">{{zh?'深度':'Depth'}}</text><text class="v">{{match.stats.avgDepth}}</text></view>
     <view class="stat"><text class="k">{{zh?'回合':'Rally'}}</text><text class="v">{{match.stats.avgRally}}</text></view>
     <view class="stat"><text class="k">{{zh?'制胜':'Winners'}}</text><text class="v">{{match.stats.winners}}</text></view>

@@ -25,7 +25,7 @@ export function MatchShareView({ share }: { share: MatchShare | null }) {
   }
 
   const m = share.match;
-  const highlights = m.points.filter((p) => !p.dead).slice(0, 8);
+  const livePoints = m.points.filter((p) => !p.dead && p.rallyLength > 0);
 
   return (
     <div className={pageClass} data-page="match-share" data-share-id={share.id} data-zq-match-mvp="1">
@@ -42,7 +42,7 @@ export function MatchShareView({ share }: { share: MatchShare | null }) {
 
       <section className="grid grid-cols-2 gap-2 sm:grid-cols-4" data-section="share-stats">
         {[
-          [zh ? "均速" : "Avg speed", `${m.stats.avgSpeedKmh} km/h`],
+          [zh ? "均速" : "Avg speed", zh ? `${m.stats.avgSpeedKmh} 公里/时` : `${m.stats.avgSpeedKmh} km/h`],
           [zh ? "回合" : "Rally", String(m.stats.avgRally)],
           [zh ? "制胜分" : "Winners", String(m.stats.winners)],
           [zh ? "非受迫" : "UFEs", String(m.stats.unforced)],
@@ -58,11 +58,23 @@ export function MatchShareView({ share }: { share: MatchShare | null }) {
       </p>
 
       <section className="space-y-2" data-section="share-points">
-        <h2 className="text-sm font-semibold">{zh ? "高光分（已剪空镜）" : "Highlight points (trimmed)"}</h2>
-        <ul className="space-y-1">
-          {highlights.map((p) => (
+        <h2 className="text-sm font-semibold">
+          {zh ? `全部回合 ${livePoints.length} 分（已剪空镜）` : `All rallies · ${livePoints.length} points (trimmed)`}
+        </h2>
+        <ul className="max-h-[min(60vh,520px)] space-y-1 overflow-auto" data-section="all-rallies">
+          {livePoints.map((p, pi) => (
             <li key={p.id} className="rounded-lg border border-border bg-card px-3 py-2 text-xs">
-              #{p.index + 1} · {scoreBarLabel(p)} · {p.result} · {p.rallyLength}
+              #{pi + 1} · {scoreBarLabel(p)} ·{" "}
+              {zh
+                ? ({
+                    winner: "制胜分",
+                    forced_error: "压迫失误",
+                    unforced_error: "非受迫",
+                    ace: "发球直接得分",
+                    double_fault: "双误",
+                  } as Record<string, string>)[p.result] || p.result
+                : p.result}{" "}
+              · {p.rallyLength}
               {zh ? "拍" : " shots"}
             </li>
           ))}

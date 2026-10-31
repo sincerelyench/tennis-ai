@@ -6,8 +6,10 @@
 
 1. 分析 tab 增加「比赛录制 / 分析」入口（挥拍技术分析不回归）
 2. 剪空镜 + 高光筛选（技术 / 分结果 / 回合长度）— UI + 本地演示数据
-3. 击球统计：每球球速（非仅均速）、深度、精准、回合；热力；球速 ±10%
-4. 落点标注「第 N 拍」；球轨迹图例明确：蓝 = 你（己方），红 = 对手（可用录入名）
+3. 击球统计：每球球速（非仅均速）、深度、精准、回合；球速 ±10%
+4. 落点标注「第 N 拍」；蓝/红轨迹为底线→对面底线全场深度；全绿球场（无热力色块）；图例蓝=你 / 红=对手
+4b. 演示赛生成完整一盘并列出全部有效回合（不截断样本）
+4c. 界面文案跟随应用语言，不中英混排
 5. 自动比分条叠加；单打 / 双打
 6. 线审尽力 + 语音喊判（Web Speech）
 7. 回放球轨迹开关
@@ -29,8 +31,8 @@ bash deploy/match-record-analyze/scripts/mac-four-surface-release.sh
 # ssh ... 'bash /tmp/match-record-analyze/scripts/apply-on-server.sh'
 ```
 
-APK：**1.0.86**，`gradle assembleRelease` + ZHANGQIU 重签（禁止 zip-inject）。
+APK：**1.0.88**，`gradle assembleRelease` + ZHANGQIU 重签（禁止 zip-inject）。
 
 ## 证据
 
-`media/shot-speed-rally-labels-20261101/`
+`media/demo-court-green-traces-20261101/`
