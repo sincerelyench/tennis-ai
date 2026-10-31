@@ -74,7 +74,6 @@ export type MatchRecord = {
   videoLabel: string;
   pipeline: "demo" | "local" | "gpu";
   speedDisclaimer: string;
-  watchNote: string;
 };
 
 const STROKES: StrokeKind[] = ["forehand", "backhand", "serve", "volley", "overhead"];
@@ -318,7 +317,6 @@ export function buildDemoMatch(opts?: {
     videoLabel: mode === "ground" ? "竖屏 · 球心裁切演示" : "横屏比赛录像演示",
     pipeline: "demo",
     speedDisclaimer: "球速为估测值，误差约 ±10%。",
-    watchNote: "Apple Watch 挑战喊判：coming（iOS 后续）。",
   };
 }
 

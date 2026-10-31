@@ -1,4 +1,4 @@
-/*! 涨球 分析 tab：比赛录制 / 分析（SwingVision 向 MVP，本地演示数据） */
+/*! 涨球 分析 tab：比赛录制 / 分析（本地演示数据） */
 (function () {
   var MARK = "data-zq-match-record-inject";
   var STYLE_ID = "zq-match-record-style";
@@ -102,7 +102,6 @@
         { id: (live[2] || live[0]).id, title: zh() ? "反手非受迫偏多" : "Backhand UFE", body: zh() ? "快节奏时优先打深过渡。" : "Prefer deep safety under pace." },
       ],
       speedDisclaimer: zh() ? "球速为估测值，误差约 ±10%。" : "Speed estimate ±10%.",
-      watchNote: zh() ? "Apple Watch 挑战喊判：coming（iOS 后续）。" : "Watch challenge callouts: coming.",
     };
   }
 
@@ -218,7 +217,6 @@
         "</div>" +
         '<canvas id="zq-mr-canvas" width="' + (mode === "ground" ? 320 : 640) + '" height="' + (mode === "ground" ? 560 : 360) + '" data-ball-trace="' + (ballTrace ? "on" : "off") + '"></canvas>' +
         '<p class="muted" data-speed-disclaimer="true">' + match.speedDisclaimer + "</p>" +
-        '<p class="muted" data-watch-note="true">' + match.watchNote + "</p>" +
         '<div class="grid">' +
         [["均速", match.stats.avgSpeedKmh + " km/h"], ["回合", match.stats.avgRally], ["制胜", match.stats.winners], ["非受迫", match.stats.unforced]].map(function (pair) {
           return '<div class="stat"><span class="muted">' + (Z && pair[0] === "均速" ? "均速" : pair[0]) + "</span><b>" + pair[1] + "</b></div>";
@@ -293,8 +291,8 @@
     wrap.innerHTML =
       '<button type="button" class="zq-mr-btn" data-zq-open-match="1">' + (zh() ? "比赛录制 / 分析" : "Match record / analyze") + "</button>" +
       '<p class="zq-mr-hint">' + (zh()
-        ? "SwingVision 向：剪空镜、计分条、球速热力、赛后点评。挥拍技术分析不变。球速 ±10%。"
-        : "SwingVision-inspired match analyze. Stroke analyze unchanged. Speed ±10%.") + "</p>";
+        ? "涨球比赛录制：剪空镜、计分条、球速热力、赛后点评。挥拍技术分析不变。球速 ±10%。"
+        : "Zhangqiu match analyze. Stroke analyze unchanged. Speed ±10%.") + "</p>";
     // Prefer inserting near top of analysis content
     if (host.firstChild) host.insertBefore(wrap, host.firstChild);
     else host.appendChild(wrap);

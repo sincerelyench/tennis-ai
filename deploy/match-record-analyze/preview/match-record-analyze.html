@@ -36,7 +36,7 @@
   <div class="wrap">
     <div class="brand">涨球 / 涨球教练</div>
     <h1>比赛录制 · 分析</h1>
-    <p class="lead">SwingVision 向 MVP：剪空镜、计分条、球速/落点热力、球轨迹、赛后点评、Ground Mode、分享访客链接。挥拍技术分析入口保留。</p>
+    <p class="lead">涨球比赛录制：剪空镜、计分条、球速/落点热力、球轨迹、赛后点评、Ground Mode、分享访客链接。挥拍技术分析入口保留。</p>
     <div class="row" id="setup">
       <button class="chip on" data-format="singles">单打</button>
       <button class="chip" data-format="doubles">双打</button>
@@ -48,7 +48,7 @@
       <button class="btn" id="traceBtn">球轨迹 开</button>
       <button class="btn" id="voiceBtn">语音喊判 关</button>
     </div>
-    <p class="hint" data-speed-disclaimer="true">球速为估测值，误差约 ±10%。Apple Watch 挑战喊判：coming（iOS 后续）。</p>
+    <p class="hint" data-speed-disclaimer="true">球速为估测值，误差约 ±10%。</p>
 
     <div class="card">
       <canvas id="court" width="640" height="360" data-ball-trace="on"></canvas>
@@ -90,7 +90,7 @@
       }
       const live=points.filter(p=>!p.dead); const you=live.flatMap(p=>p.shots.filter(s=>s.side==='you'));
       const avg=a=>a.reduce((x,y)=>x+y,0)/(a.length||1);
-      return {title:'涨球演示赛 · SwingVision 向',finalScore:gy+'-'+go,points,heatmap:heat,stats:{avgSpeedKmh:Math.round(avg(you.map(s=>s.speedKmh))),avgRally:Math.round(avg(live.map(p=>p.rallyLength))*10)/10,winners:live.filter(p=>p.result==='winner').length,unforced:3},coaching:[{title:'发球落点偏中路',body:'一发多落中线，下一场打宽外角。',id:live[0].id},{title:'反手非受迫偏多',body:'快节奏时优先打深过渡。',id:live[1].id}]};
+      return {title:'涨球演示赛',finalScore:gy+'-'+go,points,heatmap:heat,stats:{avgSpeedKmh:Math.round(avg(you.map(s=>s.speedKmh))),avgRally:Math.round(avg(live.map(p=>p.rallyLength))*10)/10,winners:live.filter(p=>p.result==='winner').length,unforced:3},coaching:[{title:'发球落点偏中路',body:'一发多落中线，下一场打宽外角。',id:live[0].id},{title:'反手非受迫偏多',body:'快节奏时优先打深过渡。',id:live[1].id}]};
     }
     let match=build(), active=match.points.find(p=>!p.dead), ballTrace=true, voice=false, mode='standard';
     const canvas=document.getElementById('court'); const ctx=canvas.getContext('2d');

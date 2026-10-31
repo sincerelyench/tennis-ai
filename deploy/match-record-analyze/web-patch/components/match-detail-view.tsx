@@ -288,9 +288,6 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
             {Math.round(active.lineCall.confidence * 100)}% · {active.lineCall.note}
           </p>
         ) : null}
-        <p className="text-[11px] text-muted-foreground" data-watch-note="true">
-          {match.watchNote}
-        </p>
       </section>
 
       <section className="space-y-2" data-section="filters">
