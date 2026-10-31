@@ -1,4 +1,4 @@
-/*! 涨球 分析 tab：比赛录制 / 分析（SwingVision 向 MVP，本地演示数据） */
+/*! 涨球 分析 tab：比赛录制 / 分析（含摄像头架设引导，本地演示数据） */
 (function () {
   var MARK = "data-zq-match-record-inject";
   var STYLE_ID = "zq-match-record-style";
@@ -102,8 +102,59 @@
         { id: (live[2] || live[0]).id, title: zh() ? "反手非受迫偏多" : "Backhand UFE", body: zh() ? "快节奏时优先打深过渡。" : "Prefer deep safety under pace." },
       ],
       speedDisclaimer: zh() ? "球速为估测值，误差约 ±10%。" : "Speed estimate ±10%.",
-      watchNote: zh() ? "Apple Watch 挑战喊判：coming（iOS 后续）。" : "Watch challenge callouts: coming.",
     };
+  }
+
+
+  function cameraCopy() {
+    var Z = zh();
+    return {
+      title: Z ? "录制前 · 摄像头架设" : "Before record · camera setup",
+      subtitle: Z ? "摆好机位再开始，球速、落点与线审更稳。" : "Frame the court first for steadier speed, depth, and line calls.",
+      duringTitle: Z ? "录制中请保持" : "While recording",
+      during: Z ? "手机固定、勿遮挡；尽量飞行模式避免来电打断。整场都要看到双侧底线。" : "Keep the phone locked; avoid blocking the lens. Prefer airplane mode. Keep both baselines in view the whole session.",
+      standardTitle: Z ? "标准机位（围网 / 三脚架）" : "Standard (fence / tripod)",
+      groundTitle: Z ? "Ground Mode（地上）" : "Ground Mode (on the ground)",
+      ready: Z ? "机位 OK，开始录制" : "Framing OK — start",
+      items: Z ? [
+        { key: "height", label: "高度", text: "尽量架高（围网顶端最佳），但别让球网挡住远端底线。" },
+        { key: "distance", label: "距离", text: "放在底线后方、靠近场地中线；单打可略偏弱侧约一脚，减少挡球。" },
+        { key: "angle", label: "角度", text: "整片场地入镜：两侧底线及线后约 1–2 米；略俯拍，近端发球线落在画面偏下。" },
+        { key: "net", label: "球网 / 底线", text: "球网顶边尽量不要压住远端发球线或底线；画面居中对齐场地。" },
+        { key: "light", label: "光线 / 挡风网", text: "太阳在手机背后一侧；尽量对着没有挡风网的一侧。" }
+      ] : [
+        { key: "height", label: "Height", text: "Mount as high as practical (fence-top preferred) without the net covering the far baseline." },
+        { key: "distance", label: "Distance", text: "Behind the baseline near center; for singles, offset ~1 ft toward the weaker side so players block less." },
+        { key: "angle", label: "Angle", text: "Fit the whole court: both baselines plus a few feet behind each; tilt down so the near service line sits in the lower third." },
+        { key: "net", label: "Net / baseline", text: "Avoid the net tape overlapping the far service or baseline; keep the court centered." },
+        { key: "light", label: "Light / windscreen", text: "Sun behind the phone; prefer the side without a windscreen." }
+      ],
+      groundItems: Z ? [
+        { key: "prop", label: "支撑", text: "在底线后中场附近放水瓶（或稳定物），手机斜靠其上。" },
+        { key: "aim", label: "取景", text: "俯仰到球网白边落在取景提示框内；能看到双侧底线与线后空间。" },
+        { key: "stable", label: "稳定", text: "确认不会被风吹倒；开录前再看一眼是否整场可见。" }
+      ] : [
+        { key: "prop", label: "Prop", text: "Place a water bottle (or stable object) on the ground near mid-court behind the baseline; lean the phone against it." },
+        { key: "aim", label: "Framing", text: "Tilt until the net tape sits in the guide box; keep both baselines and a bit of space behind them visible." },
+        { key: "stable", label: "Stable", text: "Make sure wind won’t tip it; double-check the full court before you start." }
+      ]
+    };
+  }
+
+  function cameraSetupHtml(mode) {
+    var c = cameraCopy();
+    var list = mode === "ground" ? c.groundItems : c.items;
+    return (
+      '<section data-section="camera-setup" data-mode="' + mode + '">' +
+      "<h2 style='font-size:15px;margin:12px 0 4px'>" + c.title + "</h2>" +
+      '<p class="muted">' + c.subtitle + "</p>" +
+      "<h3 style='font-size:12px;margin:10px 0 6px'>" + (mode === "ground" ? c.groundTitle : c.standardTitle) + "</h3>" +
+      '<ul class="zq-cam-list">' + list.map(function (it) {
+        return '<li data-tip="' + it.key + '"><b>' + it.label + "</b><span>" + it.text + "</span></li>";
+      }).join("") + "</ul>" +
+      '<p class="zq-cam-during" data-during-tip="1"><b>' + c.duringTitle + "</b> " + c.during + "</p>" +
+      "</section>"
+    );
   }
 
   function ensureStyle() {
@@ -128,6 +179,11 @@
       ".zq-mr-overlay .item{padding:8px 10px;font-size:11px;border-bottom:1px solid rgba(244,239,228,.08)}",
       ".zq-mr-overlay .item.on{background:rgba(125,211,160,.14);color:#7dd3a0}",
       ".zq-mr-overlay .coach{margin-top:10px;padding:10px;border:1px solid rgba(244,239,228,.12);border-radius:10px}",
+      ".zq-cam-list{list-style:none;padding:0;margin:8px 0;display:grid;gap:8px}",
+      ".zq-cam-list li{border:1px solid rgba(244,239,228,.12);border-radius:8px;padding:8px 10px;background:rgba(0,0,0,.18);font-size:11px;line-height:1.45;color:#9bb0a4}",
+      ".zq-cam-list li b{display:block;color:#f4efe4;margin-bottom:2px}",
+      ".zq-cam-during{margin-top:10px;padding:10px;border-radius:8px;border:1px solid rgba(125,211,160,.35);background:rgba(47,122,86,.22);font-size:11px;line-height:1.45}",
+      ".zq-cam-banner{margin-top:10px;color:#7dd3a0;font-size:11px;line-height:1.45}",
     ].join("");
     document.head.appendChild(s);
   }
@@ -146,12 +202,14 @@
     opts = opts || {};
     var format = opts.format || "singles";
     var mode = opts.mode || "standard";
+    var phase = opts.phase || "setup";
     var match = buildDemo(Date.now() % 100000, format, mode);
     saveMatch(match);
     var live = match.points.filter(function (p) { return !p.dead; });
     var active = live[0];
     var ballTrace = true;
     var voice = false;
+    var recordingBanner = false;
 
     var overlay = document.createElement("div");
     overlay.className = "zq-mr-overlay";
@@ -199,11 +257,58 @@
 
     function render() {
       var Z = zh();
+      var cam = cameraCopy();
+      if (phase === "setup") {
+        box.innerHTML =
+          '<button type="button" class="act" data-close="1">' + (Z ? "关闭" : "Close") + "</button>" +
+          "<h1 style='margin-top:10px'>" + (Z ? "比赛录制 · 分析" : "Match record · analyze") + "</h1>" +
+          '<p class="muted">' + (Z ? "涨球比赛录制：先架机位，再开录。" : "Zhangqiu match record: frame first, then start.") + "</p>" +
+          '<div class="row">' +
+          '<button type="button" class="chip ' + (format === "singles" ? "on" : "") + '" data-format="singles">' + (Z ? "单打" : "Singles") + "</button>" +
+          '<button type="button" class="chip ' + (format === "doubles" ? "on" : "") + '" data-format="doubles">' + (Z ? "双打" : "Doubles") + "</button>" +
+          '<button type="button" class="chip ' + (mode === "standard" ? "on" : "") + '" data-mode="standard">' + (Z ? "标准" : "Standard") + "</button>" +
+          '<button type="button" class="chip ' + (mode === "ground" ? "on" : "") + '" data-mode="ground">Ground</button>' +
+          "</div>" +
+          cameraSetupHtml(mode) +
+          '<div class="row">' +
+          '<button type="button" class="act primary" data-start-record="1">' + cam.ready + "</button>" +
+          '<button type="button" class="act" data-rebuild="1">' + (Z ? "先看演示赛" : "Open demo") + "</button>" +
+          "</div>";
+        box.onclick = function (e) {
+          var t = e.target;
+          if (!t) return;
+          if (t.getAttribute("data-close")) { overlay.remove(); return; }
+          if (t.getAttribute("data-format")) { format = t.getAttribute("data-format"); render(); return; }
+          if (t.getAttribute("data-mode")) { mode = t.getAttribute("data-mode"); render(); return; }
+          if (t.getAttribute("data-start-record")) {
+            phase = "live";
+            recordingBanner = true;
+            match = buildDemo(Date.now() % 100000, format, mode);
+            saveMatch(match);
+            live = match.points.filter(function (p) { return !p.dead; });
+            active = live[0];
+            render();
+            setTimeout(function () { recordingBanner = false; render(); }, 1800);
+            return;
+          }
+          if (t.getAttribute("data-rebuild")) {
+            phase = "live";
+            match = buildDemo(Date.now() % 100000, format, mode);
+            saveMatch(match);
+            live = match.points.filter(function (p) { return !p.dead; });
+            active = live[0];
+            render();
+          }
+        };
+        return;
+      }
       box.innerHTML =
         '<button type="button" class="act" data-close="1">' + (Z ? "关闭" : "Close") + "</button>" +
         "<h1 style='margin-top:10px'>" + match.title + "</h1>" +
         '<p class="muted">' + (match.format === "doubles" ? (Z ? "双打" : "Doubles") : (Z ? "单打" : "Singles")) +
         " · " + match.finalScore + " · " + (mode === "ground" ? "Ground Mode" : (Z ? "标准" : "Standard")) + "</p>" +
+        (recordingBanner ? ('<p class="zq-cam-banner" data-recording-banner="1">' + cam.duringTitle + "：" + cam.during + "</p>") : "") +
+        cameraSetupHtml(mode) +
         '<div class="row">' +
         '<button type="button" class="chip ' + (format === "singles" ? "on" : "") + '" data-format="singles">' + (Z ? "单打" : "Singles") + "</button>" +
         '<button type="button" class="chip ' + (format === "doubles" ? "on" : "") + '" data-format="doubles">' + (Z ? "双打" : "Doubles") + "</button>" +
@@ -218,7 +323,6 @@
         "</div>" +
         '<canvas id="zq-mr-canvas" width="' + (mode === "ground" ? 320 : 640) + '" height="' + (mode === "ground" ? 560 : 360) + '" data-ball-trace="' + (ballTrace ? "on" : "off") + '"></canvas>' +
         '<p class="muted" data-speed-disclaimer="true">' + match.speedDisclaimer + "</p>" +
-        '<p class="muted" data-watch-note="true">' + match.watchNote + "</p>" +
         '<div class="grid">' +
         [["均速", match.stats.avgSpeedKmh + " km/h"], ["回合", match.stats.avgRally], ["制胜", match.stats.winners], ["非受迫", match.stats.unforced]].map(function (pair) {
           return '<div class="stat"><span class="muted">' + (Z && pair[0] === "均速" ? "均速" : pair[0]) + "</span><b>" + pair[1] + "</b></div>";
@@ -293,13 +397,13 @@
     wrap.innerHTML =
       '<button type="button" class="zq-mr-btn" data-zq-open-match="1">' + (zh() ? "比赛录制 / 分析" : "Match record / analyze") + "</button>" +
       '<p class="zq-mr-hint">' + (zh()
-        ? "SwingVision 向：剪空镜、计分条、球速热力、赛后点评。挥拍技术分析不变。球速 ±10%。"
-        : "SwingVision-inspired match analyze. Stroke analyze unchanged. Speed ±10%.") + "</p>";
+        ? "涨球比赛录制：先架摄像头（高度/距离/角度），再开录。挥拍技术分析不变。球速 ±10%。"
+        : "Zhangqiu match analyze: set camera height/distance/angle first. Stroke analyze unchanged. Speed ±10%.") + "</p>";
     // Prefer inserting near top of analysis content
     if (host.firstChild) host.insertBefore(wrap, host.firstChild);
     else host.appendChild(wrap);
     wrap.addEventListener("click", function (e) {
-      if (e.target && e.target.getAttribute("data-zq-open-match")) openPanel({ format: "singles", mode: "standard" });
+      if (e.target && e.target.getAttribute("data-zq-open-match")) openPanel({ format: "singles", mode: "standard", phase: "setup" });
     });
   }
 

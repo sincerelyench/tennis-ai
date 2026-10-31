@@ -13,18 +13,31 @@ import {
   useMatchRecords,
 } from "@/lib/match-store";
 import type { MatchFormat } from "@/lib/match-demo";
+import { cameraSetupCopy } from "@/lib/camera-setup";
 
 export function MatchRecordView() {
   const { locale } = useI18n();
   const zh = locale !== "en";
+  const cam = cameraSetupCopy(zh);
   const router = useRouter();
   const records = useMatchRecords();
   const [format, setFormat] = useState<MatchFormat>("singles");
   const [mode, setMode] = useState<"standard" | "ground">("standard");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
+  const [confirmLive, setConfirmLive] = useState(false);
 
   function start(kind: "live" | "demo" | "upload") {
+    if (kind === "live" && !confirmLive) {
+      setConfirmLive(true);
+      setNote(
+        zh
+          ? "请先确认上方机位要点，再点「机位 OK，开始录制」。"
+          : "Confirm the framing tips above, then tap “Framing OK — start”.",
+      );
+      return;
+    }
+    setConfirmLive(false);
     setBusy(true);
     setNote(
       zh
@@ -32,12 +45,12 @@ export function MatchRecordView() {
           ? "正在生成演示比赛分析…"
           : kind === "upload"
             ? "本机剪空镜 + 演示流水线（GPU 球轨未完成时用本地演示数据）…"
-            : "开始录制入口已打开。真机相机可用；本环境用演示分析。"
+            : "录制中：保持机位稳定。真机相机可用；本环境用演示分析。"
         : kind === "demo"
           ? "Building demo match analysis…"
           : kind === "upload"
             ? "Local blank-trim + demo pipeline (GPU ball track incomplete)…"
-            : "Record entry ready. Demo analysis used when camera/GPU unavailable.",
+            : "Recording: keep framing stable. Demo analysis used when camera/GPU unavailable.",
     );
     window.setTimeout(() => {
       const match =
@@ -68,6 +81,8 @@ export function MatchRecordView() {
     }, 450);
   }
 
+  const tipList = mode === "ground" ? cam.groundItems : cam.items;
+
   return (
     <div className={pageClass} data-page="match-record" data-zq-match-mvp="1">
       <div>
@@ -76,8 +91,8 @@ export function MatchRecordView() {
         </h1>
         <p className="mt-1 text-xs text-muted-foreground">
           {zh
-            ? "SwingVision 向：录制整场、剪空镜、计分条、球速/落点热力、赛后教练点评。挥拍技术分析入口仍保留。"
-            : "SwingVision-inspired: record the match, trim dead time, score bar, speed/heatmap, post-match coaching. Stroke analyze stays available."}
+            ? "涨球比赛录制：录制整场、剪空镜、计分条、球速/落点热力、赛后教练点评。挥拍技术分析入口仍保留。"
+            : "Zhangqiu match analyze: record the match, trim dead time, score bar, speed/heatmap, post-match coaching. Stroke analyze stays available."}
         </p>
         <div className="mt-2 flex flex-wrap gap-3">
           <Link href="/analysis" className="text-xs text-primary">
@@ -88,6 +103,35 @@ export function MatchRecordView() {
           </Link>
         </div>
       </div>
+
+      <section className="space-y-3 rounded-lg border border-border bg-card p-3" data-section="camera-setup">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">{cam.title}</h2>
+          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{cam.subtitle}</p>
+        </div>
+        <h3 className="text-xs font-semibold text-foreground">
+          {mode === "ground" ? cam.groundTitle : cam.standardTitle}
+        </h3>
+        <ul className="space-y-2">
+          {tipList.map((tip) => (
+            <li
+              key={tip.key}
+              data-tip={tip.key}
+              className="rounded-md border border-border/70 bg-background/40 px-2.5 py-2 text-[11px] leading-5 text-muted-foreground"
+            >
+              <span className="font-semibold text-foreground">{tip.label}</span>
+              <span className="mt-0.5 block">{tip.text}</span>
+            </li>
+          ))}
+        </ul>
+        <p
+          className="rounded-md border border-primary/30 bg-primary-subtle/40 px-2.5 py-2 text-[11px] leading-5 text-foreground"
+          data-during-tip="true"
+        >
+          <span className="font-semibold">{cam.duringTitle}</span>
+          <span className="mt-0.5 block text-muted-foreground">{cam.during}</span>
+        </p>
+      </section>
 
       <section className="space-y-3 rounded-lg border border-border bg-card p-3" data-section="match-setup">
         <h2 className="text-sm font-semibold text-foreground">{zh ? "开局设置" : "Setup"}</h2>
@@ -111,7 +155,10 @@ export function MatchRecordView() {
           <button
             type="button"
             data-mode="standard"
-            onClick={() => setMode("standard")}
+            onClick={() => {
+              setMode("standard");
+              setConfirmLive(false);
+            }}
             className={cn(
               "rounded-lg border px-3 py-2 text-xs font-medium",
               mode === "standard" ? "border-primary bg-primary-subtle text-primary" : "border-border text-foreground",
@@ -122,7 +169,10 @@ export function MatchRecordView() {
           <button
             type="button"
             data-mode="ground"
-            onClick={() => setMode("ground")}
+            onClick={() => {
+              setMode("ground");
+              setConfirmLive(false);
+            }}
             className={cn(
               "rounded-lg border px-3 py-2 text-xs font-medium",
               mode === "ground" ? "border-primary bg-primary-subtle text-primary" : "border-border text-foreground",
@@ -140,8 +190,13 @@ export function MatchRecordView() {
         ) : null}
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button type="button" data-action="record-match" disabled={busy} onClick={() => start("live")}>
-            {zh ? "开始录制比赛" : "Start recording"}
+          <Button
+            type="button"
+            data-action={confirmLive ? "record-match-confirm" : "record-match"}
+            disabled={busy}
+            onClick={() => start("live")}
+          >
+            {confirmLive ? cam.ready : zh ? "开始录制比赛" : "Start recording"}
           </Button>
           <Button
             type="button"
@@ -156,6 +211,11 @@ export function MatchRecordView() {
             {zh ? "打开演示赛" : "Open demo match"}
           </Button>
         </div>
+        {busy ? (
+          <p className="text-[11px] leading-5 text-primary" data-recording-banner="true">
+            {cam.duringTitle}：{cam.during}
+          </p>
+        ) : null}
         {note ? (
           <p className="text-[11px] text-muted-foreground" data-match-note="true">
             {note}
@@ -163,9 +223,6 @@ export function MatchRecordView() {
         ) : null}
         <p className="text-[11px] text-muted-foreground" data-speed-disclaimer="true">
           {zh ? "球速为估测值，误差约 ±10%。" : "Shot speed is estimated (±10%)."}
-        </p>
-        <p className="text-[11px] text-muted-foreground" data-watch-note="true">
-          {zh ? "Apple Watch 挑战喊判：coming（iOS 后续）。" : "Apple Watch challenge callouts: coming (iOS stretch)."}
         </p>
       </section>
 

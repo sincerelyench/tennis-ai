@@ -36,7 +36,7 @@
   <div class="wrap">
     <div class="brand">涨球 / 涨球教练</div>
     <h1>比赛录制 · 分析</h1>
-    <p class="lead">SwingVision 向 MVP：剪空镜、计分条、球速/落点热力、球轨迹、赛后点评、Ground Mode、分享访客链接。挥拍技术分析入口保留。</p>
+    <p class="lead">涨球比赛录制：先架摄像头，再开录。剪空镜、计分条、球速/落点热力、球轨迹、赛后点评、Ground Mode、分享访客链接。挥拍技术分析入口保留。</p>
     <div class="row" id="setup">
       <button class="chip on" data-format="singles">单打</button>
       <button class="chip" data-format="doubles">双打</button>
@@ -48,7 +48,13 @@
       <button class="btn" id="traceBtn">球轨迹 开</button>
       <button class="btn" id="voiceBtn">语音喊判 关</button>
     </div>
-    <p class="hint" data-speed-disclaimer="true">球速为估测值，误差约 ±10%。Apple Watch 挑战喊判：coming（iOS 后续）。</p>
+    <section class="card" data-section="camera-setup" id="cameraSetup">
+      <div class="label" style="font-weight:700">录制前 · 摄像头架设 / Before record · camera setup</div>
+      <p class="hint">摆好机位再开始，球速、落点与线审更稳。Frame the court first for steadier tracking.</p>
+      <div id="camTips"></div>
+      <p class="hint" data-during-tip="true" style="margin-top:10px;padding:10px;border:1px solid rgba(125,211,160,.35);border-radius:8px;background:rgba(47,122,86,.22)"><b>录制中请保持 / While recording</b><br/>手机固定、勿遮挡；尽量飞行模式。Keep phone locked; prefer airplane mode; both baselines in view.</p>
+    </section>
+    <p class="hint" data-speed-disclaimer="true">球速为估测值，误差约 ±10%。Speed estimate ±10%.</p>
 
     <div class="card">
       <canvas id="court" width="640" height="360" data-ball-trace="on"></canvas>
@@ -90,7 +96,7 @@
       }
       const live=points.filter(p=>!p.dead); const you=live.flatMap(p=>p.shots.filter(s=>s.side==='you'));
       const avg=a=>a.reduce((x,y)=>x+y,0)/(a.length||1);
-      return {title:'涨球演示赛 · SwingVision 向',finalScore:gy+'-'+go,points,heatmap:heat,stats:{avgSpeedKmh:Math.round(avg(you.map(s=>s.speedKmh))),avgRally:Math.round(avg(live.map(p=>p.rallyLength))*10)/10,winners:live.filter(p=>p.result==='winner').length,unforced:3},coaching:[{title:'发球落点偏中路',body:'一发多落中线，下一场打宽外角。',id:live[0].id},{title:'反手非受迫偏多',body:'快节奏时优先打深过渡。',id:live[1].id}]};
+      return {title:'涨球演示赛',finalScore:gy+'-'+go,points,heatmap:heat,stats:{avgSpeedKmh:Math.round(avg(you.map(s=>s.speedKmh))),avgRally:Math.round(avg(live.map(p=>p.rallyLength))*10)/10,winners:live.filter(p=>p.result==='winner').length,unforced:3},coaching:[{title:'发球落点偏中路',body:'一发多落中线，下一场打宽外角。',id:live[0].id},{title:'反手非受迫偏多',body:'快节奏时优先打深过渡。',id:live[1].id}]};
     }
     let match=build(), active=match.points.find(p=>!p.dead), ballTrace=true, voice=false, mode='standard';
     const canvas=document.getElementById('court'); const ctx=canvas.getContext('2d');
@@ -103,7 +109,25 @@
       ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,0,w,28); ctx.fillStyle='#f4efe4'; ctx.font='600 13px sans-serif';
       ctx.fillText((active? (active.setScore+' · '+active.scoreBefore): match.finalScore),10,18);
     }
+    const camStandard=[
+      ['高度 / Height','尽量架高（围网顶端最佳），别让球网挡住远端底线。 Mount high without net covering far baseline.'],
+      ['距离 / Distance','底线后方靠近中线；单打可略偏弱侧约一脚。 Behind baseline near center; singles offset ~1 ft.'],
+      ['角度 / Angle','两侧底线及线后约1–2米入镜；略俯拍。 Both baselines + a few feet; tilt down.'],
+      ['球网/底线 / Net','球网顶边勿压远端线；画面居中。 Avoid net tape on far lines; center the court.'],
+      ['光线 / Light','太阳在手机背后；尽量对无挡风网一侧。 Sun behind phone; opposite windscreen.']
+    ];
+    const camGround=[
+      ['支撑 / Prop','底线后中场放水瓶，手机斜靠。 Lean phone on a water bottle mid-court behind baseline.'],
+      ['取景 / Framing','球网白边落在提示框内；双侧底线可见。 Net tape in guide box; both baselines visible.'],
+      ['稳定 / Stable','防风吹倒；开录前确认整场可见。 Stable against wind; full court before start.']
+    ];
+    function paintCam(){
+      const list = mode==='ground' ? camGround : camStandard;
+      document.getElementById('camTips').innerHTML = list.map(([k,v])=>`<div class="stat" style="margin-top:8px" data-tip="${k}"><span>${k}</span><b style="font-size:12px;font-weight:500">${v}</b></div>`).join('');
+    }
     function render(){
+      paintCam();
+
       document.getElementById('stats').innerHTML=[['均速',match.stats.avgSpeedKmh+' km/h'],['回合',match.stats.avgRally],['制胜分',match.stats.winners],['比分',match.finalScore]].map(([k,v])=>`<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
       const live=match.points.filter(p=>!p.dead);
       document.getElementById('points').innerHTML=live.map(p=>`<div class="item ${p.id===active.id?'on':''}" data-id="${p.id}">#${p.index+1} · ${p.setScore} ${p.scoreBefore} · ${p.result} · ${p.rallyLength}拍</div>`).join('');
@@ -115,7 +139,7 @@
     document.getElementById('traceBtn').onclick=()=>{ ballTrace=!ballTrace; document.getElementById('traceBtn').textContent='球轨迹 '+(ballTrace?'开':'关'); canvas.dataset.ballTrace=ballTrace?'on':'off'; draw(); };
     document.getElementById('voiceBtn').onclick=()=>{ voice=!voice; document.getElementById('voiceBtn').textContent='语音喊判 '+(voice?'开':'关'); };
     document.getElementById('demo').onclick=()=>{ match=build(); active=match.points.find(p=>!p.dead); render(); };
-    document.querySelectorAll('[data-mode]').forEach(btn=>btn.onclick=()=>{ document.querySelectorAll('[data-mode]').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); mode=btn.dataset.mode; if(mode==='ground'){ canvas.width=320; canvas.height=560; } else { canvas.width=640; canvas.height=360; } draw(); });
+    document.querySelectorAll('[data-mode]').forEach(btn=>btn.onclick=()=>{ document.querySelectorAll('[data-mode]').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); mode=btn.dataset.mode; if(mode==='ground'){ canvas.width=320; canvas.height=560; } else { canvas.width=640; canvas.height=360; } paintCam(); draw(); });
     document.querySelectorAll('[data-format]').forEach(btn=>btn.onclick=()=>{ document.querySelectorAll('[data-format]').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); });
     render();
   </script>
