@@ -48,6 +48,9 @@ Page({
   onCode(e) {
     this.setData({ code: e.detail.value })
   },
+  onMatch() {
+    wx.navigateTo({ url: "/pages/match/match" })
+  },
   onPrimary() {
     if (this.data.loading) return
     if (this.data.loggedIn && !String(this.data.code || "").trim()) {
