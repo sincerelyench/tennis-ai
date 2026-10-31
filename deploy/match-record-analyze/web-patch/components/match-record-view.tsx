@@ -76,8 +76,8 @@ export function MatchRecordView() {
         </h1>
         <p className="mt-1 text-xs text-muted-foreground">
           {zh
-            ? "SwingVision 向：录制整场、剪空镜、计分条、球速/落点热力、赛后教练点评。挥拍技术分析入口仍保留。"
-            : "SwingVision-inspired: record the match, trim dead time, score bar, speed/heatmap, post-match coaching. Stroke analyze stays available."}
+            ? "涨球比赛录制：录制整场、剪空镜、计分条、每球球速/第几拍落点、赛后教练点评。挥拍技术分析入口仍保留。"
+            : "Zhangqiu match record: full match, trim dead time, score bar, per-shot speed & rally index, post-match coaching. Stroke analyze stays available."}
         </p>
         <div className="mt-2 flex flex-wrap gap-3">
           <Link href="/analysis" className="text-xs text-primary">
@@ -162,10 +162,7 @@ export function MatchRecordView() {
           </p>
         ) : null}
         <p className="text-[11px] text-muted-foreground" data-speed-disclaimer="true">
-          {zh ? "球速为估测值，误差约 ±10%。" : "Shot speed is estimated (±10%)."}
-        </p>
-        <p className="text-[11px] text-muted-foreground" data-watch-note="true">
-          {zh ? "Apple Watch 挑战喊判：coming（iOS 后续）。" : "Apple Watch challenge callouts: coming (iOS stretch)."}
+          {zh ? "球速为估测值，误差约 ±10%。蓝=你（己方），红=对手。" : "Shot speed estimate ±10%. Blue = you, red = opponent."}
         </p>
       </section>
 

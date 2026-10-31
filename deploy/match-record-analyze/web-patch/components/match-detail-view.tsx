@@ -7,8 +7,12 @@ import { pageClass } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/i18n-provider";
 import {
+  TRACE_OPP,
+  TRACE_YOU,
   filterPoints,
+  playerSideLabel,
   scoreBarLabel,
+  shotRallyLabel,
   type PointResult,
   type StrokeKind,
 } from "@/lib/match-demo";
@@ -137,23 +141,46 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
     }
 
     if (ballTrace && active) {
-      for (const shot of active.shots) {
+      active.shots.forEach((shot, i) => {
+        const color = shot.side === "you" ? TRACE_YOU : TRACE_OPP;
+        const shotN = shot.shotIndex || i + 1;
         ctx.beginPath();
-        shot.ballPath.forEach((p, i) => {
+        shot.ballPath.forEach((p, pi) => {
           const px = w * (0.08 + p.x * 0.84);
           const py = h * (0.08 + p.y * 0.84);
-          if (i === 0) ctx.moveTo(px, py);
+          if (pi === 0) ctx.moveTo(px, py);
           else ctx.lineTo(px, py);
         });
-        ctx.strokeStyle = shot.side === "you" ? "#7dd3fc" : "#fda4af";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
         ctx.stroke();
-        const last = shot.ballPath[shot.ballPath.length - 1];
+        const last = shot.ballPath[shot.ballPath.length - 1] || { x: shot.x, y: shot.y };
+        const lx = w * (0.08 + last.x * 0.84);
+        const ly = h * (0.08 + last.y * 0.84);
         ctx.beginPath();
-        ctx.arc(w * (0.08 + last.x * 0.84), h * (0.08 + last.y * 0.84), 5, 0, Math.PI * 2);
-        ctx.fillStyle = "#fde68a";
+        ctx.arc(lx, ly, 5, 0, Math.PI * 2);
+        ctx.fillStyle = color;
         ctx.fill();
-      }
+        ctx.strokeStyle = "rgba(7,20,14,0.85)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // Landing = which hit in the rally + per-shot speed
+        const rallyTxt = shotRallyLabel(zh, shotN);
+        const speedTxt = `${shot.speedKmh} km/h`;
+        ctx.font = "600 11px ui-sans-serif, system-ui";
+        const tw = Math.max(ctx.measureText(rallyTxt).width, ctx.measureText(speedTxt).width);
+        const pad = 4;
+        const boxW = tw + pad * 2;
+        const boxH = 28;
+        let bx = Math.min(Math.max(4, lx + 8), w - boxW - 4);
+        let by = Math.min(Math.max(32, ly - boxH - 6), h - boxH - 4);
+        ctx.fillStyle = "rgba(7,20,14,0.78)";
+        ctx.fillRect(bx, by, boxW, boxH);
+        ctx.fillStyle = color;
+        ctx.fillText(rallyTxt, bx + pad, by + 12);
+        ctx.fillStyle = "#f4efe4";
+        ctx.fillText(speedTxt, bx + pad, by + 24);
+      });
     }
 
     // score bar overlay
@@ -164,7 +191,19 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
       ctx.font = "600 13px ui-sans-serif, system-ui";
       ctx.fillText(`${scoreBarLabel(active)}  →  ${active.scoreAfter}`, 10, 18);
     }
-  }, [match, active, ballTrace, playhead]);
+
+    // Explicit color legend: blue = you, red = opponent
+    const youLabel = playerSideLabel(zh, "you", match.players);
+    const oppLabel = playerSideLabel(zh, "opp", match.players);
+    ctx.fillStyle = "rgba(7,20,14,0.72)";
+    ctx.fillRect(8, h - 34, w - 16, 26);
+    ctx.font = "600 11px ui-sans-serif, system-ui";
+    ctx.fillStyle = TRACE_YOU;
+    ctx.fillText(zh ? `蓝 = ${youLabel}` : `Blue = ${youLabel}`, 16, h - 16);
+    ctx.fillStyle = TRACE_OPP;
+    const left = zh ? `红 = ${oppLabel}` : `Red = ${oppLabel}`;
+    ctx.fillText(left, Math.min(w * 0.48, w - ctx.measureText(left).width - 16), h - 16);
+  }, [match, active, ballTrace, playhead, zh]);
 
   async function createShare() {
     if (!match) return;
@@ -244,12 +283,62 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
             className="block h-auto w-full"
             data-ball-trace={ballTrace ? "on" : "off"}
           />
-          <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-2">
+          <div className="absolute bottom-10 left-2 right-2 flex flex-wrap gap-2">
             <span className="rounded bg-black/55 px-2 py-1 text-[10px] text-white" data-speed-disclaimer="true">
               {match.speedDisclaimer}
             </span>
           </div>
         </div>
+        <div
+          className="flex flex-wrap items-center gap-3 text-[11px]"
+          data-trace-legend="you-opp"
+          data-legend-blue="you"
+          data-legend-red="opp"
+        >
+          <span className="inline-flex items-center gap-1.5" style={{ color: TRACE_YOU }}>
+            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: TRACE_YOU }} />
+            {zh
+              ? `蓝 = ${playerSideLabel(true, "you", match.players)}`
+              : `Blue = ${playerSideLabel(false, "you", match.players)}`}
+          </span>
+          <span className="inline-flex items-center gap-1.5" style={{ color: TRACE_OPP }}>
+            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: TRACE_OPP }} />
+            {zh
+              ? `红 = ${playerSideLabel(true, "opp", match.players)}`
+              : `Red = ${playerSideLabel(false, "opp", match.players)}`}
+          </span>
+        </div>
+        {active ? (
+          <ul
+            className="max-h-40 space-y-1 overflow-auto rounded-lg border border-border bg-card p-2"
+            data-section="per-shot-speeds"
+          >
+            {active.shots.map((shot, i) => {
+              const n = shot.shotIndex || i + 1;
+              const color = shot.side === "you" ? TRACE_YOU : TRACE_OPP;
+              return (
+                <li
+                  key={shot.id}
+                  className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs"
+                  data-shot-index={n}
+                  data-shot-side={shot.side}
+                  data-shot-speed={shot.speedKmh}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} />
+                    <span className="font-medium text-foreground">{shotRallyLabel(zh, n)}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {playerSideLabel(zh, shot.side, match.players)} · {labelStroke(zh, shot.stroke)}
+                    </span>
+                  </span>
+                  <span className="shrink-0 font-semibold tabular-nums" style={{ color }}>
+                    {shot.speedKmh} km/h
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : null}
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -288,9 +377,6 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
             {Math.round(active.lineCall.confidence * 100)}% · {active.lineCall.note}
           </p>
         ) : null}
-        <p className="text-[11px] text-muted-foreground" data-watch-note="true">
-          {match.watchNote}
-        </p>
       </section>
 
       <section className="space-y-2" data-section="filters">

@@ -5,6 +5,13 @@
 .court { margin-top: 12px; height: 180px; border-radius: 12px; background: linear-gradient(160deg,#1f4a38,#0d281c); border: 1px solid rgba(244,239,228,.2); position: relative; padding: 10px; }
 .court.ground { width: 56%; margin-left: auto; margin-right: auto; height: 280px; }
 .score, .trace, .heat { font-size: 11px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 11px; font-weight: 600; }
+.legend .you { color: #38bdf8; }
+.legend .opp { color: #f87171; }
+.item.shot { display: flex; justify-content: space-between; gap: 8px; }
+.item.shot .speed { font-weight: 700; color: #7dd3a0; }
+.item.shot.you .speed { color: #38bdf8; }
+.item.shot.opp .speed { color: #f87171; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .chip { padding: 7px 10px; border-radius: 10px; border: 1px solid rgba(244,239,228,.2); font-size: 11px; }
 .chip.on { background: #1f4a38; border-color: #7dd3a0; }

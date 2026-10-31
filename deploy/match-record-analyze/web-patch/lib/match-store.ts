@@ -75,7 +75,7 @@ export function deleteMatch(id: string) {
 export function ensureDemoMatch(): MatchRecord {
   hydrate();
   if (matches.length) return matches[0];
-  const demo = buildDemoMatch({ title: "涨球演示赛 · SwingVision 向", seed: 1083 });
+  const demo = buildDemoMatch({ title: "涨球演示赛", seed: 1083 });
   saveMatch(demo);
   return demo;
 }

@@ -8,13 +8,25 @@
     <view class="heat">{{zh ? '落点热力已叠加' : 'Heatmap on'}}</view>
   </view>
   <text class="hint">{{match.speedDisclaimer}}</text>
-  <text class="hint">{{match.watchNote}}</text>
+  <view class="legend" data-trace-legend="you-opp">
+    <text class="you">{{legendYou}}</text>
+    <text class="opp">{{legendOpp}}</text>
+  </view>
 
   <view class="row">
     <view class="chip {{ballTrace?'on':''}}" bindtap="toggleTrace">{{zh ? '球轨迹' : 'Ball trace'}}</view>
     <view class="chip" bindtap="onShare">{{zh ? '分享链接' : 'Share link'}}</view>
   </view>
   <text class="hint" wx:if="{{shareHint}}">{{shareHint}}</text>
+
+  <text class="label">{{zh ? '本分每球球速' : 'Per-shot speeds'}}</text>
+  <view class="list" data-section="per-shot-speeds">
+    <view class="item shot {{item.side}}" wx:for="{{activeShots}}" wx:key="id">
+      <text>{{item.rallyLabel}} · {{item.sideLabel}} · {{item.stroke}}</text>
+      <text class="speed">{{item.speedKmh}} km/h</text>
+    </view>
+    <text class="hint" wx:if="{{!activeShots.length}}">{{zh ? '选一分查看每拍球速与落点序号' : 'Pick a point for per-shot speed'}}</text>
+  </view>
 
   <text class="label">{{zh ? '筛选（已剪空镜）' : 'Filters (trimmed)'}}</text>
   <view class="row">

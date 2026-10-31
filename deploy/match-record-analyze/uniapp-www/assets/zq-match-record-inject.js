@@ -1,8 +1,10 @@
-/*! 涨球 分析 tab：比赛录制 / 分析（SwingVision 向 MVP，本地演示数据） */
+/*! 涨球 分析 tab：比赛录制 / 分析（本地演示数据；每球球速 + 第N拍 + 蓝你/红对手） */
 (function () {
   var MARK = "data-zq-match-record-inject";
   var STYLE_ID = "zq-match-record-style";
   var KEY = "zq-match-records-v1";
+  var TRACE_YOU = "#38bdf8";
+  var TRACE_OPP = "#f87171";
 
   function zh() {
     try {
@@ -25,6 +27,22 @@
       t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
+  }
+
+  function sideLabel(side, players) {
+    players = players || {};
+    if (side === "you") {
+      var yn = String(players.you || "").trim();
+      if (yn && yn !== "你" && yn !== "我" && yn.toLowerCase() !== "you") {
+        return zh() ? yn + "（你）" : yn + " (you)";
+      }
+      return zh() ? "你（己方）" : "You";
+    }
+    var on = String(players.opp || "").trim();
+    if (on && on !== "对手" && on.toLowerCase() !== "opponent") {
+      return zh() ? on + "（对手）" : on + " (opp)";
+    }
+    return zh() ? "对手" : "Opponent";
   }
 
   function buildDemo(seed, format, mode) {
@@ -50,9 +68,13 @@
           path.push({ x: 0.5 + (x - 0.5) * u, y: 0.85 + (y - 0.85) * u });
         }
         shots.push({
+          id: "s-" + idx + "-" + s,
           side: s % 2 ? "opp" : "you",
           stroke: s ? (rand() > 0.5 ? "forehand" : "backhand") : "serve",
+          shotIndex: s + 1,
           speedKmh: Math.round(65 + rand() * 75),
+          x: x,
+          y: y,
           ballPath: path,
         });
         t += 0.85;
@@ -83,12 +105,16 @@
     var you = [];
     live.forEach(function (p) { p.shots.forEach(function (s) { if (s.side === "you") you.push(s); }); });
     function avg(xs) { return xs.length ? xs.reduce(function (a, b) { return a + b; }, 0) / xs.length : 0; }
+    var players = format === "doubles"
+      ? { you: "你", opp: "对手 A", youPartner: "搭档", oppPartner: "对手 B" }
+      : { you: "你", opp: "对手" };
     return {
       id: "m-" + Date.now().toString(36),
       title: zh() ? (mode === "ground" ? "Ground Mode 演示赛" : "涨球演示赛") : "Zhangqiu demo match",
       format: format || "singles",
       mode: mode || "standard",
       finalScore: gy + "-" + go,
+      players: players,
       points: points,
       heatmap: heat,
       stats: {
@@ -102,7 +128,7 @@
         { id: (live[2] || live[0]).id, title: zh() ? "反手非受迫偏多" : "Backhand UFE", body: zh() ? "快节奏时优先打深过渡。" : "Prefer deep safety under pace." },
       ],
       speedDisclaimer: zh() ? "球速为估测值，误差约 ±10%。" : "Speed estimate ±10%.",
-      watchNote: zh() ? "Apple Watch 挑战喊判：coming（iOS 后续）。" : "Watch challenge callouts: coming.",
+      watchNote: "",
     };
   }
 
@@ -125,9 +151,13 @@
       ".zq-mr-overlay .stat{border:1px solid rgba(244,239,228,.15);border-radius:10px;padding:10px;background:rgba(18,50,38,.7)}",
       ".zq-mr-overlay .stat b{display:block;margin-top:4px;font-size:15px}",
       ".zq-mr-overlay .list{max-height:160px;overflow:auto;border:1px solid rgba(244,239,228,.12);border-radius:10px;margin-top:8px}",
-      ".zq-mr-overlay .item{padding:8px 10px;font-size:11px;border-bottom:1px solid rgba(244,239,228,.08)}",
+      ".zq-mr-overlay .item{padding:8px 10px;font-size:11px;border-bottom:1px solid rgba(244,239,228,.08);display:flex;justify-content:space-between;gap:8px}",
       ".zq-mr-overlay .item.on{background:rgba(125,211,160,.14);color:#7dd3a0}",
+      ".zq-mr-overlay .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;font-size:12px;font-weight:700}",
+      ".zq-mr-overlay .legend .you{color:" + TRACE_YOU + "}",
+      ".zq-mr-overlay .legend .opp{color:" + TRACE_OPP + "}",
       ".zq-mr-overlay .coach{margin-top:10px;padding:10px;border:1px solid rgba(244,239,228,.12);border-radius:10px}",
+      ".zq-mr-overlay .shot-speed{font-weight:700}",
     ].join("");
     document.head.appendChild(s);
   }
@@ -163,6 +193,7 @@
     function draw(canvas) {
       var ctx = canvas.getContext("2d");
       var w = canvas.width, h = canvas.height;
+      var Z = zh();
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = "#1f4a38";
       ctx.fillRect(0, 0, w, h);
@@ -180,14 +211,36 @@
         });
       });
       if (ballTrace && active) {
-        active.shots.forEach(function (shot) {
+        active.shots.forEach(function (shot, i) {
+          var color = shot.side === "you" ? TRACE_YOU : TRACE_OPP;
+          var n = shot.shotIndex || i + 1;
           ctx.beginPath();
-          shot.ballPath.forEach(function (p, i) {
+          shot.ballPath.forEach(function (p, pi) {
             var px = w * (0.08 + p.x * 0.84), py = h * (0.08 + p.y * 0.84);
-            if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+            if (pi) ctx.lineTo(px, py); else ctx.moveTo(px, py);
           });
-          ctx.strokeStyle = shot.side === "you" ? "#7dd3fc" : "#fda4af";
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.5;
           ctx.stroke();
+          var last = shot.ballPath[shot.ballPath.length - 1] || { x: shot.x, y: shot.y };
+          var lx = w * (0.08 + last.x * 0.84);
+          var ly = h * (0.08 + last.y * 0.84);
+          ctx.beginPath();
+          ctx.arc(lx, ly, 5, 0, Math.PI * 2);
+          ctx.fillStyle = color;
+          ctx.fill();
+          var rallyTxt = Z ? ("第 " + n + " 拍") : ("Shot " + n);
+          var speedTxt = shot.speedKmh + " km/h";
+          ctx.font = "600 11px sans-serif";
+          var tw = Math.max(ctx.measureText(rallyTxt).width, ctx.measureText(speedTxt).width);
+          var bx = Math.min(Math.max(4, lx + 8), w - tw - 12);
+          var by = Math.min(Math.max(32, ly - 34), h - 40);
+          ctx.fillStyle = "rgba(7,20,14,.78)";
+          ctx.fillRect(bx, by, tw + 8, 28);
+          ctx.fillStyle = color;
+          ctx.fillText(rallyTxt, bx + 4, by + 12);
+          ctx.fillStyle = "#f4efe4";
+          ctx.fillText(speedTxt, bx + 4, by + 24);
         });
       }
       ctx.fillStyle = "rgba(0,0,0,.55)";
@@ -195,10 +248,20 @@
       ctx.fillStyle = "#f4efe4";
       ctx.font = "600 13px sans-serif";
       ctx.fillText((active ? active.setScore + " · " + active.scoreBefore : match.finalScore), 10, 18);
+      // canvas legend
+      ctx.fillStyle = "rgba(7,20,14,.72)";
+      ctx.fillRect(8, h - 34, w - 16, 26);
+      ctx.font = "600 11px sans-serif";
+      ctx.fillStyle = TRACE_YOU;
+      ctx.fillText((Z ? "蓝 = " : "Blue = ") + sideLabel("you", match.players), 16, h - 16);
+      ctx.fillStyle = TRACE_OPP;
+      ctx.fillText((Z ? "红 = " : "Red = ") + sideLabel("opp", match.players), Math.min(w * 0.48, w - 120), h - 16);
     }
 
     function render() {
       var Z = zh();
+      var youL = sideLabel("you", match.players);
+      var oppL = sideLabel("opp", match.players);
       box.innerHTML =
         '<button type="button" class="act" data-close="1">' + (Z ? "关闭" : "Close") + "</button>" +
         "<h1 style='margin-top:10px'>" + match.title + "</h1>" +
@@ -217,13 +280,21 @@
         '<button type="button" class="act" data-share="1">' + (Z ? "复制分享提示" : "Copy share hint") + "</button>" +
         "</div>" +
         '<canvas id="zq-mr-canvas" width="' + (mode === "ground" ? 320 : 640) + '" height="' + (mode === "ground" ? 560 : 360) + '" data-ball-trace="' + (ballTrace ? "on" : "off") + '"></canvas>' +
+        '<div class="legend" data-trace-legend="you-opp"><span class="you">' + (Z ? "蓝 = " : "Blue = ") + youL + '</span><span class="opp">' + (Z ? "红 = " : "Red = ") + oppL + "</span></div>" +
         '<p class="muted" data-speed-disclaimer="true">' + match.speedDisclaimer + "</p>" +
-        '<p class="muted" data-watch-note="true">' + match.watchNote + "</p>" +
         '<div class="grid">' +
         [["均速", match.stats.avgSpeedKmh + " km/h"], ["回合", match.stats.avgRally], ["制胜", match.stats.winners], ["非受迫", match.stats.unforced]].map(function (pair) {
-          return '<div class="stat"><span class="muted">' + (Z && pair[0] === "均速" ? "均速" : pair[0]) + "</span><b>" + pair[1] + "</b></div>";
+          return '<div class="stat"><span class="muted">' + pair[0] + "</span><b>" + pair[1] + "</b></div>";
         }).join("") +
         "</div>" +
+        '<p class="muted" style="margin-top:12px">' + (Z ? "本分每球球速 / 第几拍" : "Per-shot speed / rally index") + "</p>" +
+        '<div class="list" data-section="per-shot-speeds">' + ((active && active.shots) || []).map(function (shot, i) {
+          var n = shot.shotIndex || i + 1;
+          var color = shot.side === "you" ? TRACE_YOU : TRACE_OPP;
+          return '<div class="item" data-shot-index="' + n + '" data-shot-side="' + shot.side + '" data-shot-speed="' + shot.speedKmh + '"><span>' +
+            (Z ? ("第 " + n + " 拍") : ("Shot " + n)) + " · " + sideLabel(shot.side, match.players) +
+            '</span><span class="shot-speed" style="color:' + color + '">' + shot.speedKmh + " km/h</span></div>";
+        }).join("") + "</div>" +
         '<p class="muted" style="margin-top:12px">' + (Z ? "高光分（已剪空镜）" : "Highlights (dead time trimmed)") + "</p>" +
         '<div class="list">' + live.map(function (p) {
           return '<div class="item ' + (active && p.id === active.id ? "on" : "") + '" data-point="' + p.id + '">#' + (p.index + 1) + " · " + p.setScore + " " + p.scoreBefore + " · " + p.result + " · " + p.rallyLength + (Z ? "拍" : " shots") + "</div>";
@@ -293,9 +364,8 @@
     wrap.innerHTML =
       '<button type="button" class="zq-mr-btn" data-zq-open-match="1">' + (zh() ? "比赛录制 / 分析" : "Match record / analyze") + "</button>" +
       '<p class="zq-mr-hint">' + (zh()
-        ? "SwingVision 向：剪空镜、计分条、球速热力、赛后点评。挥拍技术分析不变。球速 ±10%。"
-        : "SwingVision-inspired match analyze. Stroke analyze unchanged. Speed ±10%.") + "</p>";
-    // Prefer inserting near top of analysis content
+        ? "涨球比赛录制：剪空镜、计分条、每球球速/第几拍落点、赛后点评。蓝=你，红=对手。挥拍技术分析不变。球速 ±10%。"
+        : "Zhangqiu match analyze. Per-shot speed & rally index. Blue = you, red = opponent. Stroke analyze unchanged. Speed ±10%.") + "</p>";
     if (host.firstChild) host.insertBefore(wrap, host.firstChild);
     else host.appendChild(wrap);
     wrap.addEventListener("click", function (e) {

@@ -78,6 +78,7 @@ function buildDemoMatch(opts) {
         end: t + dur,
         stroke: stroke,
         side: side,
+        shotIndex: s + 1,
         speedKmh: Math.round(stroke === "serve" ? 130 + rand() * 40 : 60 + rand() * 55),
         depth: Math.round((0.4 + rand() * 0.5) * 100) / 100,
         accuracy: Math.round((0.45 + rand() * 0.5) * 100) / 100,
@@ -133,7 +134,7 @@ function buildDemoMatch(opts) {
     format: format,
     mode: mode,
     durationSec: Math.round(t),
-    players: format === "doubles" ? { you: "我", opp: "对手A", youPartner: "搭档", oppPartner: "对手B" } : { you: "我", opp: "对手" },
+    players: format === "doubles" ? { you: "你", opp: "对手A", youPartner: "搭档", oppPartner: "对手B" } : { you: "你", opp: "对手" },
     finalScore: gamesYou + "-" + gamesOpp,
     points: points,
     stats: {
@@ -171,7 +172,7 @@ function buildDemoMatch(opts) {
     videoLabel: mode === "ground" ? "竖屏球心演示" : "比赛录像演示",
     pipeline: "demo",
     speedDisclaimer: "球速为估测值，误差约 ±10%。",
-    watchNote: "Apple Watch 挑战喊判：coming（iOS 后续）。",
+    watchNote: "",
   }
 }
 

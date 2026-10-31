@@ -10,6 +10,8 @@ export type MatchShot = {
   end: number;
   stroke: StrokeKind;
   side: "you" | "opp";
+  /** 1-based hit index within the point (第 N 拍). */
+  shotIndex: number;
   speedKmh: number;
   depth: number; // 0–1 toward baseline
   accuracy: number; // 0–1 toward intended zone
@@ -176,6 +178,7 @@ export function buildDemoMatch(opts?: {
         end: t + dur,
         stroke,
         side,
+        shotIndex: s + 1,
         speedKmh: Math.round(speed),
         depth: Math.round((0.35 + rand() * 0.6) * 100) / 100,
         accuracy: Math.round((0.4 + rand() * 0.55) * 100) / 100,
@@ -309,8 +312,8 @@ export function buildDemoMatch(opts?: {
     durationSec: Math.round(t),
     players:
       format === "doubles"
-        ? { you: "我", opp: "对手 A", youPartner: "搭档", oppPartner: "对手 B" }
-        : { you: "我", opp: "对手" },
+        ? { you: "你", opp: "对手 A", youPartner: "搭档", oppPartner: "对手 B" }
+        : { you: "你", opp: "对手" },
     finalScore: `${gamesYou}-${gamesOpp}`,
     points,
     stats,
@@ -318,8 +321,35 @@ export function buildDemoMatch(opts?: {
     videoLabel: mode === "ground" ? "竖屏 · 球心裁切演示" : "横屏比赛录像演示",
     pipeline: "demo",
     speedDisclaimer: "球速为估测值，误差约 ±10%。",
-    watchNote: "Apple Watch 挑战喊判：coming（iOS 后续）。",
+    watchNote: "",
   };
+}
+
+/** Trace colors: blue = you / 己方, red = opponent. */
+export const TRACE_YOU = "#38bdf8";
+export const TRACE_OPP = "#f87171";
+
+export function playerSideLabel(
+  zh: boolean,
+  side: "you" | "opp",
+  players?: MatchRecord["players"],
+): string {
+  const youName = (players?.you || "").trim();
+  const oppName = (players?.opp || "").trim();
+  if (side === "you") {
+    if (youName && youName !== "你" && youName !== "我" && youName.toLowerCase() !== "you") {
+      return zh ? `${youName}（你）` : `${youName} (you)`;
+    }
+    return zh ? "你（己方）" : "You";
+  }
+  if (oppName && oppName !== "对手" && oppName.toLowerCase() !== "opponent") {
+    return zh ? `${oppName}（对手）` : `${oppName} (opp)`;
+  }
+  return zh ? "对手" : "Opponent";
+}
+
+export function shotRallyLabel(zh: boolean, shotIndex: number): string {
+  return zh ? `第 ${shotIndex} 拍` : `Shot ${shotIndex}`;
 }
 
 export function trimDeadPoints(match: MatchRecord): MatchPoint[] {
