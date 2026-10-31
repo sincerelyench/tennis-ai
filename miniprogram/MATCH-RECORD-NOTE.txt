@@ -1,1 +1,1 @@
-涨球 match-record shot-speed/rally-labels 2026-11-01 APK 1.0.86
+涨球 match-record 2026-11-01 — 每球球速、第N拍落点、蓝=你/红=对手；无 SwingVision / Apple Watch 文案；APK 1.0.86
