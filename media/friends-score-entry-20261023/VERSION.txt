@@ -1,0 +1,7 @@
+versionCode=181
+versionName=1.0.81
+sha256=027f7e18460a7bdd9dba64386e208ac7b6d52abdb62d0001cd6157f63032687e
+bytes=6591932
+built=2026-10-23
+method=gradle assembleRelease (JDK17) + release keystore ZHANGQIU
+note=full rebuild; not zip-inject
