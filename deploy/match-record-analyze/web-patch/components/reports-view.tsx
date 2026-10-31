@@ -76,7 +76,7 @@ export function ReportsView({ variant = "reports" }: { variant?: "analysis" | "r
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground" data-match-entry-hint="true">
             {zh
-              ? "比赛录制：整场录像、剪空镜、计分条、球速热力与涨球教练赛后点评（SwingVision 向）。挥拍技术分析不变。"
+              ? "比赛录制：整场录像、剪空镜、计分条、球速热力与涨球教练赛后点评。挥拍技术分析不变。"
               : "Match record: full match, trim dead time, score bar, speed/heatmap, Zhangqiu Coach notes. Stroke analyze unchanged."}
           </p>
         </div>
