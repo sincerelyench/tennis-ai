@@ -31,7 +31,7 @@ bash deploy/match-record-analyze/scripts/mac-four-surface-release.sh
 # ssh ... 'bash /tmp/match-record-analyze/scripts/apply-on-server.sh'
 ```
 
-APK：**1.0.89**，`gradle assembleRelease` + ZHANGQIU 重签（禁止 zip-inject）。
+APK：**1.0.91**，`gradle assembleRelease` + ZHANGQIU 重签（禁止 zip-inject）。
 
 ## 证据
 

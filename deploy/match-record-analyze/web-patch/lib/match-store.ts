@@ -3,7 +3,17 @@
 import { useSyncExternalStore } from "react";
 import { buildDemoMatch, type MatchRecord } from "@/lib/match-demo";
 
-const KEY = "zq-match-records-v1";
+/** Bump clears cached demos that still carried 「SwingVision 向」 titles / old landings. */
+const KEY = "zq-match-records-v2";
+const LEGACY_KEYS = ["zq-match-records-v1"];
+
+export function scrubMatchTitle(title: string | undefined): string {
+  let s = String(title || "");
+  s = s.replace(/SwingVision\s*向?/gi, "").replace(/swing\s*vision/gi, "");
+  s = s.replace(/\s{2,}/g, " ").replace(/^[·\s\-—|]+|[·\s\-—|]+$/g, "").trim();
+  return s || "涨球演示赛";
+}
+
 const listeners = new Set<() => void>();
 let matches: MatchRecord[] = [];
 let hydrated = false;
@@ -16,6 +26,7 @@ function persist() {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(matches));
+    for (const k of LEGACY_KEYS) window.localStorage.removeItem(k);
   } catch {
     /* ignore quota */
   }
@@ -25,10 +36,21 @@ function hydrate() {
   if (hydrated || typeof window === "undefined") return;
   hydrated = true;
   try {
-    const raw = window.localStorage.getItem(KEY);
+    let raw = window.localStorage.getItem(KEY);
+    if (!raw) {
+      for (const k of LEGACY_KEYS) {
+        raw = window.localStorage.getItem(k);
+        if (raw) break;
+      }
+    }
     if (!raw) return;
     const parsed = JSON.parse(raw) as MatchRecord[];
-    if (Array.isArray(parsed)) matches = parsed;
+    if (Array.isArray(parsed)) {
+      matches = parsed.map((m) => ({ ...m, title: scrubMatchTitle(m.title) }));
+      // Drop demos that still encode SwingVision in any string field after scrub miss.
+      matches = matches.filter((m) => !/swing\s*vision/i.test(JSON.stringify(m)));
+      persist();
+    }
   } catch {
     matches = [];
   }
@@ -59,10 +81,11 @@ export function getMatchById(id: string): MatchRecord | null {
 
 export function saveMatch(match: MatchRecord) {
   hydrate();
-  matches = [match, ...matches.filter((m) => m.id !== match.id)].slice(0, 40);
+  const cleaned = { ...match, title: scrubMatchTitle(match.title) };
+  matches = [cleaned, ...matches.filter((m) => m.id !== cleaned.id)].slice(0, 40);
   persist();
   emit();
-  return match;
+  return cleaned;
 }
 
 export function deleteMatch(id: string) {
@@ -74,7 +97,16 @@ export function deleteMatch(id: string) {
 
 export function ensureDemoMatch(): MatchRecord {
   hydrate();
-  if (matches.length) return matches[0];
+  const existing = matches.find((m) => m.pipeline === "demo") || matches[0];
+  if (existing) {
+    const title = scrubMatchTitle(existing.title);
+    if (title !== existing.title) {
+      const fixed = { ...existing, title };
+      saveMatch(fixed);
+      return fixed;
+    }
+    return existing;
+  }
   const demo = buildDemoMatch({ title: "涨球演示赛", seed: 1083 });
   saveMatch(demo);
   return demo;

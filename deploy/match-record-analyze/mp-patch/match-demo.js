@@ -65,7 +65,8 @@ function buildDemoMatch(opts) {
       const side = s % 2 === 0 ? server : server === "you" ? "opp" : "you"
       const endX = 0.15 + rand() * 0.7
       const y0 = side === "you" ? 0.95 : 0.05
-      const y1 = side === "you" ? 0.05 : 0.95
+      // you/blue far half only; opp/red near half only
+      const y1 = side === "you" ? (0.05 + rand() * 0.12) : (0.83 + rand() * 0.12)
       const x0 = 0.18 + rand() * 0.64  // straight baseline→baseline; wider contact
       const dur = 0.8 + rand() * 0.7
       const path = []

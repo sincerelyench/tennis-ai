@@ -2,7 +2,15 @@
 (function () {
   var MARK = "data-zq-match-record-inject";
   var STYLE_ID = "zq-match-record-style";
-  var KEY = "zq-match-records-v1";
+  var KEY = "zq-match-records-v2";
+  var LEGACY_KEYS = ["zq-match-records-v1"];
+  function scrubTitle(title) {
+    var s = String(title || "");
+    s = s.replace(/SwingVision\s*向?/gi, "").replace(/swing\s*vision/gi, "");
+    s = s.replace(/\s{2,}/g, " ").replace(/^[·\s\-—|]+|[·\s\-—|]+$/g, "").trim();
+    if (!s) s = zh() ? "涨球演示赛" : "Zhangqiu demo match";
+    return s;
+  }
   var TRACE_YOU = "#38bdf8";
   var TRACE_OPP = "#f87171";
 
@@ -79,7 +87,8 @@
         var endX = 0.15 + rand() * 0.7;
         // Straight line 网后→对面网后 (no sine/bezier); realistic lateral contact.
         var y0 = side === "you" ? 0.95 : 0.05;
-        var y1 = side === "you" ? 0.05 : 0.95;
+        // you/blue → far half only; opp/red → near half only
+        var y1 = side === "you" ? (0.05 + rand() * 0.12) : (0.83 + rand() * 0.12);
         var x0 = 0.18 + rand() * 0.64;
         var path = [];
         for (var k = 0; k <= 10; k++) {
@@ -244,6 +253,7 @@
 
   function saveMatch(m) {
     try {
+      if (m && m.title) m.title = scrubTitle(m.title);
       var rows = [];
       try { rows = JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { rows = []; }
       if (!Array.isArray(rows)) rows = [];
@@ -260,7 +270,7 @@
     saveMatch(match);
     var live = match.points.filter(function (p) { return !p.dead; });
     var active = live[0];
-    var ballTrace = true;
+    var ballTrace = false;
     var voice = false;
 
     var overlay = document.createElement("div");
@@ -291,21 +301,26 @@
       ctx.moveTo(xm, mapY(0.25)); ctx.lineTo(xm, mapY(0.75));
       ctx.stroke();
       // no heatmap / yellow tiles — solid green court only
-      if (ballTrace && active) {
+      // Landings always; trajectory lines only when ballTrace on (default off).
+      if (active) {
         active.shots.forEach(function (shot, i) {
           var color = shot.side === "you" ? TRACE_YOU : TRACE_OPP;
           var n = shot.shotIndex || i + 1;
-          ctx.beginPath();
-          shot.ballPath.forEach(function (p, pi) {
-            var px = mapX(p.x), py = mapY(p.y);
-            if (pi) ctx.lineTo(px, py); else ctx.moveTo(px, py);
-          });
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 2.5;
-          ctx.stroke();
           var last = shot.ballPath[shot.ballPath.length - 1] || { x: shot.x, y: shot.y };
-          var lx = mapX(last.x);
-          var ly = mapY(last.y);
+          var landY = shot.side === "you" ? Math.min(0.48, Math.max(0.02, last.y)) : Math.max(0.52, Math.min(0.98, last.y));
+          var landX = Math.min(0.92, Math.max(0.08, last.x));
+          if (ballTrace) {
+            ctx.beginPath();
+            shot.ballPath.forEach(function (p, pi) {
+              var px = mapX(p.x), py = mapY(pi === shot.ballPath.length - 1 ? landY : p.y);
+              if (pi) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+            });
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+          }
+          var lx = mapX(landX);
+          var ly = mapY(landY);
           ctx.beginPath();
           ctx.arc(lx, ly, 5, 0, Math.PI * 2);
           ctx.fillStyle = color;
@@ -345,7 +360,7 @@
       var oppL = sideLabel("opp", match.players);
       box.innerHTML =
         '<button type="button" class="act" data-close="1">' + (Z ? "关闭" : "Close") + "</button>" +
-        "<h1 style='margin-top:10px'>" + match.title + "</h1>" +
+        "<h1 style='margin-top:10px'>" + scrubTitle(match.title) + "</h1>" +
         '<p class="muted">' + (match.format === "doubles" ? (Z ? "双打" : "Doubles") : (Z ? "单打" : "Singles")) +
         " · " + match.finalScore + " · " + (mode === "ground" ? (Z ? "地面机位" : "Ground mode") : (Z ? "标准" : "Standard")) + "</p>" +
         '<div class="row">' +

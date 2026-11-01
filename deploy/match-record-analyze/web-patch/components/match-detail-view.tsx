@@ -17,7 +17,7 @@ import {
   type PointResult,
   type StrokeKind,
 } from "@/lib/match-demo";
-import { getMatchById, ensureDemoMatch, saveMatch } from "@/lib/match-store";
+import { getMatchById, ensureDemoMatch, saveMatch, scrubMatchTitle } from "@/lib/match-store";
 
 const STROKE_OPTS: Array<StrokeKind | "all"> = ["all", "forehand", "backhand", "serve", "volley", "overhead"];
 const RESULT_OPTS: Array<PointResult | "all"> = [
@@ -65,7 +65,7 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
   const [stroke, setStroke] = useState<StrokeKind | "all">("all");
   const [result, setResult] = useState<PointResult | "all">("all");
   const [minRally, setMinRally] = useState(0);
-  const [ballTrace, setBallTrace] = useState(true);
+  const [ballTrace, setBallTrace] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [shareBusy, setShareBusy] = useState(false);
@@ -144,23 +144,29 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
     ctx.lineTo(xm, ySvcFar);
     ctx.stroke();
 
-    if (ballTrace && active) {
+    if (active) {
       active.shots.forEach((shot, i) => {
         const color = shot.side === "you" ? TRACE_YOU : TRACE_OPP;
         const shotN = shot.shotIndex || i + 1;
-        ctx.beginPath();
-        shot.ballPath.forEach((p, pi) => {
-          const px = mapX(p.x);
-          const py = mapY(p.y);
-          if (pi === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        });
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-        const last = shot.ballPath[shot.ballPath.length - 1] || { x: shot.x, y: shot.y };
-        const lx = mapX(last.x);
-        const ly = mapY(last.y);
+        // Clamp landing to the correct half even if cached demo had bad coords.
+        const raw = shot.ballPath[shot.ballPath.length - 1] || { x: shot.x, y: shot.y };
+        const landY =
+          shot.side === "you" ? Math.min(0.48, Math.max(0.02, raw.y)) : Math.max(0.52, Math.min(0.98, raw.y));
+        const landX = Math.min(0.92, Math.max(0.08, raw.x));
+        if (ballTrace) {
+          ctx.beginPath();
+          shot.ballPath.forEach((p, pi) => {
+            const px = mapX(p.x);
+            const py = mapY(pi === shot.ballPath.length - 1 ? landY : p.y);
+            if (pi === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          });
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        }
+        const lx = mapX(landX);
+        const ly = mapY(landY);
         ctx.beginPath();
         ctx.arc(lx, ly, 5, 0, Math.PI * 2);
         ctx.fillStyle = color;
@@ -168,7 +174,6 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
         ctx.strokeStyle = "rgba(7,20,14,0.85)";
         ctx.lineWidth = 1;
         ctx.stroke();
-        // Landing = which hit in the rally + per-shot speed (locale-only copy)
         const rallyTxt = shotRallyLabel(zh, shotN);
         const speedTxt = speedUnitLabel(zh, shot.speedKmh);
         ctx.font = "600 11px ui-sans-serif, system-ui";
@@ -176,8 +181,8 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
         const pad = 4;
         const boxW = tw + pad * 2;
         const boxH = 28;
-        let bx = Math.min(Math.max(4, lx + 8), w - boxW - 4);
-        let by = Math.min(Math.max(32, ly - boxH - 6), h - boxH - 4);
+        const bx = Math.min(Math.max(4, lx + 8), w - boxW - 4);
+        const by = Math.min(Math.max(32, ly - boxH - 6), h - boxH - 4);
         ctx.fillStyle = "rgba(7,20,14,0.78)";
         ctx.fillRect(bx, by, boxW, boxH);
         ctx.fillStyle = color;
@@ -254,7 +259,7 @@ export function MatchDetailView({ matchId }: { matchId: string }) {
   return (
     <div className={pageClass} data-page="match-detail" data-match-id={match.id} data-zq-match-mvp="1">
       <div>
-        <h1 className="text-base font-bold text-foreground">{match.title}</h1>
+        <h1 className="text-base font-bold text-foreground">{scrubMatchTitle(match.title)}</h1>
         <p className="mt-1 text-xs text-muted-foreground">
           {match.format === "doubles" ? (zh ? "双打" : "Doubles") : zh ? "单打" : "Singles"} · {match.finalScore} ·{" "}
           {match.videoLabel}

@@ -50,13 +50,13 @@
     </div>
     <div class="row">
       <button class="btn primary" id="demo">打开演示赛</button>
-      <button class="btn" id="traceBtn">球轨迹 开</button>
+      <button class="btn" id="traceBtn">球轨迹 关</button>
       <button class="btn" id="voiceBtn">语音喊判 关</button>
     </div>
     <p class="hint" data-speed-disclaimer="true">球速为估测值，误差约 ±10%。蓝 = 你（己方），红 = 对手。</p>
 
     <div class="card">
-      <canvas id="court" width="640" height="360" data-ball-trace="on"></canvas>
+      <canvas id="court" width="640" height="360" data-ball-trace="off"></canvas>
       <div class="legend" data-trace-legend="you-opp">
         <span class="you" id="legendYou">蓝 = 你（己方）</span>
         <span class="opp" id="legendOpp">红 = 对手</span>
@@ -97,7 +97,7 @@
         for(let s=0;s<rally;s++){
           const side=s%2===0?server:(server==='you'?'opp':'you');
           const endX=.15+rand()*.7;
-          const y0=side==='you'?0.95:0.05, y1=side==='you'?0.05:0.95, x0=.18+rand()*.64; // straight 网后→对面
+          const y0=side==='you'?0.95:0.05, y1=side==='you'?(0.05+rand()*0.12):(0.83+rand()*0.12), x0=.18+rand()*.64; // half-clamped landings
           const path=[]; for(let i=0;i<=10;i++){const u=i/10;path.push({x:x0+(endX-x0)*u,y:y0+(y1-y0)*u});}
           const end=path[path.length-1];
           heat[Math.min(7,Math.floor(end.x*8))][Math.min(3,Math.floor(end.y*4))]++;
@@ -116,7 +116,7 @@
       const avg=a=>a.reduce((x,y)=>x+y,0)/(a.length||1);
       return {title:'涨球演示赛',finalScore:gy+'-'+go,players:{you:'你',opp:'对手'},points,heatmap:heat,stats:{avgSpeedKmh:Math.round(avg(you.map(s=>s.speedKmh))),avgRally:Math.round(avg(live.map(p=>p.rallyLength))*10)/10,winners:live.filter(p=>p.result==='winner').length,unforced:3},coaching:[{title:'发球落点偏中路',body:'一发多落中线，下一场打宽外角。',id:live[0].id},{title:'反手非受迫偏多',body:'快节奏时优先打深过渡。',id:live[1].id}]};
     }
-    let match=build(), active=match.points.find(p=>!p.dead), ballTrace=true, voice=false, mode='standard';
+    let match=build(), active=match.points.find(p=>!p.dead), ballTrace=false, voice=false, mode='standard';
     const canvas=document.getElementById('court'); const ctx=canvas.getContext('2d');
     function sideLabel(side){
       if(side==='you') return match.players.you==='你' ? '你（己方）' : (match.players.you + '（你）');
@@ -130,12 +130,17 @@
       ctx.beginPath(); ctx.moveTo(xm,y0); ctx.lineTo(xm,y1); ctx.moveTo(x0,ym); ctx.lineTo(x1,ym);
       ctx.moveTo(x0,mapY(.25)); ctx.lineTo(x1,mapY(.25)); ctx.moveTo(x0,mapY(.75)); ctx.lineTo(x1,mapY(.75)); ctx.moveTo(xm,mapY(.25)); ctx.lineTo(xm,mapY(.75)); ctx.stroke();
       // solid green court only — no heatmap yellow tiles
-      if(ballTrace&&active){
+      if(active){
         active.shots.forEach((shot,i)=>{
           const color=shot.side==='you'?TRACE_YOU:TRACE_OPP; const n=shot.shotIndex||i+1;
-          ctx.beginPath(); shot.ballPath.forEach((p,pi)=>{const x=mapX(p.x),y=mapY(p.y); pi?ctx.lineTo(x,y):ctx.moveTo(x,y);});
-          ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.stroke();
-          const last=shot.ballPath[shot.ballPath.length-1]; const lx=mapX(last.x), ly=mapY(last.y);
+          const last=shot.ballPath[shot.ballPath.length-1];
+          const landY=shot.side==='you'?Math.min(0.48,Math.max(0.02,last.y)):Math.max(0.52,Math.min(0.98,last.y));
+          const landX=Math.min(0.92,Math.max(0.08,last.x));
+          if(ballTrace){
+            ctx.beginPath(); shot.ballPath.forEach((p,pi)=>{const x=mapX(p.x),y=mapY(pi===shot.ballPath.length-1?landY:p.y); pi?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+            ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.stroke();
+          }
+          const lx=mapX(landX), ly=mapY(landY);
           ctx.beginPath(); ctx.arc(lx,ly,5,0,Math.PI*2); ctx.fillStyle=color; ctx.fill();
           const rallyTxt=`第 ${n} 拍`, speedTxt=`${shot.speedKmh} 公里/时`;
           ctx.font='600 11px sans-serif';

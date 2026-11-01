@@ -92,14 +92,25 @@ function mulberry32(seed: number) {
 }
 
 /**
- * Real tennis top-down trace: straight line from near one baseline (网后)
- * to landing near the opposite baseline. No sine/bezier wobble.
+ * Top-down court halves (y=0 far baseline, y=1 near baseline / 你):
+ * - you/blue landings ONLY in far half (opp end)
+ * - opp/red landings ONLY in near half (your end)
+ * Straight line 网后→对面网后; no sine/bezier wobble.
  */
-function ballPath(side: "you" | "opp", endX: number, rand: () => number): { x: number; y: number }[] {
+export function landingY(side: "you" | "opp", rand: () => number): number {
+  // Strict one-half clamp — same color never appears on both ends.
+  return side === "you" ? 0.05 + rand() * 0.12 : 0.83 + rand() * 0.12;
+}
+
+function ballPath(
+  side: "you" | "opp",
+  endX: number,
+  endY: number,
+  rand: () => number,
+): { x: number; y: number }[] {
   const pts: { x: number; y: number }[] = [];
   const y0 = side === "you" ? 0.95 : 0.05;
-  const y1 = side === "you" ? 0.05 : 0.95;
-  // Contact near baseline, slight lateral spread like a real rally stance.
+  const y1 = endY;
   const x0 = 0.18 + rand() * 0.64;
   const x1 = Math.min(0.9, Math.max(0.1, endX));
   for (let i = 0; i <= 10; i++) {
@@ -181,9 +192,8 @@ export function buildDemoMatch(opts?: {
       const stroke: StrokeKind = s === 0 ? "serve" : STROKES[1 + Math.floor(rand() * 4)];
       const side: "you" | "opp" = (s % 2 === 0 ? server : server === "you" ? "opp" : "you");
       const x = 0.12 + rand() * 0.76;
-      // Land deep near the far baseline so markers match full-depth traces.
-      const y = side === "you" ? 0.06 + rand() * 0.1 : 0.84 + rand() * 0.1;
-      const path = ballPath(side, x, rand);
+      const y = landingY(side, rand);
+      const path = ballPath(side, x, y, rand);
       const end = path[path.length - 1] || { x, y };
       const gx = Math.min(7, Math.floor(end.x * 8));
       const gy = Math.min(3, Math.floor(end.y * 4));

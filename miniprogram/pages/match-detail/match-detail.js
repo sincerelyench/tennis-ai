@@ -112,7 +112,7 @@ Page({
     activeShots: [],
     stroke: "all",
     result: "all",
-    ballTrace: true,
+    ballTrace: false,
     shareHint: "",
     legendYou: "",
     legendOpp: "",
