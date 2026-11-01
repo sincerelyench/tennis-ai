@@ -1,0 +1,42 @@
+.page { padding: 16px; background: #eef3f0; min-height: 100vh; box-sizing: border-box; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.brand { font-weight: 800; font-size: 18px; color: #14201a; }
+.lang { color: #1f7a4c; font-weight: 700; font-size: 12px; }
+.hdr { margin: 12px 0; }
+.title { display: block; font-size: 20px; font-weight: 800; color: #14201a; }
+.lead { display: block; margin-top: 6px; font-size: 13px; color: #5b6b63; line-height: 1.45; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.chip {
+  flex: 1; min-width: 42%; background: #fff; border: 1px solid #d7e3dc; border-radius: 12px; padding: 10px;
+}
+.chip.on { border-color: #1f7a4c; background: #eef8f2; }
+.name { display: block; font-weight: 800; font-size: 14px; }
+.hint { display: block; margin-top: 4px; font-size: 11px; color: #1f7a4c; font-weight: 700; }
+.style { display: block; margin-top: 4px; font-size: 11px; color: #5b6b63; }
+.log { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; min-height: 180px; }
+.bubble {
+  max-width: 88%; padding: 8px 10px; border-radius: 12px; font-size: 13px; line-height: 1.45;
+}
+.bubble.user { align-self: flex-end; background: #1f7a4c; color: #fff; }
+.bubble.coach { align-self: flex-start; background: #fff; border: 1px solid #d7e3dc; color: #14201a; }
+.board-intro {
+  margin-top: 14px; padding: 10px; border-radius: 10px; background: #f3f7f4; border: 1px dashed #c9d9cf;
+}
+.intro { font-size: 12px; color: #5b6b63; line-height: 1.45; }
+.board { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; }
+.empty { font-size: 12px; color: #5b6b63; padding: 8px 0; }
+.msg {
+  background: #fff; border: 1px solid #d7e3dc; border-radius: 12px; padding: 10px;
+}
+.meta { display: block; font-size: 11px; color: #5b6b63; font-weight: 700; }
+.body { display: block; margin-top: 6px; font-size: 13px; line-height: 1.45; color: #14201a; }
+.status { display: block; margin-top: 6px; font-size: 11px; color: #1f7a4c; font-weight: 700; }
+.composer { margin-top: 12px; display: flex; gap: 8px; align-items: center; }
+.composer.col { flex-direction: column; align-items: stretch; }
+.input {
+  flex: 1; background: #fff; border: 1px solid #d7e3dc; border-radius: 10px; padding: 8px 10px; font-size: 14px;
+}
+.textarea {
+  width: 100%; min-height: 72px; background: #fff; border: 1px solid #d7e3dc; border-radius: 10px;
+  padding: 8px 10px; font-size: 14px; box-sizing: border-box;
+}

@@ -1,0 +1,7 @@
+Stroke demo clips in this folder.
+
+forehand-topspin, backhand-topspin, and serve are the in-app demonstration clips already shipped with 涨球.
+
+forehand-slice, backhand-slice, forehand-volley, backhand-volley, and overhead-smash are adapted from Wikimedia Commons instructional videos by Dardo 86 7, licensed CC BY-SA 3.0.
+
+https://commons.wikimedia.org/wiki/Category:Videos_of_tennis

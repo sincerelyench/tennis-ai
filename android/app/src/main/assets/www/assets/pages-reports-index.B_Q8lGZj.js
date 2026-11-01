@@ -1,0 +1,1 @@
+import{d as s,T as a,U as n,k as e,aB as t,j as r,l as i}from"./index-SaS00-5Q.js";const o=s({__name:"index",setup(s){function o(){t("/pages/analysis/index")}return a(()=>{o()}),n(()=>{o()}),(s,a)=>{const n=i;return r(),e(n)}}});export{o as default};
