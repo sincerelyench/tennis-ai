@@ -50,8 +50,8 @@ AAPT=$(ls -d "$SDK"/build-tools/*/aapt 2>/dev/null | tail -1)
 "$AAPT" dump badging "$OUT_DIR/tennis-ai.apk" | head -3 | tee "$OUT_DIR/badging.txt"
 shasum -a 256 "$OUT_DIR/tennis-ai.apk" | tee "$OUT_DIR/SHA256.txt"
 cat > "$OUT_DIR/VERSION.txt" <<EOF
-versionName=1.0.92
-versionCode=192
+versionName=1.0.93
+versionCode=193
 applicationId=app.zhangqiu
 built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 signing=ZHANGQIU assembleRelease (no zip-inject)

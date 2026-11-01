@@ -35,7 +35,7 @@ if [[ -d "$REPO_ROOT/miniprogram/pages/coach" ]]; then
   LOCAL_MP_ZIP="${LOCAL_MP_ZIP:-/tmp/mp-weixin-network-coach.zip}"
   (
     cd "$REPO_ROOT/miniprogram"
-    printf '%s\n' "涨球 network-coach-chat $(date +%Y-%m-%d) APK 1.0.92" > NETWORK-COACH-NOTE.txt
+    printf '%s\n' "涨球 network-coach-chat $(date +%Y-%m-%d) APK 1.0.93" > NETWORK-COACH-NOTE.txt
     zip -qr "$LOCAL_MP_ZIP" . -x '*.DS_Store*'
   )
   echo "  built $LOCAL_MP_ZIP"

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Coach tab personas: always 涨球教练 + selected network coach (if any).
+ * Coach tab personas: 涨球教练 (AI chat) + selected network coach (human messaging).
  * Keeps 选教练 entry. Never shows Poppy.
  */
 
@@ -41,25 +41,27 @@ type PublishedCard = {
 function copy(locale: Locale) {
   if (locale === "zh") {
     return {
-      pickTitle: "对话教练",
+      pickTitle: "我的教练",
       zhangqiu: DEFAULT_COACH_NAME_ZH,
-      zhangqiuHint: "平台教练 · 可问答",
-      networkHint: "网络教练 · 可问答",
+      zhangqiuHint: "AI 教练 · 即时问答",
+      zhangqiuOn: "正在问答",
+      networkHint: "真人教练 · 留言",
+      networkOn: "留言中",
       selectCoach: "选教练",
       changeCoach: "更换网络教练",
       none: "还没选网络教练",
-      selected: "当前对话",
     };
   }
   return {
-    pickTitle: "Chat with",
+    pickTitle: "My coaches",
     zhangqiu: DEFAULT_COACH_NAME_EN,
-    zhangqiuHint: "Platform coach · Q&A",
-    networkHint: "Network coach · Q&A",
+    zhangqiuHint: "AI coach · Instant Q&A",
+    zhangqiuOn: "Chatting",
+    networkHint: "Human coach · Messages",
+    networkOn: "Messaging",
     selectCoach: "Choose coach",
     changeCoach: "Change network coach",
     none: "No network coach yet",
-    selected: "Chatting",
   };
 }
 
@@ -177,7 +179,13 @@ export function CoachChatPersonas({
                 {p.name}
               </p>
               <p className="mt-0.5 text-[11px] font-medium text-primary">
-                {selected ? t.selected : p.kind === "zhangqiu" ? t.zhangqiuHint : t.networkHint}
+                {selected
+                  ? p.kind === "zhangqiu"
+                    ? t.zhangqiuOn
+                    : t.networkOn
+                  : p.kind === "zhangqiu"
+                    ? t.zhangqiuHint
+                    : t.networkHint}
               </p>
               {p.styleTagline ? (
                 <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">{p.styleTagline}</p>

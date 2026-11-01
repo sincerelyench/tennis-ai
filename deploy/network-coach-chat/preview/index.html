@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>涨球 · 涨球教练 + 网络教练问答</title>
+  <title>涨球 · AI 涨球教练 + 真人网络教练留言</title>
   <style>
     :root {
       --bg: #eef3f0;
@@ -56,10 +56,22 @@
     .bubble { max-width: 88%; padding: 8px 10px; border-radius: 12px; font-size: 13px; line-height: 1.45; }
     .bubble.user { align-self: flex-end; background: var(--primary); color: #fff; }
     .bubble.coach { align-self: flex-start; border: 1px solid var(--line); background: #fff; }
+    .note {
+      padding: 8px 10px; border-radius: 10px; background: #f3f7f4; border: 1px dashed #c9d9cf;
+      font-size: 12px; color: var(--muted); line-height: 1.45; margin-bottom: 8px;
+    }
+    .msg {
+      border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: #fff;
+    }
+    .msg .meta { font-size: 11px; color: var(--muted); font-weight: 700; }
+    .msg .body { margin-top: 6px; font-size: 13px; line-height: 1.45; }
+    .msg .status { margin-top: 6px; font-size: 11px; color: var(--primary); font-weight: 700; }
     form { display: flex; gap: 8px; margin-top: 10px; }
-    input {
+    form.col { flex-direction: column; }
+    input, textarea {
       flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: inherit;
     }
+    textarea { min-height: 72px; resize: vertical; }
     button.send, button.ghost, button.primary {
       border: 0; border-radius: 10px; padding: 10px 14px; font-weight: 700; cursor: pointer;
     }
@@ -72,6 +84,7 @@
     .picker .card.on { border-color: var(--primary); background: #eef8f2; }
     .hidden { display: none !important; }
     .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .empty { font-size: 12px; color: var(--muted); padding: 8px 0; }
   </style>
 </head>
 <body>
@@ -84,17 +97,22 @@
     </div>
   </header>
   <main>
-    <section id="viewChat" data-network-coach-chat="true">
-      <div class="eyebrow" id="eye">涨球教练 · 网络教练</div>
-      <h1 id="title">对话教练</h1>
-      <p class="lead" id="lead">固定保留涨球教练；另可与已选网络教练问答聊天。</p>
+    <section id="viewChat" data-network-coach-chat="true" data-coach-mode="ai-chat">
+      <div class="eyebrow" id="eye">AI 涨球教练 · 真人网络教练</div>
+      <h1 id="title">我的教练</h1>
+      <p class="lead" id="lead">涨球教练是 AI 即时问答；网络教练是平台真人，用留言沟通。</p>
       <div class="row" data-coach-chat-personas="true" id="personaRow"></div>
       <p class="hint" id="hint"></p>
-      <div class="panel">
-        <div class="log" id="log" data-coach-panel="improve"></div>
-        <form id="form">
-          <input id="input" maxlength="400" placeholder="问问教练…" />
+      <div class="panel" id="panel">
+        <div class="note hidden" id="humanNote" data-coach-panel="human-intro"></div>
+        <div class="log" id="log" data-coach-panel="ai-chat"></div>
+        <form id="formAi" data-coach-composer="ai">
+          <input id="inputAi" maxlength="400" placeholder="问问涨球教练…" />
           <button class="send" type="submit" id="sendBtn">发送</button>
+        </form>
+        <form id="formMsg" class="col hidden" data-coach-composer="message">
+          <textarea id="inputMsg" maxlength="400" placeholder="给教练留言…"></textarea>
+          <button class="send" type="submit" id="leaveBtn">留言</button>
         </form>
       </div>
     </section>
@@ -102,13 +120,14 @@
     <section id="viewPick" class="picker hidden" data-coach-picker="true">
       <div class="eyebrow">涨球</div>
       <h1 id="pickTitle">选教练</h1>
-      <p class="lead" id="pickLead">仅列出已发布网络教练。选用后回到教练 tab 即可问答。</p>
+      <p class="lead" id="pickLead">仅列出已发布网络教练。选用后回到教练 tab 可留言。</p>
       <div id="coachList"></div>
     </section>
   </main>
   <script>
     const SEL = "tennis-player-selected-coach-v1";
     const PUB = "tennis-coach-publish-v1";
+    const MSG = "tennis-network-coach-messages-v1";
     const ZHANGQIU = { id: "poppy", nameZh: "涨球教练", nameEn: "Zhangqiu Coach" };
     const DEMO = {
       coachId: "lin_kai",
@@ -125,6 +144,7 @@
     let view = "chat";
     let active = "poppy";
     let messages = [];
+    let board = [];
 
     function scrub(n) {
       const raw = String(n || "").trim();
@@ -132,15 +152,18 @@
       return raw;
     }
 
+    function isAi(id) {
+      return !id || id === "poppy" || id === "zhangqiu";
+    }
+
     function ensureSeed() {
       let pub = {};
       try { pub = JSON.parse(localStorage.getItem(PUB) || "{}"); } catch {}
       pub.lin_kai = Object.assign({}, DEMO, pub.lin_kai || {}, { status: "published", displayName: scrub(DEMO.displayName) });
-      // also keep built-in published card named 涨球教练 (not Poppy)
       pub.poppy = Object.assign({}, pub.poppy || {}, {
         coachId: "poppy",
         displayName: "涨球教练",
-        styleTagline: locale === "zh" ? "平台默认人格" : "Platform default",
+        styleTagline: locale === "zh" ? "AI 默认人格" : "AI default",
         status: "published",
         libraryStrokeCount: 1,
       });
@@ -152,7 +175,7 @@
 
     function selectedNetwork() {
       const id = localStorage.getItem(SEL) || "";
-      if (!id || id === "poppy") return null;
+      if (!id || isAi(id)) return null;
       let pub = {};
       try { pub = JSON.parse(localStorage.getItem(PUB) || "{}"); } catch {}
       const card = pub[id];
@@ -164,69 +187,114 @@
       };
     }
 
-    function hello() {
-      const net = selectedNetwork();
-      if (active === "poppy") {
-        return locale === "zh"
-          ? "我是涨球教练。一次一条提示，先把击球点送到身前。"
-          : "I’m Zhangqiu Coach. One cue at a time — meet the ball out front.";
-      }
-      const n = net ? net.name : scrub("");
-      return locale === "zh"
-        ? `你好，我是${n}。可以直接问技术问题，我会按我的风格回答。`
-        : `Hi, I’m ${n}. Ask technique questions and I’ll answer in my style.`;
+    function readBoard(id) {
+      try {
+        const all = JSON.parse(localStorage.getItem(MSG) || "{}");
+        return Array.isArray(all[id]) ? all[id] : [];
+      } catch { return []; }
     }
 
-    function replyFor(q) {
-      const net = selectedNetwork();
-      if (active === "poppy") {
-        return locale === "zh"
-          ? `涨球教练：关于「${q.slice(0, 36)}」——先把击球点再往身前送一个拍头，力量放在击球之后。`
-          : `Zhangqiu Coach: On “${q.slice(0, 36)}” — meet it a racket-head farther in front; power after contact.`;
-      }
-      const n = net ? net.name : "Network coach";
+    function writeBoard(id, list) {
+      try {
+        const all = JSON.parse(localStorage.getItem(MSG) || "{}");
+        all[id] = list.slice(-40);
+        localStorage.setItem(MSG, JSON.stringify(all));
+      } catch {}
+    }
+
+    function helloAi() {
       return locale === "zh"
-        ? `${n}：先用碎步找位，再送拍。你问的是「${q.slice(0, 36)}」——这周只练站位与击球点。`
-        : `${n}: Split-step, then send. You asked “${q.slice(0, 36)}” — this week only feet + contact.`;
+        ? "我是涨球教练（AI）。一次一条提示，先把击球点送到身前。"
+        : "I’m Zhangqiu Coach (AI). One cue at a time — meet the ball out front.";
+    }
+
+    function replyAi(q) {
+      return locale === "zh"
+        ? `涨球教练：关于「${q.slice(0, 36)}」——先把击球点再往身前送一个拍头，力量放在击球之后。`
+        : `Zhangqiu Coach: On “${q.slice(0, 36)}” — meet it a racket-head farther in front; power after contact.`;
+    }
+
+    function formatTime(iso) {
+      try {
+        return new Date(iso).toLocaleString(locale === "zh" ? "zh-CN" : "en-US", {
+          month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit",
+        });
+      } catch { return ""; }
     }
 
     function renderPersonas() {
       const net = selectedNetwork();
       const row = document.getElementById("personaRow");
-      const zOn = active === "poppy";
+      const zOn = isAi(active);
       row.innerHTML =
         `<button class="chip ${zOn ? "on" : ""}" data-id="poppy" data-coach-kind="zhangqiu" data-coach-selected="${zOn}" type="button">` +
         `<b data-coach-name="true">${locale === "zh" ? ZHANGQIU.nameZh : ZHANGQIU.nameEn}</b>` +
-        `<span>${zOn ? (locale === "zh" ? "当前对话" : "Chatting") : (locale === "zh" ? "平台教练 · 可问答" : "Platform coach · Q&A")}</span></button>` +
+        `<span>${zOn ? (locale === "zh" ? "正在问答" : "Chatting") : (locale === "zh" ? "AI 教练 · 即时问答" : "AI coach · Instant Q&A")}</span></button>` +
         (net
           ? `<button class="chip ${!zOn ? "on" : ""}" data-id="${net.id}" data-coach-kind="network" data-coach-selected="${!zOn}" type="button">` +
             `<b data-coach-name="true">${net.name}</b>` +
-            `<span>${!zOn ? (locale === "zh" ? "当前对话" : "Chatting") : (locale === "zh" ? "网络教练 · 可问答" : "Network coach · Q&A")}</span>` +
+            `<span>${!zOn ? (locale === "zh" ? "留言中" : "Messaging") : (locale === "zh" ? "真人教练 · 留言" : "Human coach · Messages")}</span>` +
             (net.style ? `<i>${net.style}</i>` : "") +
             `</button>`
           : "");
       row.querySelectorAll("button").forEach((btn) => {
         btn.onclick = () => {
           active = btn.getAttribute("data-id");
-          messages = [{ role: "coach", text: hello() }];
-          renderChat();
+          if (isAi(active)) {
+            messages = [{ role: "coach", text: helloAi() }];
+            board = [];
+          } else {
+            board = readBoard(active);
+            messages = [];
+          }
+          renderPanel();
           renderPersonas();
         };
       });
       document.getElementById("hint").textContent = net
-        ? (locale === "zh" ? `已选网络教练：${net.name}。可切换上方芯片问答。` : `Network coach: ${net.name}. Switch chips to chat.`)
+        ? (locale === "zh"
+          ? `已选网络教练：${net.name}。点上方芯片：AI 问答 / 真人留言。`
+          : `Network coach: ${net.name}. Switch chips: AI chat / human messages.`)
         : (locale === "zh" ? "还没选网络教练，打开「选教练」。" : "No network coach yet — open Choose coach.");
     }
 
-    function renderChat() {
+    function renderPanel() {
+      const ai = isAi(active);
+      const net = selectedNetwork();
+      document.getElementById("viewChat").setAttribute("data-coach-mode", ai ? "ai-chat" : "human-message");
+      document.getElementById("formAi").classList.toggle("hidden", !ai);
+      document.getElementById("formMsg").classList.toggle("hidden", ai);
+      const note = document.getElementById("humanNote");
+      note.classList.toggle("hidden", ai);
+      if (!ai) {
+        note.textContent = locale === "zh"
+          ? `${net ? net.name : "网络教练"}是平台真人教练。请留言，教练会择时回复——不是即时 AI 问答。`
+          : `${net ? net.name : "Network coach"} is a real platform coach. Leave a message — they reply later, not instant AI chat.`;
+      }
       const log = document.getElementById("log");
+      log.setAttribute("data-coach-panel", ai ? "ai-chat" : "human-board");
       log.innerHTML = "";
-      messages.forEach((m) => {
-        const d = document.createElement("div");
-        d.className = "bubble " + (m.role === "user" ? "user" : "coach");
-        d.textContent = m.text;
-        log.appendChild(d);
-      });
+      if (ai) {
+        messages.forEach((m) => {
+          const d = document.createElement("div");
+          d.className = "bubble " + (m.role === "user" ? "user" : "coach");
+          d.textContent = m.text;
+          log.appendChild(d);
+        });
+      } else if (!board.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = locale === "zh" ? "还没有留言。写一条技术问题或训练反馈吧。" : "No messages yet. Leave a technique question or training note.";
+        log.appendChild(empty);
+      } else {
+        board.forEach((m) => {
+          const d = document.createElement("div");
+          d.className = "msg";
+          d.innerHTML = `<div class="meta">${formatTime(m.at)}</div><div class="body"></div><div class="status">${locale === "zh" ? "已留言，等待教练回复" : "Sent — waiting for coach reply"}</div>`;
+          d.querySelector(".body").textContent = m.text;
+          log.appendChild(d);
+        });
+      }
       log.scrollTop = log.scrollHeight;
     }
 
@@ -248,7 +316,8 @@
         btn.onclick = () => {
           localStorage.setItem(SEL, btn.getAttribute("data-id"));
           active = btn.getAttribute("data-id");
-          messages = [{ role: "coach", text: hello() }];
+          board = readBoard(active);
+          messages = [];
           renderPicker();
           setView("chat");
         };
@@ -261,37 +330,51 @@
       document.getElementById("viewPick").classList.toggle("hidden", v !== "pick");
       document.getElementById("tabChat").classList.toggle("on", v === "chat");
       document.getElementById("tabPick").classList.toggle("on", v === "pick");
-      if (v === "chat") { renderPersonas(); renderChat(); }
+      if (v === "chat") { renderPersonas(); renderPanel(); }
       else renderPicker();
     }
 
     function applyLocale() {
-      document.getElementById("title").textContent = locale === "zh" ? "对话教练" : "Chat with coaches";
+      document.getElementById("title").textContent = locale === "zh" ? "我的教练" : "My coaches";
       document.getElementById("lead").textContent = locale === "zh"
-        ? "固定保留涨球教练；另可与已选网络教练问答聊天。"
-        : "Always keep Zhangqiu Coach; also chat with your selected network coach.";
-      document.getElementById("eye").textContent = locale === "zh" ? "涨球教练 · 网络教练" : "Zhangqiu Coach · Network coach";
+        ? "涨球教练是 AI 即时问答；网络教练是平台真人，用留言沟通。"
+        : "Zhangqiu Coach is AI chat; network coaches are real people via messages.";
+      document.getElementById("eye").textContent = locale === "zh" ? "AI 涨球教练 · 真人网络教练" : "AI Zhangqiu · Human network coach";
       document.getElementById("pickTitle").textContent = locale === "zh" ? "选教练" : "Choose coach";
       document.getElementById("pickLead").textContent = locale === "zh"
-        ? "仅列出已发布网络教练。选用后回到教练 tab 即可问答。"
-        : "Published network coaches only. Select one, then chat on the Coach tab.";
-      document.getElementById("input").placeholder = locale === "zh" ? "问问教练…" : "Ask the coach…";
+        ? "仅列出已发布网络教练。选用后回到教练 tab 可留言。"
+        : "Published network coaches only. Select one, then leave messages on the Coach tab.";
+      document.getElementById("inputAi").placeholder = locale === "zh" ? "问问涨球教练…" : "Ask Zhangqiu Coach…";
+      document.getElementById("inputMsg").placeholder = locale === "zh" ? "给教练留言…" : "Leave a message…";
       document.getElementById("sendBtn").textContent = locale === "zh" ? "发送" : "Send";
+      document.getElementById("leaveBtn").textContent = locale === "zh" ? "留言" : "Leave message";
       document.getElementById("tabChat").textContent = locale === "zh" ? "教练" : "Coach";
       document.getElementById("tabPick").textContent = locale === "zh" ? "选教练" : "Choose";
       document.getElementById("langBtn").textContent = locale === "zh" ? "EN" : "中文";
-      messages = [{ role: "coach", text: hello() }];
+      if (isAi(active)) messages = [{ role: "coach", text: helloAi() }];
+      else board = readBoard(active);
       setView(view);
     }
 
-    document.getElementById("form").onsubmit = (e) => {
+    document.getElementById("formAi").onsubmit = (e) => {
       e.preventDefault();
-      const q = document.getElementById("input").value.trim();
+      if (!isAi(active)) return;
+      const q = document.getElementById("inputAi").value.trim();
       if (!q) return;
-      document.getElementById("input").value = "";
+      document.getElementById("inputAi").value = "";
       messages.push({ role: "user", text: q });
-      messages.push({ role: "coach", text: replyFor(q) });
-      renderChat();
+      messages.push({ role: "coach", text: replyAi(q) });
+      renderPanel();
+    };
+    document.getElementById("formMsg").onsubmit = (e) => {
+      e.preventDefault();
+      if (isAi(active)) return;
+      const q = document.getElementById("inputMsg").value.trim();
+      if (!q) return;
+      document.getElementById("inputMsg").value = "";
+      board.push({ id: Date.now(), text: q, at: new Date().toISOString(), status: "pending" });
+      writeBoard(active, board);
+      renderPanel();
     };
     document.getElementById("tabChat").onclick = () => setView("chat");
     document.getElementById("tabPick").onclick = () => setView("pick");

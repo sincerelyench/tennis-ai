@@ -8,6 +8,8 @@ const {
   normalizeDisplayName,
 } = require("../../utils/coach-publish");
 
+const MSG_KEY = "tennis-network-coach-messages-v1";
+
 function scrub(name, locale) {
   const raw = String(name || "").trim();
   if (!raw || /poppy|东东|dongdong|掌球/i.test(raw)) {
@@ -16,12 +18,51 @@ function scrub(name, locale) {
   return raw;
 }
 
+function isAi(id) {
+  return !id || id === DEFAULT_COACH_ID || id === "poppy" || id === "zhangqiu";
+}
+
+function readBoard(coachId) {
+  try {
+    const all = wx.getStorageSync(MSG_KEY) || {};
+    const list = all[coachId];
+    return Array.isArray(list) ? list : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeBoard(coachId, list) {
+  try {
+    const all = wx.getStorageSync(MSG_KEY) || {};
+    all[coachId] = list.slice(-40);
+    wx.setStorageSync(MSG_KEY, all);
+  } catch (e) {}
+}
+
+function formatTime(iso, locale) {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleString(locale === "en" ? "en-US" : "zh-CN", {
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch (e) {
+    return "";
+  }
+}
+
 Page({
   data: {
     locale: "zh-CN",
     activeId: DEFAULT_COACH_ID,
+    isAi: true,
     network: null,
     messages: [],
+    board: [],
     draft: "",
     pending: false,
   },
@@ -30,14 +71,18 @@ Page({
     const locale = getLang();
     this.setData({ locale });
     this.refreshPersonas();
-    if (!this.data.messages.length) this.bootstrap();
+    if (isAi(this.data.activeId)) {
+      if (!this.data.messages.length) this.bootstrapAi();
+    } else {
+      this.loadBoard();
+    }
   },
 
   refreshPersonas() {
     const locale = this.data.locale;
     const selected = getSelectedCoachId();
     let network = null;
-    if (selected && selected !== DEFAULT_COACH_ID && selected !== "poppy") {
+    if (selected && !isAi(selected)) {
       const card = listPublished().find((p) => p.coachId === selected);
       network = {
         id: selected,
@@ -48,35 +93,34 @@ Page({
     this.setData({ network });
   },
 
-  bootstrap() {
-    const hello = this.helloText(this.data.activeId);
+  bootstrapAi() {
+    const hello =
+      this.data.locale !== "en"
+        ? "我是涨球教练（AI）。一次一条提示，先把击球点送到身前。"
+        : "I’m Zhangqiu Coach (AI). One cue at a time — meet the ball out front.";
     this.setData({
       messages: [{ id: 1, role: "coach", text: hello }],
       history: [{ role: "assistant", content: hello }],
+      board: [],
     });
   },
 
-  helloText(id) {
-    const zh = this.data.locale !== "en";
-    if (id === DEFAULT_COACH_ID || id === "poppy") {
-      return zh
-        ? "我是涨球教练。一次一条提示，先把击球点送到身前。"
-        : "I’m Zhangqiu Coach. One cue at a time — meet the ball out front.";
-    }
-    const n = (this.data.network && this.data.network.name) || (zh ? "网络教练" : "Network coach");
-    return zh
-      ? `你好，我是${n}。可以直接问技术问题，我会按我的风格回答。`
-      : `Hi, I’m ${n}. Ask technique questions and I’ll answer in my style.`;
+  loadBoard() {
+    const locale = this.data.locale;
+    const raw = readBoard(this.data.activeId);
+    const board = raw.map((m) => ({
+      ...m,
+      atLabel: formatTime(m.at, locale === "en" ? "en" : "zh"),
+    }));
+    this.setData({ board, messages: [], history: [] });
   },
 
   onPickPersona(e) {
     const id = e.currentTarget.dataset.id;
-    this.setData({ activeId: id, draft: "" });
-    const hello = this.helloText(id);
-    this.setData({
-      messages: [{ id: Date.now(), role: "coach", text: hello }],
-      history: [{ role: "assistant", content: hello }],
-    });
+    const ai = isAi(id);
+    this.setData({ activeId: id, isAi: ai, draft: "" });
+    if (ai) this.bootstrapAi();
+    else this.loadBoard();
   },
 
   onOpenPicker() {
@@ -88,6 +132,7 @@ Page({
   },
 
   onSend() {
+    if (!this.data.isAi) return;
     const text = String(this.data.draft || "").trim();
     if (!text || this.data.pending) return;
     const zh = this.data.locale !== "en";
@@ -112,28 +157,40 @@ Page({
         messages: history.slice(-20),
         confirmedDaily: true,
         confirmedImprove: false,
-        coachId: this.data.activeId,
+        coachId: DEFAULT_COACH_ID,
         locale: zh ? "zh-CN" : "en",
       },
       success: (res) => {
         if (res.statusCode === 200 && res.data && res.data.text) finish(res.data.text);
-        else finish(this.localReply(text));
+        else finish(this.localAiReply(text));
       },
-      fail: () => finish(this.localReply(text)),
+      fail: () => finish(this.localAiReply(text)),
     });
   },
 
-  localReply(q) {
+  onLeave() {
+    if (this.data.isAi) return;
+    const text = String(this.data.draft || "").trim();
+    if (!text) return;
+    const item = {
+      id: Date.now(),
+      text,
+      at: new Date().toISOString(),
+      status: "pending",
+    };
+    const board = this.data.board
+      .map(({ atLabel, ...rest }) => rest)
+      .concat([item]);
+    writeBoard(this.data.activeId, board);
+    this.setData({ draft: "" });
+    this.loadBoard();
+  },
+
+  localAiReply(q) {
     const zh = this.data.locale !== "en";
-    if (this.data.activeId === DEFAULT_COACH_ID || this.data.activeId === "poppy") {
-      return zh
-        ? `涨球教练：关于「${q.slice(0, 36)}」——先把击球点再往身前送一个拍头。`
-        : `Zhangqiu Coach: On “${q.slice(0, 36)}” — meet it farther in front.`;
-    }
-    const n = (this.data.network && this.data.network.name) || (zh ? "网络教练" : "Network coach");
     return zh
-      ? `${n}：先碎步找位再送拍。你问的是「${q.slice(0, 36)}」。`
-      : `${n}: Split-step, then send. You asked “${q.slice(0, 36)}”.`;
+      ? `涨球教练：关于「${q.slice(0, 36)}」——先把击球点再往身前送一个拍头。`
+      : `Zhangqiu Coach: On “${q.slice(0, 36)}” — meet it farther in front.`;
   },
 
   onToggleLang() {
@@ -141,6 +198,7 @@ Page({
     setLang(next);
     this.setData({ locale: next });
     this.refreshPersonas();
-    this.bootstrap();
+    if (this.data.isAi) this.bootstrapAi();
+    else this.loadBoard();
   },
 });

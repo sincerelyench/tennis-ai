@@ -28,7 +28,16 @@ type UiMessage = {
   tasks?: CoachTask[];
 };
 
+type BoardMessage = {
+  id: string;
+  text: string;
+  at: string;
+  status: "pending";
+};
+
 type CoachTab = "improve" | "tasks";
+
+const MSG_KEY = "tennis-network-coach-messages-v1";
 
 function readActiveChatCoach(): string {
   if (typeof window === "undefined") return DEFAULT_COACH_ID;
@@ -43,6 +52,31 @@ function writeActiveChatCoach(id: string) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem("tennis-ai-coach-chat", id);
+  } catch {
+    /* ignore */
+  }
+}
+
+function isAiCoach(id: string) {
+  return !id || id === DEFAULT_COACH_ID || id === "poppy" || id === "zhangqiu";
+}
+
+function readBoard(coachId: string): BoardMessage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const all = JSON.parse(window.localStorage.getItem(MSG_KEY) || "{}") as Record<string, BoardMessage[]>;
+    return Array.isArray(all[coachId]) ? all[coachId] : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeBoard(coachId: string, list: BoardMessage[]) {
+  if (typeof window === "undefined") return;
+  try {
+    const all = JSON.parse(window.localStorage.getItem(MSG_KEY) || "{}") as Record<string, BoardMessage[]>;
+    all[coachId] = list.slice(-40);
+    window.localStorage.setItem(MSG_KEY, JSON.stringify(all));
   } catch {
     /* ignore */
   }
@@ -63,14 +97,16 @@ export function CoachView() {
   const [coachId, setCoachId] = useState<string>(readActiveChatCoach);
   const [activePersona, setActivePersona] = useState<ChatPersona | null>(null);
   const [showPicker, setShowPicker] = useState(false);
+  const [board, setBoard] = useState<BoardMessage[]>([]);
 
   const phase = resolvePhase(true, confirmedImprove);
   const zh = locale === "zh" || (typeof locale === "string" && locale.startsWith("zh"));
+  const chattingBuiltIn = isAiCoach(coachId);
 
-  function resetThread(nextId: string) {
+  function resetThread(nextId: string, persona?: ChatPersona | null) {
     setCoachId(nextId);
     writeActiveChatCoach(nextId);
-    if (nextId === DEFAULT_COACH_ID || nextId === "poppy") {
+    if (isAiCoach(nextId)) {
       writeCoachId(DEFAULT_COACH_ID as CoachId);
     }
     seq.current = 0;
@@ -82,12 +118,18 @@ export function CoachView() {
     setImprovePlan(null);
     setTab("improve");
     setStarted(true);
-    void askCoach([], { daily: true, improve: false }, nextId);
+    if (isAiCoach(nextId)) {
+      setBoard([]);
+      void askCoach([], { daily: true, improve: false }, nextId);
+    } else {
+      setBoard(readBoard(nextId));
+    }
+    if (persona) setActivePersona(persona);
   }
 
   function pickPersona(id: string, persona: ChatPersona) {
     setActivePersona(persona);
-    resetThread(id);
+    resetThread(id, persona);
   }
 
   function nextId(prefix: string) {
@@ -100,6 +142,7 @@ export function CoachView() {
     flags: { daily: boolean; improve: boolean },
     nextCoach = coachId,
   ) {
+    if (!isAiCoach(nextCoach)) return;
     setPending(true);
     setError("");
     try {
@@ -111,7 +154,7 @@ export function CoachView() {
           messages: nextHistory,
           confirmedDaily: flags.daily,
           confirmedImprove: flags.improve,
-          coachId: nextCoach,
+          coachId: DEFAULT_COACH_ID,
           locale,
         }),
       });
@@ -146,7 +189,11 @@ export function CoachView() {
   useEffect(() => {
     if (started) return;
     setStarted(true);
-    void askCoach([], { daily: true, improve: false });
+    if (isAiCoach(coachId)) {
+      void askCoach([], { daily: true, improve: false });
+    } else {
+      setBoard(readBoard(coachId));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started]);
 
@@ -160,8 +207,23 @@ export function CoachView() {
     void askCoach(nextHistory, { daily: true, improve: confirmedImprove });
   }
 
+  function leaveMessage(text: string) {
+    const value = text.trim();
+    if (!value || isAiCoach(coachId)) return;
+    setDraft("");
+    const item: BoardMessage = {
+      id: nextId("m"),
+      text: value,
+      at: new Date().toISOString(),
+      status: "pending",
+    };
+    const next = [...board, item];
+    setBoard(next);
+    writeBoard(coachId, next);
+  }
+
   function confirmCurrent() {
-    if (phase !== "improve") return;
+    if (phase !== "improve" || !chattingBuiltIn) return;
     setConfirmedImprove(true);
     setTab("tasks");
     const user: ChatMessage = { role: "user", content: t("coach.confirmImproveMsg") };
@@ -170,14 +232,35 @@ export function CoachView() {
     void askCoach(nextHistory, { daily: true, improve: true });
   }
 
-  const confirmLabel = phase === "improve" ? t("coach.confirmImprove") : "";
-  const chips = phase === "improve" ? [t("coach.chipTwice"), t("coach.chipContact")] : [];
+  const confirmLabel = chattingBuiltIn && phase === "improve" ? t("coach.confirmImprove") : "";
+  const chips = chattingBuiltIn && phase === "improve" ? [t("coach.chipTwice"), t("coach.chipContact")] : [];
   const taskItems = messages.flatMap((message) => message.tasks || []);
-  const chattingBuiltIn = coachId === DEFAULT_COACH_ID || coachId === "poppy" || coachId === "zhangqiu";
+
+  function formatTime(iso: string) {
+    try {
+      return new Date(iso).toLocaleString(zh ? "zh-CN" : "en-US", {
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "";
+    }
+  }
 
   return (
-    <div className={pageClass} data-network-coach-chat="true">
-      <h1 className="text-base font-bold text-foreground">{t("coach.title")}</h1>
+    <div
+      className={pageClass}
+      data-network-coach-chat="true"
+      data-coach-mode={chattingBuiltIn ? "ai-chat" : "human-message"}
+    >
+      <h1 className="text-base font-bold text-foreground">{zh ? "我的教练" : "My coaches"}</h1>
+      <p className="text-xs text-muted-foreground">
+        {zh
+          ? "涨球教练是 AI 即时问答；网络教练是平台真人，用留言沟通。"
+          : "Zhangqiu Coach is AI chat; network coaches are real people via messages."}
+      </p>
 
       <CoachChatPersonas
         locale={zh ? "zh" : "en"}
@@ -206,140 +289,190 @@ export function CoachView() {
 
       {chattingBuiltIn ? <CoachProfileCard coachId={DEFAULT_COACH_ID as CoachId} /> : null}
 
-      {activePersona?.kind === "network" || (!chattingBuiltIn && activePersona) ? (
+      {!chattingBuiltIn ? (
         <section
           className="rounded-lg border border-border bg-card px-3 py-3"
           data-coach-profile={coachId}
           data-coach-kind="network"
+          data-coach-panel="human-intro"
         >
           <p className="text-sm font-semibold text-foreground">
             {activePersona?.name || (zh ? "网络教练" : "Network coach")}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {zh
-              ? "已选网络教练，可直接问答聊天。讲解风格来自其已发布动作库。"
-              : "Selected network coach — ask questions in chat. Style comes from their published library."}
+              ? "平台真人教练。请留言，教练会择时回复——不是即时 AI 问答。"
+              : "Real platform coach. Leave a message — they reply later, not instant AI chat."}
           </p>
         </section>
       ) : null}
 
-      <div className="flex gap-2" data-coach-tabs="true" role="tablist" aria-label={t("coach.stepsAria")}>
-        {(["improve", "tasks"] as CoachTab[]).map((item) => (
-          <button
-            key={item}
-            type="button"
-            role="tab"
-            aria-selected={tab === item}
-            data-coach-tab={item}
-            data-coach-tab-selected={tab === item ? "true" : undefined}
-            onClick={() => setTab(item)}
-            className={cn(
-              "flex-1 rounded-lg px-3 py-2 text-sm font-semibold",
-              tab === item ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-            )}
-          >
-            {t(item === "improve" ? "coach.improve" : "coach.tasks")}
-          </button>
-        ))}
-      </div>
-
-      {tab === "improve" && messages.length === 0 && pending ? <LoadingState label={t("coach.building")} /> : null}
-      {messages.length === 0 && error ? (
-        <EmptyState title={t("coach.empty")} description={error}>
-          <Button type="button" onClick={() => void askCoach([], { daily: true, improve: false })}>
-            {t("common.retry")}
-          </Button>
-        </EmptyState>
-      ) : null}
-
-      {tab === "improve" ? (
-        <div className="space-y-3" data-coach-panel="improve">
-          {messages.map((message) => (
-            <div key={message.id} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
-              <div
-                className={
-                  message.role === "user"
-                    ? "max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm leading-6 text-primary-foreground"
-                    : "max-w-[85%] space-y-3 rounded-lg border border-border bg-card px-3 py-2 text-sm leading-6 text-foreground"
-                }
+      {chattingBuiltIn ? (
+        <>
+          <div className="flex gap-2" data-coach-tabs="true" role="tablist" aria-label={t("coach.stepsAria")}>
+            {(["improve", "tasks"] as CoachTab[]).map((item) => (
+              <button
+                key={item}
+                type="button"
+                role="tab"
+                aria-selected={tab === item}
+                data-coach-tab={item}
+                data-coach-tab-selected={tab === item ? "true" : undefined}
+                onClick={() => setTab(item)}
+                className={cn(
+                  "flex-1 rounded-lg px-3 py-2 text-sm font-semibold",
+                  tab === item ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                )}
               >
-                <p>{message.text}</p>
-                {message.plan ? <PlanCard plan={message.plan} t={t} /> : null}
-              </div>
+                {t(item === "improve" ? "coach.improve" : "coach.tasks")}
+              </button>
+            ))}
+          </div>
+
+          {tab === "improve" && messages.length === 0 && pending ? <LoadingState label={t("coach.building")} /> : null}
+          {messages.length === 0 && error ? (
+            <EmptyState title={t("coach.empty")} description={error}>
+              <Button type="button" onClick={() => void askCoach([], { daily: true, improve: false })}>
+                {t("common.retry")}
+              </Button>
+            </EmptyState>
+          ) : null}
+
+          {tab === "improve" ? (
+            <div className="space-y-3" data-coach-panel="ai-chat">
+              {messages.map((message) => (
+                <div key={message.id} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                  <div
+                    className={
+                      message.role === "user"
+                        ? "max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm leading-6 text-primary-foreground"
+                        : "max-w-[85%] space-y-3 rounded-lg border border-border bg-card px-3 py-2 text-sm leading-6 text-foreground"
+                    }
+                  >
+                    <p>{message.text}</p>
+                    {message.plan ? <PlanCard plan={message.plan} t={t} /> : null}
+                  </div>
+                </div>
+              ))}
+              {pending && messages.length > 0 ? <LoadingState label={t("coach.reviewing")} /> : null}
             </div>
-          ))}
-          {pending && messages.length > 0 ? <LoadingState label={t("coach.reviewing")} /> : null}
-        </div>
-      ) : (
-        <div className="space-y-3" data-coach-panel="tasks">
-          {taskItems.length ? (
-            taskItems.map((task) => <TaskCard key={task.id} task={task} t={t} />)
           ) : (
-            <EmptyState title={t("coach.tasksEmpty")} description={t("coach.tasksEmptyDesc")} />
+            <div className="space-y-3" data-coach-panel="tasks">
+              {taskItems.length ? (
+                taskItems.map((task) => <TaskCard key={task.id} task={task} t={t} />)
+              ) : (
+                <EmptyState title={t("coach.tasksEmpty")} description={t("coach.tasksEmptyDesc")} />
+              )}
+              {pending && confirmedImprove ? <LoadingState label={t("coach.reviewing")} /> : null}
+            </div>
           )}
-          {pending && confirmedImprove ? <LoadingState label={t("coach.reviewing")} /> : null}
-        </div>
-      )}
 
-      {tab === "improve" && confirmLabel ? (
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" disabled={pending} onClick={confirmCurrent} data-action="confirm-plan">
-            {confirmLabel}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={pending}
-            onClick={() => send(t("coach.changeImprove"))}
-          >
-            {t("coach.changeIt")}
-          </Button>
-        </div>
-      ) : null}
+          {tab === "improve" && confirmLabel ? (
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" disabled={pending} onClick={confirmCurrent} data-action="confirm-plan">
+                {confirmLabel}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={pending}
+                onClick={() => send(t("coach.changeImprove"))}
+              >
+                {t("coach.changeIt")}
+              </Button>
+            </div>
+          ) : null}
 
-      {tab === "improve" && chips.length ? (
-        <div className="flex flex-wrap gap-2">
-          {chips.map((chip) => (
-            <Button key={chip} type="button" variant="outline" size="sm" disabled={pending} onClick={() => send(chip)}>
-              {chip}
-            </Button>
-          ))}
-        </div>
-      ) : null}
+          {tab === "improve" && chips.length ? (
+            <div className="flex flex-wrap gap-2">
+              {chips.map((chip) => (
+                <Button key={chip} type="button" variant="outline" size="sm" disabled={pending} onClick={() => send(chip)}>
+                  {chip}
+                </Button>
+              ))}
+            </div>
+          ) : null}
 
-      {improvePlan && tab === "improve" ? (
-        <p className="text-xs text-muted-foreground">
-          {confirmedImprove ? t("coach.improveConfirmed") : t("coach.improvePending")}
-        </p>
-      ) : null}
+          {improvePlan && tab === "improve" ? (
+            <p className="text-xs text-muted-foreground">
+              {confirmedImprove ? t("coach.improveConfirmed") : t("coach.improvePending")}
+            </p>
+          ) : null}
 
-      <form
-        className="space-y-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          send(draft);
-        }}
-      >
-        <div className="flex gap-2">
-          <Input
-            value={draft}
-            onChange={(event) => {
-              setDraft(event.target.value);
-              if (error) setError("");
+          <form
+            className="space-y-2"
+            data-coach-composer="ai"
+            onSubmit={(event) => {
+              event.preventDefault();
+              send(draft);
             }}
-            placeholder={
-              tab === "improve" && phase === "improve" ? t("coach.placeholderImprove") : t("coach.placeholderAsk")
-            }
-            aria-label={t("coach.askAria")}
-            className="h-10 bg-background"
-            disabled={pending}
-          />
-          <Button type="submit" className="h-10 px-4" disabled={pending}>
-            {t("common.send")}
-          </Button>
-        </div>
-        {error && messages.length > 0 ? <p className="text-xs font-medium text-destructive">{error}</p> : null}
-      </form>
+          >
+            <div className="flex gap-2">
+              <Input
+                value={draft}
+                onChange={(event) => {
+                  setDraft(event.target.value);
+                  if (error) setError("");
+                }}
+                placeholder={zh ? "问问涨球教练…" : "Ask Zhangqiu Coach…"}
+                aria-label={t("coach.askAria")}
+                className="h-10 bg-background"
+                disabled={pending}
+              />
+              <Button type="submit" className="h-10 px-4" disabled={pending}>
+                {t("common.send")}
+              </Button>
+            </div>
+            {error && messages.length > 0 ? <p className="text-xs font-medium text-destructive">{error}</p> : null}
+          </form>
+        </>
+      ) : (
+        <>
+          <div className="space-y-3" data-coach-panel="human-board">
+            {board.length === 0 ? (
+              <EmptyState
+                title={zh ? "还没有留言" : "No messages yet"}
+                description={zh ? "写一条技术问题或训练反馈吧。" : "Leave a technique question or training note."}
+              />
+            ) : (
+              board.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-lg border border-border bg-card px-3 py-2"
+                  data-message-id={item.id}
+                >
+                  <p className="text-[11px] font-semibold text-muted-foreground">{formatTime(item.at)}</p>
+                  <p className="mt-1 text-sm leading-6 text-foreground">{item.text}</p>
+                  <p className="mt-1 text-[11px] font-semibold text-primary">
+                    {zh ? "已留言，等待教练回复" : "Sent — waiting for coach reply"}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+
+          <form
+            className="space-y-2"
+            data-coach-composer="message"
+            onSubmit={(event) => {
+              event.preventDefault();
+              leaveMessage(draft);
+            }}
+          >
+            <textarea
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder={zh ? "给教练留言…" : "Leave a message…"}
+              aria-label={zh ? "给教练留言" : "Leave a message"}
+              rows={3}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+            <Button type="submit" className="h-10 px-4" disabled={!draft.trim()}>
+              {zh ? "留言" : "Leave message"}
+            </Button>
+          </form>
+        </>
+      )}
     </div>
   );
 }
