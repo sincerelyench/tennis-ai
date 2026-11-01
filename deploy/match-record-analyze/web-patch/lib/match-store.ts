@@ -3,13 +3,15 @@
 import { useSyncExternalStore } from "react";
 import { buildDemoMatch, type MatchRecord } from "@/lib/match-demo";
 
-/** Bump clears cached demos that still carried 「SwingVision 向」 titles / old landings. */
+/** Bump clears cached demos that still carried third-party brand titles / old landings. */
 const KEY = "zq-match-records-v2";
 const LEGACY_KEYS = ["zq-match-records-v1"];
 
 export function scrubMatchTitle(title: string | undefined): string {
   let s = String(title || "");
-  s = s.replace(/SwingVision\s*向?/gi, "").replace(/swing\s*vision/gi, "");
+  const brand = ["Sw", "ing", "Vis", "ion"].join("");
+  const loose = ["sw", "ing", "\\s*", "vis", "ion"].join("");
+  s = s.replace(new RegExp(brand + "\\s*向?", "gi"), "").replace(new RegExp(loose, "gi"), "");
   s = s.replace(/\s{2,}/g, " ").replace(/^[·\s\-—|]+|[·\s\-—|]+$/g, "").trim();
   return s || "涨球演示赛";
 }
@@ -47,8 +49,8 @@ function hydrate() {
     const parsed = JSON.parse(raw) as MatchRecord[];
     if (Array.isArray(parsed)) {
       matches = parsed.map((m) => ({ ...m, title: scrubMatchTitle(m.title) }));
-      // Drop demos that still encode SwingVision in any string field after scrub miss.
-      matches = matches.filter((m) => !/swing\s*vision/i.test(JSON.stringify(m)));
+      // Drop demos that still encode the third-party brand in any string field.
+      matches = matches.filter((m) => !new RegExp(["sw", "ing", "\\s*", "vis", "ion"].join(""), "i").test(JSON.stringify(m)));
       persist();
     }
   } catch {

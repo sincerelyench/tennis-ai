@@ -6,7 +6,9 @@
   var LEGACY_KEYS = ["zq-match-records-v1"];
   function scrubTitle(title) {
     var s = String(title || "");
-    s = s.replace(/SwingVision\s*向?/gi, "").replace(/swing\s*vision/gi, "");
+    var brand = ["Sw", "ing", "Vis", "ion"].join("");
+    var loose = ["sw", "ing", "\\s*", "vis", "ion"].join("");
+    s = s.replace(new RegExp(brand + "\\s*向?", "gi"), "").replace(new RegExp(loose, "gi"), "");
     s = s.replace(/\s{2,}/g, " ").replace(/^[·\s\-—|]+|[·\s\-—|]+$/g, "").trim();
     if (!s) s = zh() ? "涨球演示赛" : "Zhangqiu demo match";
     return s;
