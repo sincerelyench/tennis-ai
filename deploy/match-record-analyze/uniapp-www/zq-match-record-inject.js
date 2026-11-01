@@ -77,9 +77,10 @@
       for (var s = 0; s < rally; s++) {
         var side = s % 2 === 0 ? server : (server === "you" ? "opp" : "you");
         var endX = 0.15 + rand() * 0.7;
+        // Straight line 网后→对面网后 (no sine/bezier); realistic lateral contact.
         var y0 = side === "you" ? 0.95 : 0.05;
         var y1 = side === "you" ? 0.05 : 0.95;
-        var x0 = 0.32 + rand() * 0.36;
+        var x0 = 0.18 + rand() * 0.64;
         var path = [];
         for (var k = 0; k <= 10; k++) {
           var u = k / 10;

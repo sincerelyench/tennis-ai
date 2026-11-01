@@ -66,7 +66,7 @@ function buildDemoMatch(opts) {
       const endX = 0.15 + rand() * 0.7
       const y0 = side === "you" ? 0.95 : 0.05
       const y1 = side === "you" ? 0.05 : 0.95
-      const x0 = 0.32 + rand() * 0.36
+      const x0 = 0.18 + rand() * 0.64  // straight baseline→baseline; wider contact
       const dur = 0.8 + rand() * 0.7
       const path = []
       for (let i = 0; i <= 10; i++) {

@@ -97,7 +97,7 @@
         for(let s=0;s<rally;s++){
           const side=s%2===0?server:(server==='you'?'opp':'you');
           const endX=.15+rand()*.7;
-          const y0=side==='you'?0.95:0.05, y1=side==='you'?0.05:0.95, x0=.32+rand()*.36;
+          const y0=side==='you'?0.95:0.05, y1=side==='you'?0.05:0.95, x0=.18+rand()*.64; // straight 网后→对面
           const path=[]; for(let i=0;i<=10;i++){const u=i/10;path.push({x:x0+(endX-x0)*u,y:y0+(y1-y0)*u});}
           const end=path[path.length-1];
           heat[Math.min(7,Math.floor(end.x*8))][Math.min(3,Math.floor(end.y*4))]++;

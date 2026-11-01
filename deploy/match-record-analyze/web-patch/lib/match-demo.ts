@@ -91,17 +91,21 @@ function mulberry32(seed: number) {
   };
 }
 
-/** Full-court depth: one baseline → other baseline (not mid-court stubs). */
+/**
+ * Real tennis top-down trace: straight line from near one baseline (网后)
+ * to landing near the opposite baseline. No sine/bezier wobble.
+ */
 function ballPath(side: "you" | "opp", endX: number, rand: () => number): { x: number; y: number }[] {
   const pts: { x: number; y: number }[] = [];
   const y0 = side === "you" ? 0.95 : 0.05;
   const y1 = side === "you" ? 0.05 : 0.95;
-  const x0 = 0.32 + rand() * 0.36;
+  // Contact near baseline, slight lateral spread like a real rally stance.
+  const x0 = 0.18 + rand() * 0.64;
   const x1 = Math.min(0.9, Math.max(0.1, endX));
   for (let i = 0; i <= 10; i++) {
     const u = i / 10;
     pts.push({
-      x: x0 + (x1 - x0) * u + Math.sin(u * Math.PI) * 0.035 * (rand() - 0.5),
+      x: x0 + (x1 - x0) * u,
       y: y0 + (y1 - y0) * u,
     });
   }
