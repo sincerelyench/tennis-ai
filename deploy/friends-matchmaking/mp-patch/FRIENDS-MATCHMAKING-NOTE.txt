@@ -1,0 +1,3 @@
+涨球 friends-matchmaking 2026-11-02 APK 1.0.93
+球友 tab：王者荣耀式附近匹配（水平/城市/UTR）；保留城市排行+录入比分；无搜索球友/球场。
+主承载：Web + Android/iOS WebView inject。
