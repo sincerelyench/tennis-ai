@@ -22,7 +22,6 @@ ios/DerivedData/
 *.xcuserstate
 **/xcuserdata/
 *.xcarchive
-
 # Large local media not required to run the app
 *.mp4
 *.mov
@@ -34,3 +33,9 @@ ios/DerivedData/
 samples/*.mp4
 samples/*.mov
 samples/*.webm
+# local release binaries
+deploy/**/dist/*.apk
+deploy/**/dist/*.ipa
+android/*.jks
+android/keystore.properties
+deploy/**/dist/

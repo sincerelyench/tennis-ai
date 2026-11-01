@@ -1,0 +1,80 @@
+.page {
+  min-height: 100vh;
+  padding: 32rpx;
+  background: linear-gradient(180deg, #e8f2ec 0%, #f4f7f5 40%, #eef3f0 100%);
+  color: #14201a;
+  box-sizing: border-box;
+}
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+.brand {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #1f7a4c;
+}
+.lang {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #1f7a4c;
+  padding: 8rpx 16rpx;
+  background: #e9f7ef;
+  border-radius: 999rpx;
+}
+.hdr {
+  margin-bottom: 24rpx;
+}
+.title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 800;
+}
+.lead {
+  display: block;
+  color: #5b6b63;
+  font-size: 26rpx;
+  margin-top: 12rpx;
+  line-height: 1.45;
+}
+.hint {
+  display: block;
+  font-size: 24rpx;
+  color: #5b6b63;
+  margin-top: 12rpx;
+}
+.err {
+  color: #b42318;
+}
+.empty {
+  margin-top: 24rpx;
+  padding: 32rpx;
+  border: 1rpx dashed #d7e3dc;
+  border-radius: 16rpx;
+  color: #5b6b63;
+  font-size: 26rpx;
+}
+.card {
+  border: 1rpx solid #d7e3dc;
+  border-radius: 24rpx;
+  padding: 24rpx;
+  background: #fff;
+  margin-bottom: 16rpx;
+}
+.card.on {
+  border-color: #1f7a4c;
+  background: #eef8f2;
+}
+.name {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 800;
+}
+.style {
+  display: block;
+  color: #5b6b63;
+  font-size: 24rpx;
+  margin: 8rpx 0 16rpx;
+}
