@@ -1,6 +1,8 @@
 {
   "pages": [
     "pages/home/home",
+    "pages/match/match",
+    "pages/match-detail/match-detail",
     "pages/guide/guide",
     "pages/upload/upload",
     "pages/queue/queue",

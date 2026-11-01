@@ -1,0 +1,5 @@
+*.jks
+android/app/src/main/assets/
+app/build/
+keystore.properties
+local.properties

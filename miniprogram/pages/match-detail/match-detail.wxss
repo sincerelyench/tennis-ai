@@ -1,0 +1,27 @@
+.page { padding: 16px; color: #f4efe4; min-height: 100vh; background: #07140e; }
+.h1 { font-size: 18px; font-weight: 700; display: block; }
+.lead, .hint, .label { display: block; font-size: 12px; opacity: .75; margin-top: 8px; line-height: 1.45; }
+.label { margin-top: 16px; font-weight: 600; opacity: .9; }
+.court { margin-top: 12px; height: 180px; border-radius: 12px; background: #1f4a38; border: 1px solid rgba(244,239,228,.2); position: relative; padding: 10px; }
+.court.ground { width: 56%; margin-left: auto; margin-right: auto; height: 280px; }
+.score, .trace, .heat { font-size: 11px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 11px; font-weight: 600; }
+.legend .you { color: #38bdf8; }
+.legend .opp { color: #f87171; }
+.item.shot { display: flex; justify-content: space-between; gap: 8px; }
+.item.shot .speed { font-weight: 700; color: #7dd3a0; }
+.item.shot.you .speed { color: #38bdf8; }
+.item.shot.opp .speed { color: #f87171; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.chip { padding: 7px 10px; border-radius: 10px; border: 1px solid rgba(244,239,228,.2); font-size: 11px; }
+.chip.on { background: #1f4a38; border-color: #7dd3a0; }
+.list { margin-top: 8px; max-height: min(60vh, 520px); overflow: auto; border: 1px solid rgba(244,239,228,.12); border-radius: 10px; }
+.item { padding: 8px 10px; font-size: 11px; border-bottom: 1px solid rgba(244,239,228,.08); }
+.item.on { background: rgba(125,211,160,.15); }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.stat { width: calc(50% - 4px); padding: 10px; border-radius: 10px; background: rgba(31,74,56,.35); box-sizing: border-box; }
+.k { display: block; font-size: 10px; opacity: .7; }
+.v { display: block; margin-top: 4px; font-size: 14px; font-weight: 700; }
+.card { margin-top: 10px; padding: 12px; border-radius: 12px; border: 1px solid rgba(244,239,228,.12); background: rgba(31,74,56,.28); }
+.item-title { display: block; font-size: 13px; font-weight: 600; }
+.link { margin-top: 8px; color: #7dd3a0; font-size: 12px; }
