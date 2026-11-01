@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 涨球教练 + 网络教练问答</title>
+  <style>
+    :root {
+      --bg: #eef3f0;
+      --card: #fff;
+      --fg: #14201a;
+      --muted: #5b6b63;
+      --primary: #1f7a4c;
+      --line: #d7e3dc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans SC", "PingFang SC", sans-serif;
+      color: var(--fg);
+      min-height: 100vh;
+      background:
+        radial-gradient(1000px 420px at 8% -8%, #d9efe3 0%, transparent 55%),
+        linear-gradient(180deg, #e3efe8 0%, var(--bg) 50%, #e8eee9 100%);
+    }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 18px; border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,.78); backdrop-filter: blur(8px);
+      position: sticky; top: 0;
+    }
+    .brand { font-weight: 800; font-size: 18px; }
+    .lang, .tab {
+      border: 0; border-radius: 999px; padding: 7px 12px; font-weight: 700; font-size: 12px; cursor: pointer;
+      background: #e9f7ef; color: var(--primary);
+    }
+    .tabs { display: flex; gap: 6px; }
+    .tab.on { background: var(--primary); color: #fff; }
+    main { max-width: 460px; margin: 0 auto; padding: 20px 16px 80px; }
+    .eyebrow { color: var(--primary); font-size: 12px; font-weight: 700; }
+    h1 { font-size: 22px; margin: 6px 0 8px; }
+    .lead { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+    .chip {
+      flex: 1; min-width: 42%; border: 1px solid var(--line); border-radius: 12px;
+      padding: 12px; background: var(--card); text-align: left; cursor: pointer;
+    }
+    .chip.on { border-color: var(--primary); background: #eef8f2; }
+    .chip b { display: block; font-size: 14px; }
+    .chip span { display: block; margin-top: 4px; font-size: 11px; color: var(--primary); font-weight: 700; }
+    .chip i { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); font-style: normal; }
+    .panel {
+      border: 1px solid var(--line); border-radius: 14px; background: var(--card); padding: 12px; margin-top: 10px;
+    }
+    .log { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow: auto; }
+    .bubble { max-width: 88%; padding: 8px 10px; border-radius: 12px; font-size: 13px; line-height: 1.45; }
+    .bubble.user { align-self: flex-end; background: var(--primary); color: #fff; }
+    .bubble.coach { align-self: flex-start; border: 1px solid var(--line); background: #fff; }
+    form { display: flex; gap: 8px; margin-top: 10px; }
+    input {
+      flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: inherit;
+    }
+    button.send, button.ghost, button.primary {
+      border: 0; border-radius: 10px; padding: 10px 14px; font-weight: 700; cursor: pointer;
+    }
+    button.send, button.primary { background: var(--primary); color: #fff; }
+    button.ghost { background: #eef3f0; color: var(--fg); }
+    .picker .card {
+      border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 8px;
+      display: flex; justify-content: space-between; gap: 8px; align-items: center;
+    }
+    .picker .card.on { border-color: var(--primary); background: #eef8f2; }
+    .hidden { display: none !important; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">涨球</div>
+    <div class="tabs">
+      <button class="tab on" id="tabChat" type="button">教练</button>
+      <button class="tab" id="tabPick" type="button">选教练</button>
+      <button class="lang" id="langBtn" type="button">EN</button>
+    </div>
+  </header>
+  <main>
+    <section id="viewChat" data-network-coach-chat="true">
+      <div class="eyebrow" id="eye">涨球教练 · 网络教练</div>
+      <h1 id="title">对话教练</h1>
+      <p class="lead" id="lead">固定保留涨球教练；另可与已选网络教练问答聊天。</p>
+      <div class="row" data-coach-chat-personas="true" id="personaRow"></div>
+      <p class="hint" id="hint"></p>
+      <div class="panel">
+        <div class="log" id="log" data-coach-panel="improve"></div>
+        <form id="form">
+          <input id="input" maxlength="400" placeholder="问问教练…" />
+          <button class="send" type="submit" id="sendBtn">发送</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="viewPick" class="picker hidden" data-coach-picker="true">
+      <div class="eyebrow">涨球</div>
+      <h1 id="pickTitle">选教练</h1>
+      <p class="lead" id="pickLead">仅列出已发布网络教练。选用后回到教练 tab 即可问答。</p>
+      <div id="coachList"></div>
+    </section>
+  </main>
+  <script>
+    const SEL = "tennis-player-selected-coach-v1";
+    const PUB = "tennis-coach-publish-v1";
+    const ZHANGQIU = { id: "poppy", nameZh: "涨球教练", nameEn: "Zhangqiu Coach" };
+    const DEMO = {
+      coachId: "lin_kai",
+      displayName: "林凯教练",
+      displayNameEn: "Coach Lin Kai",
+      styleTagline: "底线对抗 · 脚步先行",
+      styleTaglineEn: "Baseline battle · feet first",
+      status: "published",
+      publishedAt: new Date().toISOString(),
+      libraryStrokeCount: 2,
+    };
+
+    let locale = "zh";
+    let view = "chat";
+    let active = "poppy";
+    let messages = [];
+
+    function scrub(n) {
+      const raw = String(n || "").trim();
+      if (!raw || /poppy|东东|dongdong|掌球/i.test(raw)) return locale === "zh" ? "涨球教练" : "Zhangqiu Coach";
+      return raw;
+    }
+
+    function ensureSeed() {
+      let pub = {};
+      try { pub = JSON.parse(localStorage.getItem(PUB) || "{}"); } catch {}
+      pub.lin_kai = Object.assign({}, DEMO, pub.lin_kai || {}, { status: "published", displayName: scrub(DEMO.displayName) });
+      // also keep built-in published card named 涨球教练 (not Poppy)
+      pub.poppy = Object.assign({}, pub.poppy || {}, {
+        coachId: "poppy",
+        displayName: "涨球教练",
+        styleTagline: locale === "zh" ? "平台默认人格" : "Platform default",
+        status: "published",
+        libraryStrokeCount: 1,
+      });
+      localStorage.setItem(PUB, JSON.stringify(pub));
+      if (!localStorage.getItem(SEL) || localStorage.getItem(SEL) === "poppy") {
+        localStorage.setItem(SEL, "lin_kai");
+      }
+    }
+
+    function selectedNetwork() {
+      const id = localStorage.getItem(SEL) || "";
+      if (!id || id === "poppy") return null;
+      let pub = {};
+      try { pub = JSON.parse(localStorage.getItem(PUB) || "{}"); } catch {}
+      const card = pub[id];
+      if (!card || card.status !== "published") return { id, name: locale === "zh" ? "网络教练" : "Network coach", style: "" };
+      return {
+        id,
+        name: scrub(locale === "zh" ? card.displayName : (card.displayNameEn || card.displayName)),
+        style: locale === "zh" ? (card.styleTagline || "") : (card.styleTaglineEn || card.styleTagline || ""),
+      };
+    }
+
+    function hello() {
+      const net = selectedNetwork();
+      if (active === "poppy") {
+        return locale === "zh"
+          ? "我是涨球教练。一次一条提示，先把击球点送到身前。"
+          : "I’m Zhangqiu Coach. One cue at a time — meet the ball out front.";
+      }
+      const n = net ? net.name : scrub("");
+      return locale === "zh"
+        ? `你好，我是${n}。可以直接问技术问题，我会按我的风格回答。`
+        : `Hi, I’m ${n}. Ask technique questions and I’ll answer in my style.`;
+    }
+
+    function replyFor(q) {
+      const net = selectedNetwork();
+      if (active === "poppy") {
+        return locale === "zh"
+          ? `涨球教练：关于「${q.slice(0, 36)}」——先把击球点再往身前送一个拍头，力量放在击球之后。`
+          : `Zhangqiu Coach: On “${q.slice(0, 36)}” — meet it a racket-head farther in front; power after contact.`;
+      }
+      const n = net ? net.name : "Network coach";
+      return locale === "zh"
+        ? `${n}：先用碎步找位，再送拍。你问的是「${q.slice(0, 36)}」——这周只练站位与击球点。`
+        : `${n}: Split-step, then send. You asked “${q.slice(0, 36)}” — this week only feet + contact.`;
+    }
+
+    function renderPersonas() {
+      const net = selectedNetwork();
+      const row = document.getElementById("personaRow");
+      const zOn = active === "poppy";
+      row.innerHTML =
+        `<button class="chip ${zOn ? "on" : ""}" data-id="poppy" data-coach-kind="zhangqiu" data-coach-selected="${zOn}" type="button">` +
+        `<b data-coach-name="true">${locale === "zh" ? ZHANGQIU.nameZh : ZHANGQIU.nameEn}</b>` +
+        `<span>${zOn ? (locale === "zh" ? "当前对话" : "Chatting") : (locale === "zh" ? "平台教练 · 可问答" : "Platform coach · Q&A")}</span></button>` +
+        (net
+          ? `<button class="chip ${!zOn ? "on" : ""}" data-id="${net.id}" data-coach-kind="network" data-coach-selected="${!zOn}" type="button">` +
+            `<b data-coach-name="true">${net.name}</b>` +
+            `<span>${!zOn ? (locale === "zh" ? "当前对话" : "Chatting") : (locale === "zh" ? "网络教练 · 可问答" : "Network coach · Q&A")}</span>` +
+            (net.style ? `<i>${net.style}</i>` : "") +
+            `</button>`
+          : "");
+      row.querySelectorAll("button").forEach((btn) => {
+        btn.onclick = () => {
+          active = btn.getAttribute("data-id");
+          messages = [{ role: "coach", text: hello() }];
+          renderChat();
+          renderPersonas();
+        };
+      });
+      document.getElementById("hint").textContent = net
+        ? (locale === "zh" ? `已选网络教练：${net.name}。可切换上方芯片问答。` : `Network coach: ${net.name}. Switch chips to chat.`)
+        : (locale === "zh" ? "还没选网络教练，打开「选教练」。" : "No network coach yet — open Choose coach.");
+    }
+
+    function renderChat() {
+      const log = document.getElementById("log");
+      log.innerHTML = "";
+      messages.forEach((m) => {
+        const d = document.createElement("div");
+        d.className = "bubble " + (m.role === "user" ? "user" : "coach");
+        d.textContent = m.text;
+        log.appendChild(d);
+      });
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function renderPicker() {
+      const list = document.getElementById("coachList");
+      let pub = {};
+      try { pub = JSON.parse(localStorage.getItem(PUB) || "{}"); } catch {}
+      const selected = localStorage.getItem(SEL);
+      const cards = Object.values(pub).filter((c) => c.status === "published" && c.coachId !== "poppy");
+      list.innerHTML = cards.map((c) => {
+        const on = c.coachId === selected;
+        const name = scrub(locale === "zh" ? c.displayName : (c.displayNameEn || c.displayName));
+        return `<div class="card ${on ? "on" : ""}" data-coach-id="${c.coachId}" data-selected="${on ? 1 : 0}">
+          <div><b data-coach-name="true">${name}</b><div class="hint">${locale === "zh" ? (c.styleTagline || "") : (c.styleTaglineEn || c.styleTagline || "")}</div></div>
+          <button class="primary" type="button" data-action="select-coach" data-id="${c.coachId}">${on ? (locale === "zh" ? "当前选用" : "Selected") : (locale === "zh" ? "选用" : "Select")}</button>
+        </div>`;
+      }).join("") || `<p class="hint">${locale === "zh" ? "暂无已发布网络教练" : "No published network coaches"}</p>`;
+      list.querySelectorAll("[data-action=select-coach]").forEach((btn) => {
+        btn.onclick = () => {
+          localStorage.setItem(SEL, btn.getAttribute("data-id"));
+          active = btn.getAttribute("data-id");
+          messages = [{ role: "coach", text: hello() }];
+          renderPicker();
+          setView("chat");
+        };
+      });
+    }
+
+    function setView(v) {
+      view = v;
+      document.getElementById("viewChat").classList.toggle("hidden", v !== "chat");
+      document.getElementById("viewPick").classList.toggle("hidden", v !== "pick");
+      document.getElementById("tabChat").classList.toggle("on", v === "chat");
+      document.getElementById("tabPick").classList.toggle("on", v === "pick");
+      if (v === "chat") { renderPersonas(); renderChat(); }
+      else renderPicker();
+    }
+
+    function applyLocale() {
+      document.getElementById("title").textContent = locale === "zh" ? "对话教练" : "Chat with coaches";
+      document.getElementById("lead").textContent = locale === "zh"
+        ? "固定保留涨球教练；另可与已选网络教练问答聊天。"
+        : "Always keep Zhangqiu Coach; also chat with your selected network coach.";
+      document.getElementById("eye").textContent = locale === "zh" ? "涨球教练 · 网络教练" : "Zhangqiu Coach · Network coach";
+      document.getElementById("pickTitle").textContent = locale === "zh" ? "选教练" : "Choose coach";
+      document.getElementById("pickLead").textContent = locale === "zh"
+        ? "仅列出已发布网络教练。选用后回到教练 tab 即可问答。"
+        : "Published network coaches only. Select one, then chat on the Coach tab.";
+      document.getElementById("input").placeholder = locale === "zh" ? "问问教练…" : "Ask the coach…";
+      document.getElementById("sendBtn").textContent = locale === "zh" ? "发送" : "Send";
+      document.getElementById("tabChat").textContent = locale === "zh" ? "教练" : "Coach";
+      document.getElementById("tabPick").textContent = locale === "zh" ? "选教练" : "Choose";
+      document.getElementById("langBtn").textContent = locale === "zh" ? "EN" : "中文";
+      messages = [{ role: "coach", text: hello() }];
+      setView(view);
+    }
+
+    document.getElementById("form").onsubmit = (e) => {
+      e.preventDefault();
+      const q = document.getElementById("input").value.trim();
+      if (!q) return;
+      document.getElementById("input").value = "";
+      messages.push({ role: "user", text: q });
+      messages.push({ role: "coach", text: replyFor(q) });
+      renderChat();
+    };
+    document.getElementById("tabChat").onclick = () => setView("chat");
+    document.getElementById("tabPick").onclick = () => setView("pick");
+    document.getElementById("langBtn").onclick = () => { locale = locale === "zh" ? "en" : "zh"; applyLocale(); };
+
+    ensureSeed();
+    applyLocale();
+  </script>
+</body>
+</html>

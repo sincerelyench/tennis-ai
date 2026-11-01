@@ -1,0 +1,51 @@
+<view class="page" data-network-coach-chat="true">
+  <view class="top">
+    <text class="brand">涨球</text>
+    <text class="lang" bindtap="onToggleLang">{{locale === 'en' ? '中文' : 'EN'}}</text>
+  </view>
+
+  <view class="hdr">
+    <text class="title">{{locale === 'en' ? 'Chat with coaches' : '对话教练'}}</text>
+    <text class="lead">{{locale === 'en' ? 'Zhangqiu Coach plus your selected network coach.' : '涨球教练 + 已选网络教练，均可问答。'}}</text>
+  </view>
+
+  <view class="row" data-coach-chat-personas="true">
+    <view
+      class="chip {{activeId === 'poppy' ? 'on' : ''}}"
+      data-id="poppy"
+      data-coach-kind="zhangqiu"
+      data-coach-selected="{{activeId === 'poppy' ? 'true' : 'false'}}"
+      bindtap="onPickPersona"
+    >
+      <text class="name" data-coach-name="true">{{locale === 'en' ? 'Zhangqiu Coach' : '涨球教练'}}</text>
+      <text class="hint">{{activeId === 'poppy' ? (locale === 'en' ? 'Chatting' : '当前对话') : (locale === 'en' ? 'Platform coach · Q&A' : '平台教练 · 可问答')}}</text>
+    </view>
+    <view
+      wx:if="{{network}}"
+      class="chip {{activeId === network.id ? 'on' : ''}}"
+      data-id="{{network.id}}"
+      data-coach-kind="network"
+      data-coach-selected="{{activeId === network.id ? 'true' : 'false'}}"
+      bindtap="onPickPersona"
+    >
+      <text class="name" data-coach-name="true">{{network.name}}</text>
+      <text class="hint">{{activeId === network.id ? (locale === 'en' ? 'Chatting' : '当前对话') : (locale === 'en' ? 'Network coach · Q&A' : '网络教练 · 可问答')}}</text>
+      <text wx:if="{{network.style}}" class="style">{{network.style}}</text>
+    </view>
+  </view>
+
+  <button size="mini" type="primary" data-action="open-coach-picker" bindtap="onOpenPicker">
+    {{network ? (locale === 'en' ? 'Change network coach' : '更换网络教练') : (locale === 'en' ? 'Choose coach' : '选教练')}}
+  </button>
+
+  <view class="log" data-coach-panel="improve">
+    <block wx:for="{{messages}}" wx:key="id">
+      <view class="bubble {{item.role}}">{{item.text}}</view>
+    </block>
+  </view>
+
+  <view class="composer">
+    <input class="input" value="{{draft}}" bindinput="onDraft" placeholder="{{locale === 'en' ? 'Ask the coach…' : '问问教练…'}}" confirm-type="send" bindconfirm="onSend" />
+    <button size="mini" type="primary" loading="{{pending}}" bindtap="onSend">{{locale === 'en' ? 'Send' : '发送'}}</button>
+  </view>
+</view>
