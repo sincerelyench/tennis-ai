@@ -7,8 +7,8 @@
   function scrubTitle(title) {
     var s = String(title || "");
     var brand = String.fromCharCode(83,119,105,110,103,86,105,115,105,111,110);
-    var loose = String.fromCharCode(115,119,105,110,103) + "\s*" + String.fromCharCode(118,105,115,105,111,110);
-    s = s.replace(new RegExp(brand + "\s*" + String.fromCharCode(21521) + "?", "gi"), "");
+    var loose = String.fromCharCode(115,119,105,110,103) + "\\s*" + String.fromCharCode(118,105,115,105,111,110);
+    s = s.replace(new RegExp(brand + "\\s*" + String.fromCharCode(21521) + "?", "gi"), "");
     s = s.replace(new RegExp(loose, "gi"), "");
     s = s.replace(/\s{2,}/g, " ").replace(/^[·\s\-—|]+|[·\s\-—|]+$/g, "").trim();
     if (!s) s = zh() ? "涨球演示赛" : "Zhangqiu demo match";
