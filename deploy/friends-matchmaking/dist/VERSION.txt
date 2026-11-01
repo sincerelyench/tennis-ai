@@ -1,0 +1,8 @@
+versionName=1.0.93
+versionCode=193
+applicationId=app.zhangqiu
+built=2026-11-01T18:43:43Z
+signing=ZHANGQIU assembleRelease (no zip-inject)
+feature=friends-matchmaking
+ipa=re-signed Apple Development after www inject update
+ipaSha256=ab9b630fd73b0c7bed3aae17d8801c84e650791acc62b75616bfdcb8941dffce

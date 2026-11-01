@@ -34,3 +34,12 @@ ios/DerivedData/
 samples/*.mp4
 samples/*.mov
 samples/*.webm
+
+# local android secrets / sdk
+android/local.properties
+android/*.jks
+android/keystore.properties
+android/app/build/
+deploy/friends-matchmaking/dist/*.apk
+deploy/friends-matchmaking/dist/*.ipa
+deploy/friends-matchmaking/.ipa-work/
