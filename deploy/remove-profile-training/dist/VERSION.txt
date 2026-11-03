@@ -1,0 +1,6 @@
+versionName=1.0.96
+versionCode=196
+applicationId=app.zhangqiu
+built=2026-11-03T17:42:53Z
+signing=ZHANGQIU assembleRelease (no zip-inject)
+feature=remove-profile-training

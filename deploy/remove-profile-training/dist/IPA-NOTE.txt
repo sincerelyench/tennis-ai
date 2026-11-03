@@ -1,0 +1,2 @@
+IPA WebView shell refreshed with remove-profile-training (+ devices) injects.
+Primary UI also via live /tennis web. APK 1.0.96 is fully re-signed assembleRelease.

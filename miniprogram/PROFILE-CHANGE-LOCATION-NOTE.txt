@@ -1,0 +1,3 @@
+涨球 profile-change-location
+我的/Profile 可改当前位置城市；PATCH /tennis/api/auth/profile cityId；同步球友城市键。
+主承载：Web + APK 1.0.95 + IPA；本 zip 含说明。

@@ -1,0 +1,2 @@
+涨球 remove-profile-training — 我的/Profile 去掉「训练计划」菜单与「本周/每周训练」区块。
+Web / APK / IPA 主承载；小程序壳同步说明。不移除「设备」或城市编辑。
