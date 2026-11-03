@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 匹配微信引导预览</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #f3f4f6; color: #111827; }
+    .wrap { max-width: 420px; margin: 24px auto; padding: 0 16px; }
+    .card { background: #fff; border: 1px solid rgba(0,0,0,.08); border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+    h1 { font-size: 16px; margin: 0 0 8px; }
+    .found { color: #0f766e; font-weight: 700; text-align: center; margin: 0 0 10px; }
+    .buddy { display: flex; gap: 12px; padding: 12px; border-radius: 12px; border: 1px solid rgba(15,118,110,.25); background: rgba(15,118,110,.06); }
+    .avatar { width: 48px; height: 48px; border-radius: 999px; background: #0f766e; color: #fff; display:flex; align-items:center; justify-content:center; font-weight:800; }
+    .intro { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; margin-top: 10px; }
+    .intro .lab { font-size: 11px; color: #6b7280; margin: 0 0 6px; }
+    .intro .body { font-size: 14px; line-height: 1.55; margin: 0 0 8px; }
+    button { width: 100%; height: 40px; border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; font-weight: 700; margin-top: 8px; }
+    .primary { background: #0f766e; color: #fff; border: 0; }
+    .msg { font-size: 12px; color: #6b7280; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" data-match-found="true">
+      <h1>匹配约球</h1>
+      <p class="found">匹配成功</p>
+      <div class="buddy">
+        <div class="avatar">李</div>
+        <div>
+          <div style="font-weight:800">李明</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:4px">无锡 · 水平 3.5 · 本地第 2</div>
+        </div>
+      </div>
+      <div class="intro" data-match-intro="true">
+        <p class="lab">匹配消息</p>
+        <p class="body" data-match-intro-body="true">匹配成功，请互相加微信，再自行约定场地和时间。</p>
+        <p class="msg">对方尚未回复。可取消后重新匹配。</p>
+        <button data-match-intro-cancel="true">取消</button>
+      </div>
+    </div>
+    <div class="card" data-match-post-cancel="true">
+      <p class="msg">已取消匹配。可重新开始匹配，或搜索球友并挑战。</p>
+      <button class="primary" data-match-rematch="true">重新开始匹配</button>
+      <button data-match-search-challenge="true">搜索球友并挑战</button>
+    </div>
+    <div class="card" data-match-intro-inbox="true">
+      <h1>匹配消息</h1>
+      <p class="body">匹配成功，请互相加微信，再自行约定场地和时间。</p>
+      <button data-match-intro-cancel="true">取消</button>
+    </div>
+  </div>
+</body>
+</html>

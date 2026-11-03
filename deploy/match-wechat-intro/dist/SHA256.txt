@@ -1,0 +1,1 @@
+c9c6df6e6e7ded851806630a89a9e7ef6a0ad158e9ca48bb12836f0c46c99d6e  /Users/yanqing/Downloads/tennis-ai-match-wechat-intro/deploy/match-wechat-intro/dist/tennis-ai.apk

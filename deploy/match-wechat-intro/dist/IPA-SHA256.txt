@@ -1,0 +1,1 @@
+888fb260f813893ff93c57f9d2bc8527f62c98c4e5a070bdb50741386acd47af  /Users/yanqing/Downloads/tennis-ai-match-wechat-intro/deploy/match-wechat-intro/dist/tennis-ai.ipa
