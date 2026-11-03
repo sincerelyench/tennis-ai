@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>涨球 · 我的 · 改当前位置</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #0f172a; line-height: 1.5; }
+      code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
+      a { color: #0d9488; }
+      li { margin: 8px 0; }
+    </style>
+  </head>
+  <body>
+    <h1>我的 · 改当前位置 / 城市</h1>
+    <p>在「我的 / Profile」选择城市后写入 <code>PATCH /tennis/api/auth/profile</code>（<code>cityId</code>），并同步 <code>zq-friends-city-v1</code>，球友排行与匹配按新城市过滤。</p>
+    <ul>
+      <li>Web：<a href="/tennis/profile">/tennis/profile</a></li>
+      <li>中文仅中国城市；英文含全球城市</li>
+      <li>与 sibling「本地列表显示自己」共用 auth <code>cityId</code></li>
+      <li>APK 1.0.95 / IPA / mp-weixin 四端同步</li>
+    </ul>
+  </body>
+</html>

@@ -13,8 +13,8 @@ android {
         applicationId "app.zhangqiu"
         minSdk 24
         targetSdk 34
-        versionCode 194
-        versionName "1.0.94"
+        versionCode 195
+        versionName "1.0.95"
         resValue "string", "start_url", zqStartUrl
     }
 
