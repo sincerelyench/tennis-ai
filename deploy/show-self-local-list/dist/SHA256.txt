@@ -1,0 +1,1 @@
+d242b9449467955a5f1b9c0c5d67fb2dc87c8f1d84664d2382f9e631a20825b1  /Users/yanqing/Downloads/tennis-ai/deploy/show-self-local-list/dist/tennis-ai.apk

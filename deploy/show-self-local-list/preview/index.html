@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>涨球 · 本地列表显示自己</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 2rem; line-height: 1.5; max-width: 40rem; }
+      code { background: #f4f4f5; padding: 0.1rem 0.35rem; border-radius: 4px; }
+      li { margin: 0.35rem 0; }
+    </style>
+  </head>
+  <body>
+    <h1>本地列表显示自己</h1>
+    <p>
+      有真实登录 <code>displayName</code> 时，本人会出现在当前选中城市的本地排行（哪怕只有自己）。
+      无显示名时仍为 <strong>0 / empty</strong>，不会用假名占位。
+    </p>
+    <ul>
+      <li>API：<code>/tennis/api/friends/ladder?cityId=…</code> 把本人并入所选城市</li>
+      <li>Web：<code>ensureSelfInPlayers</code> + 球友页城市同步到 auth</li>
+      <li>匹配：本人在排行中，但不会匹配到自己</li>
+    </ul>
+    <p><a href="/tennis/friends">打开球友页</a></p>
+  </body>
+</html>
