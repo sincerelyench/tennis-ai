@@ -1,0 +1,1 @@
+5c45617b42d69182a197368701662574268dbb5e82ff1e55c34ce2920bc72055  /Users/yanqing/Downloads/tennis-ai-friends-score-confirm/deploy/friends-score-confirm/dist/tennis-ai.apk
