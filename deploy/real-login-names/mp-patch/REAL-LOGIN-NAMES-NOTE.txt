@@ -1,0 +1,4 @@
+涨球小程序：球员/教练显示名一律走登录资料 / 已发布教练 displayName。
+- 球友排行与匹配：请求 /tennis/api/friends/directory；无显示名用户不计入，数量为 0。
+- 网络教练列表：/tennis/api/coaches?published=1 已过滤 lin_kai / 林凯教练等种子假名。
+- 请重新打包 mp-weixin.zip 并上传 https://yqchen.blog/mp-weixin.zip
