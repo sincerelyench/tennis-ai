@@ -1,0 +1,4 @@
+涨球 remove-settings-devices — 我的/设置去掉「设备」入口与 /devices 页。
+Web：ProfileView 菜单项删除；/devices 软跳回我的。
+APK/IPA：zq-remove-devices-inject.js 隐藏设备行并拦截 device 路由。
+小程序包随本 zip 刷新说明；主 UI 由 WebView / 远端 tennis 承载。

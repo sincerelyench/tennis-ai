@@ -1,0 +1,1 @@
+4deec61a39f0f882d189e14376e3cb7819198a731b609206cc90c30afc36c191  /Users/yanqing/Downloads/tennis-ai-remove-devices/deploy/remove-settings-devices/dist/tennis-ai.apk

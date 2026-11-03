@@ -1,0 +1,2 @@
+IPA baseline shell (remote WebView). Devices removal delivered via live /tennis web + www injects.
+APK 1.0.96 carries zq-remove-devices-inject. IPA package mtime refreshed with this release upload.
