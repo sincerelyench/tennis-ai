@@ -1,0 +1,2 @@
+IPA WebView shell refreshed with video-clip-duration uni bundle (default/min 10s, drag longer).
+Primary trim UI also via live /tennis web. APK 1.0.98 is fully re-signed assembleRelease.
