@@ -1,0 +1,1 @@
+涨球 remove-profile-stats — 我的/Profile 去掉「训练时长 / 球友个数 / 分析个数」统计条，以及「练的最多 / 最近趋势」卡片。主 UI 由 Web/APK/IPA 承载；小程序包同步说明。
