@@ -34,13 +34,56 @@ echo "==> [3/5] refresh mp-weixin.zip"
 LOCAL_MP_ZIP="${LOCAL_MP_ZIP:-/tmp/mp-weixin-match-wechat-intro.zip}"
 (
   cd "$REPO_ROOT/miniprogram"
-  printf '%s\n' "涨球 match-wechat-intro $(date +%Y-%m-%d) APK 1.0.96 — 匹配成功微信引导；取消后重匹配/搜索挑战。" > FRIENDS-MATCH-WECHAT-INTRO-NOTE.txt
+  printf '%s\n' "涨球 match-wechat-intro $(date +%Y-%m-%d) APK 1.0.97 — 匹配成功微信引导；取消后重匹配/搜索挑战。" > FRIENDS-MATCH-WECHAT-INTRO-NOTE.txt
   if [[ -d "$HERE/mp-patch" ]]; then
     cp -a "$HERE/mp-patch/." .
   fi
   zip -qr "$LOCAL_MP_ZIP" . -x '*.DS_Store*'
 )
 echo "  built $LOCAL_MP_ZIP"
+
+
+echo "==> [3.5/5] refresh IPA WebView shell injects"
+if [[ ! -f "$HERE/dist/tennis-ai.ipa" ]]; then
+  BASE_IPA=""
+  for cand in \
+    /Users/yanqing/Downloads/tennis-ai-remove-profile-training/deploy/remove-profile-training/dist/tennis-ai.ipa \
+    /Users/yanqing/Downloads/tennis-ai-profile-location/deploy/profile-change-location/dist/tennis-ai.ipa \
+    /Users/yanqing/Downloads/tennis-ai-friends-score-confirm/deploy/friends-score-confirm/dist/tennis-ai.ipa
+  do
+    [[ -f "$cand" ]] && BASE_IPA="$cand" && break
+  done
+  if [[ -n "$BASE_IPA" ]]; then
+    mkdir -p "$HERE/dist"
+    IPA_STAGING=$(mktemp -d)
+    unzip -q "$BASE_IPA" -d "$IPA_STAGING"
+    WWW="$IPA_STAGING/Payload/Zhangqiu.app/www"
+    mkdir -p "$WWW/assets"
+    for f in zq-friends-city-inject.js zq-friends-matchmaking-inject.js; do
+      [[ -f "$HERE/uniapp-www/$f" ]] || continue
+      cp -f "$HERE/uniapp-www/$f" "$WWW/assets/$f"
+      cp -f "$HERE/uniapp-www/$f" "$WWW/$f"
+    done
+    python3 -c "
+from pathlib import Path
+html = Path(r'$WWW') / 'index.html'
+if html.exists():
+    t = html.read_text()
+    changed = False
+    for name in ['zq-friends-city-inject.js', 'zq-friends-matchmaking-inject.js']:
+        if name in t: continue
+        if '</body>' in t:
+            t = t.replace('</body>', f'  <script src=\"./assets/{name}\"></script>\n</body>')
+            changed = True
+    if changed: html.write_text(t)
+"
+    printf '%s\n' "match-wechat-intro 1.0.97 $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$IPA_STAGING/Payload/Zhangqiu.app/MATCH-WECHAT-INTRO.txt"
+    ( cd "$IPA_STAGING" && zip -qr "$HERE/dist/tennis-ai.ipa" Payload )
+    shasum -a 256 "$HERE/dist/tennis-ai.ipa" | tee "$HERE/dist/IPA-SHA256.txt"
+    echo "IPA WebView shell refreshed with match-wechat-intro injects." > "$HERE/dist/IPA-NOTE.txt"
+    echo "  built refreshed IPA from baseline shell"
+  fi
+fi
 
 echo "==> [4/5] upload APK/IPA/mp when provided"
 "${SSH[@]}" "$WEB_HOST" "mkdir -p '$REMOTE_APK'"

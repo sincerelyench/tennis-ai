@@ -19,7 +19,7 @@
 | Surface | Delivery |
 | --- | --- |
 | Web | `opt-patch` → `/opt/tennis-ai` + `/api/friends/intros` |
-| Android APK | `uniapp-www` inject + `assembleRelease` **1.0.96**（禁止 zip-inject） |
+| Android APK | `uniapp-www` inject + `assembleRelease` **1.0.97**（禁止 zip-inject） |
 | iOS IPA | 同 www inject 嵌入壳 |
 | 微信小程序 | `FRIENDS-MATCH-WECHAT-INTRO-NOTE.txt` + zip 刷新 |
 

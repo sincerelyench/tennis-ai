@@ -43,10 +43,10 @@ from pathlib import Path
 import re
 p = Path("$ANDROID/app/build.gradle")
 t = p.read_text()
-t2 = re.sub(r"versionCode\s+\d+", "versionCode 196", t, count=1)
-t2 = re.sub(r'versionName\s+"[^"]+"', 'versionName "1.0.96"', t2, count=1)
+t2 = re.sub(r"versionCode\s+\d+", "versionCode 197", t, count=1)
+t2 = re.sub(r'versionName\s+"[^"]+"', 'versionName "1.0.97"', t2, count=1)
 p.write_text(t2)
-print("version -> 1.0.96 / 196")
+print("version -> 1.0.97 / 196")
 PY
 
 if [[ ! -f "$ANDROID/keystore.properties" && -f /Users/yanqing/Downloads/tennis-ai/android/keystore.properties ]]; then
@@ -55,6 +55,45 @@ fi
 if [[ ! -f "$ANDROID/zhangqiu-release.jks" && -f /Users/yanqing/Downloads/tennis-ai/android/zhangqiu-release.jks ]]; then
   cp -f /Users/yanqing/Downloads/tennis-ai/android/zhangqiu-release.jks "$ANDROID/zhangqiu-release.jks"
 fi
+
+python3 - <<'PYSIGN'
+from pathlib import Path
+p = Path("$ANDROID/app/build.gradle")
+t = p.read_text()
+if "signingConfigs" not in t:
+    t = t.replace(
+        """    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }""",
+        """    signingConfigs {
+        release {
+            def keystorePropertiesFile = rootProject.file("keystore.properties")
+            def keystoreProperties = new Properties()
+            if (keystorePropertiesFile.exists()) {
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                storeFile rootProject.file(keystoreProperties["storeFile"])
+                storePassword keystoreProperties["storePassword"]
+                keyAlias keystoreProperties["keyAlias"]
+                keyPassword keystoreProperties["keyPassword"]
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }""",
+        1,
+    )
+    p.write_text(t)
+    print("signingConfigs wired")
+else:
+    print("signingConfigs present")
+PYSIGN
 
 cd "$ANDROID"
 chmod +x gradlew 2>/dev/null || true
@@ -72,7 +111,7 @@ AAPT=$(ls -d "$SDK"/build-tools/*/aapt 2>/dev/null | tail -1)
 "$AAPT" dump badging "$OUT_DIR/tennis-ai.apk" | head -3 | tee "$OUT_DIR/badging.txt"
 shasum -a 256 "$OUT_DIR/tennis-ai.apk" | tee "$OUT_DIR/SHA256.txt"
 cat > "$OUT_DIR/VERSION.txt" <<EOF
-versionName=1.0.96
+versionName=1.0.97
 versionCode=196
 applicationId=app.zhangqiu
 built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
