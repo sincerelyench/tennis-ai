@@ -34,3 +34,8 @@ ios/DerivedData/
 samples/*.mp4
 samples/*.mov
 samples/*.webm
+android/keystore.properties
+android/zhangqiu-release.jks
+android/local.properties
+**/zhangqiu-release.jks
+**/keystore.properties
