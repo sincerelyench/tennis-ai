@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 选段时长</title>
+  <style>
+    :root { color-scheme: light; --ink:#0f1c16; --muted:#5b6b63; --line:#d7e0db; --teal:#0f766e; }
+    body { margin:0; font-family: "SF Pro Text", "PingFang SC", sans-serif; background: linear-gradient(160deg,#e8f3ee,#f7faf8 40%,#eef2ff); color:var(--ink); }
+    main { max-width: 720px; margin: 0 auto; padding: 48px 20px 80px; }
+    h1 { font-size: 28px; letter-spacing: -0.02em; margin: 0 0 8px; }
+    p { color: var(--muted); line-height: 1.55; }
+    .rules { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 20px; }
+    .rule { display:grid; grid-template-columns: 88px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .k { color: var(--teal); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .strip { margin-top: 28px; height: 56px; border-radius: 10px; background: #111; position: relative; overflow: hidden; }
+    .film { display:flex; height:100%; opacity:.55; }
+    .film span { flex:1; background: linear-gradient(90deg,#234,#456,#234); border-right:1px solid #000; }
+    .win { position:absolute; top:0; bottom:0; left:0; width: 22%; border:2px solid #2dd4bf; background: rgba(45,212,191,.22); box-sizing:border-box; }
+    .win::before, .win::after { content:""; position:absolute; top:0; bottom:0; width:10px; background:#14b8a6; }
+    .win::before { left:0; } .win::after { right:0; }
+    .meta { margin-top: 10px; font-size: 13px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>选段默认 10 秒</h1>
+    <p>源片短于 10 秒时整段提交。源片更长时默认框选 10 秒，可向右拖长到任意时长，但不能短于 10 秒。</p>
+    <div class="strip" aria-hidden="true">
+      <div class="film"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="win"></div>
+    </div>
+    <p class="meta">示意：青绿窗 = 默认 10s；拖动右柄可延长到片尾。</p>
+    <div class="rules">
+      <div class="rule"><div class="k">Default</div><div>10 seconds</div></div>
+      <div class="rule"><div class="k">Short</div><div>&lt; 10s → entire video</div></div>
+      <div class="rule"><div class="k">Min</div><div>10s (or full if source shorter)</div></div>
+      <div class="rule"><div class="k">Max</div><div>Full source duration</div></div>
+    </div>
+  </main>
+</body>
+</html>

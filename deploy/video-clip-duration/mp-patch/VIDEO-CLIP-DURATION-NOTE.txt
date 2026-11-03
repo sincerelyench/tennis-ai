@@ -1,0 +1,4 @@
+涨球 video-clip-duration
+选段窗（Web / APK / IPA 主路径）：默认 10 秒；源片 <10s 整段；可拖长到片尾；最短 10 秒。
+微信小程序上传页无胶片选段窗，仍按 chooseMedia 整段上传（maxDuration 60）。
+APK 1.0.98 full assembleRelease resign.

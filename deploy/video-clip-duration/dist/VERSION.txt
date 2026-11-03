@@ -1,0 +1,6 @@
+versionName=1.0.98
+versionCode=198
+applicationId=app.zhangqiu
+built=2026-11-03T18:23:26Z
+signing=ZHANGQIU assembleRelease (no zip-inject)
+feature=video-clip-duration
