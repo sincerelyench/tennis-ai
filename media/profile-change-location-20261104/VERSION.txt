@@ -1,0 +1,6 @@
+versionName=1.0.95
+versionCode=195
+applicationId=app.zhangqiu
+built=2026-11-03T17:35:53Z
+signing=ZHANGQIU assembleRelease (no zip-inject)
+feature=profile-change-location
