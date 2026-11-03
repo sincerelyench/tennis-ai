@@ -3,7 +3,7 @@ plugins {
 }
 
 // 打包时覆盖：./gradlew assembleDebug -PZQ_START_URL=http://10.0.2.2:27116/e1
-def zqStartUrl = (project.findProperty("ZQ_START_URL") ?: "https://tennis.47.93.203.28.sslip.io/e1").toString()
+def zqStartUrl = (project.findProperty("ZQ_START_URL") ?: "https://yqchen.blog/tennis").toString()
 
 android {
     namespace "app.zhangqiu"
@@ -13,8 +13,8 @@ android {
         applicationId "app.zhangqiu"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "0.1.0"
+        versionCode 199
+        versionName "1.0.99"
         resValue "string", "start_url", zqStartUrl
     }
 
@@ -23,9 +23,24 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    signingConfigs {
+        release {
+            def keystorePropertiesFile = rootProject.file("keystore.properties")
+            def keystoreProperties = new Properties()
+            if (keystorePropertiesFile.exists()) {
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                storeFile rootProject.file(keystoreProperties["storeFile"])
+                storePassword keystoreProperties["storePassword"]
+                keyAlias keystoreProperties["keyAlias"]
+                keyPassword keystoreProperties["keyPassword"]
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
         }
     }
 }

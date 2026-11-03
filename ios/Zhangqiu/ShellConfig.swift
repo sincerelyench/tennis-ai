@@ -3,7 +3,7 @@ import UIKit
 /// Build-time and launch-time start URL, plus the offline page shared with Android.
 enum ShellConfig {
     /// Same default as `android/app/build.gradle` (`ZQ_START_URL`).
-    static let defaultStartURL = "https://tennis.47.93.203.28.sslip.io/e1"
+    static let defaultStartURL = "https://yqchen.blog/tennis"
 
     /// Launch environment, then the `-ZQStartURL` argument, then the Info.plist
     /// value baked in from the `ZQ_START_URL` build setting, then the default.

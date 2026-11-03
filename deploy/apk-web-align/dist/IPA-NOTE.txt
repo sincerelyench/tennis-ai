@@ -1,0 +1,2 @@
+IPA shell refreshed: default start URL → https://yqchen.blog/tennis (was sslip /e1).
+APK 1.0.99 fully re-signed assembleRelease.
