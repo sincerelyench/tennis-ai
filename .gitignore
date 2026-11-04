@@ -34,3 +34,8 @@ ios/DerivedData/
 samples/*.mp4
 samples/*.mov
 samples/*.webm
+
+# Release signing (local only)
+android/keystore.properties
+android/zhangqiu-release.jks
+*.jks

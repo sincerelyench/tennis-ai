@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 微信登录预览</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; font-family: "PingFang SC", "Noto Sans SC", sans-serif; background: #07140e; color: #eef6ee; }
+    .wrap { max-width: 420px; margin: 0 auto; padding: 48px 24px; }
+    .brand { font-size: 22px; font-weight: 700; letter-spacing: 0.02em; }
+    h1 { font-size: 26px; margin: 28px 0 8px; }
+    p { color: #a8b8a8; line-height: 1.5; }
+    .wx { display: block; width: 100%; border: 0; border-radius: 10px; background: #07c160; color: #fff;
+      font-size: 16px; font-weight: 600; padding: 14px; margin-top: 28px; cursor: pointer; }
+    .or { text-align: center; color: #7a8a7a; font-size: 12px; margin: 16px 0; }
+    .phone { width: 100%; box-sizing: border-box; border-radius: 10px; border: 1px solid #1f3328;
+      background: #0c1c14; color: #eef6ee; padding: 12px 14px; margin-bottom: 10px; }
+    .submit { width: 100%; border-radius: 10px; border: 0; background: #d6e35a; color: #07140e;
+      font-weight: 700; padding: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap" data-wechat-login="true">
+    <div class="brand">涨球</div>
+    <h1>登录</h1>
+    <p>登录后回到刚才的页面。该号码首次登录会自动开户。</p>
+    <button class="wx" type="button">微信登录</button>
+    <div class="or">或使用手机号登录</div>
+    <input class="phone" placeholder="请输入手机号" />
+    <input class="phone" placeholder="4 位验证码" />
+    <button class="submit" type="button">登录</button>
+  </div>
+</body>
+</html>

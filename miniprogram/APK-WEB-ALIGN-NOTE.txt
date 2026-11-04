@@ -1,0 +1,3 @@
+涨球 apk-web-align — APK/IPA 壳打开 https://yqchen.blog/tennis，与网页一致。
+APK 1.0.99 / 199（ZHANGQIU assembleRelease，非 zip 注入）。
+功能：约球换位、无我的统计、匹配微信约定、选段默认 10 秒。
