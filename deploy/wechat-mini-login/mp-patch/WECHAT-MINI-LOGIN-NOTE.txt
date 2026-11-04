@@ -1,0 +1,1 @@
+涨球 wechat-mini-login 2026-11-04：mp-weixin 仅约球 + 微信登录（wx.login → /api/auth/wechat）。分析/教练/我的不在小程序开放。
