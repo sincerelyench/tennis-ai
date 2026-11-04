@@ -1,0 +1,38 @@
+.shot { width: 100%; height: 360rpx; border-radius: 24rpx; margin: 12rpx 0 16rpx; background: #0b1712; }
+.axis { margin-bottom: 20rpx; padding-bottom: 12rpx; border-bottom: 1px solid #2d4a3a; }
+.axis-top { display: flex; justify-content: space-between; gap: 12rpx; }
+.bar { height: 12rpx; border-radius: 99rpx; background: #0b1712; overflow: hidden; margin: 8rpx 0; }
+.bar-fill { height: 100%; background: #d6e35a; }
+.tip-label, .focus-label { color: #d6e35a; font-size: 22rpx; }
+.warn {
+  display: block;
+  background: rgba(224, 178, 92, 0.16);
+  border: 1px solid rgba(224, 178, 92, 0.75);
+  color: #ffe7b0;
+  border-radius: 20rpx;
+  padding: 20rpx;
+  margin-bottom: 16rpx;
+}
+.tl {
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+  border: 1px solid #2d4a3a;
+  border-radius: 20rpx;
+  padding: 12rpx;
+  margin-bottom: 12rpx;
+}
+.tl.on { border-color: #d6e35a; }
+.tl-shot { width: 120rpx; height: 90rpx; border-radius: 12rpx; background: #0b1712; flex: 0 0 120rpx; }
+.h2 { display: block; font-size: 34rpx; font-weight: 700; margin: 28rpx 0 12rpx; }
+.compare { margin-top: 12rpx; }
+.compare.locked {
+  opacity: 0.72;
+  background: #101612;
+  border: 1px solid #2d4a3a;
+  border-radius: 24rpx;
+  padding: 20rpx;
+}
+.delta { display: block; margin-bottom: 8rpx; }
+.up { color: #b7e3c4; }
+.down { color: #ffb4b4; }
