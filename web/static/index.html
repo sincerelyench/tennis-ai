@@ -150,10 +150,10 @@
     .step {
       background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px;
       color: var(--muted); font-size: 12px; backdrop-filter: blur(10px);
+      display: flex; align-items: center; min-height: 44px;
     }
-    .step b { display: block; color: var(--text); font-size: 13px; margin-bottom: 4px; }
+    .step b { display: block; color: var(--text); font-size: 13px; margin: 0; }
     .step.on { border-color: var(--ball); color: #cfe39a; box-shadow: 0 0 18px rgba(212,225,87,.15); }
-    .step .eta { display: block; margin-top: 6px; font-size: 11px; opacity: .85; }
     .progress {
       height: 8px; background: #223028; border-radius: 99px; overflow: hidden; margin: 8px 0 18px;
     }
@@ -395,11 +395,11 @@
 
   <script>
     const STEPS = [
-      ["读取视频", "打开你的录像", "约 15 秒"],
-      ["识别动作", "看清挥拍动作", "约 3–4 分钟"],
-      ["找出挥拍", "标出每一次击球", "约 30 秒"],
-      ["整理数据", "整理评分依据", "约 1 分钟"],
-      ["教练点评", "生成练习建议", "约 2 分钟，最慢"],
+      "读取视频",
+      "识别动作",
+      "找出挥拍",
+      "整理数据",
+      "教练点评",
     ];
     const JOB_KEY = "tennis-ai-active-job";
     const LEVEL_KEY = "tennis-ai-player-level";
@@ -413,12 +413,12 @@
     const upload = $("upload"), analyzing = $("analyzing"), reportEl = $("report");
     const drop = $("drop"), file = $("file");
 
-    function paintSteps(step, etaSteps) {
+    function paintSteps(step) {
       $("steps").innerHTML = STEPS.map((s, i) => {
         const n = i + 1;
         const cls = n < step ? "done" : n === step ? "on" : "";
-        const eta = (etaSteps && etaSteps[i] && etaSteps[i].label) || s[2];
-        return `<div class="step ${cls}"><b>${n}. ${s[0]}</b>${s[1]}<span class="eta">${esc(eta)}</span></div>`;
+        const name = (typeof s === "string" ? s : s[0]) || "";
+        return `<div class="step ${cls}"><b>${n}. ${esc(name)}</b></div>`;
       }).join("");
     }
     paintSteps(0);
@@ -608,7 +608,7 @@
       }
       const job = await res.json();
       $("bar").style.width = (job.progress || 0) + "%";
-      paintSteps(job.step || 1, job.eta_steps);
+      paintSteps(job.step || 1);
       $("msg").textContent = job.message || "";
       $("detail").innerHTML = `
         ${esc(job.source_name || "")}<br/>
