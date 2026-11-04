@@ -1,0 +1,4 @@
+/* inherits app.wxss light theme */
+.page {
+  padding-top: 48rpx;
+}

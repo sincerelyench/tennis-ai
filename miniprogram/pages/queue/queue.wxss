@@ -1,0 +1,4 @@
+/* light-theme-override */
+page { background: #ffffff; color: #0f172a; }
+.page { background: #ffffff; color: #0f172a; }
+

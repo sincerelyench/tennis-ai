@@ -1,0 +1,1 @@
+涨球 mp-align-webview 2026-11-05：微信登录后用 web-view 打开 https://yqchen.blog/tennis（与 APK/IPA 同源），避免原生四 tab 再漂移。

@@ -27,7 +27,7 @@ Page({
   },
   onShow() {
     if (!session.auth()) {
-      wx.redirectTo({ url: "/pages/home/home" })
+      wx.redirectTo({ url: "/pages/login/login" })
       return
     }
     this.paint(i18n.getLang())

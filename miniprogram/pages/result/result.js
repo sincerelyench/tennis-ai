@@ -3,6 +3,7 @@ const api = require("../../utils/api")
 const session = require("../../utils/session")
 const errors = require("../../utils/errors")
 const config = require("../../config")
+const issueDemos = require("../../utils/issue-correct-demos")
 
 function bandKey(score, max) {
   if (typeof score !== "number" || !max) return ""
@@ -47,13 +48,17 @@ Page({
     compareReason: "",
     compareWhen: "",
     deltas: [],
+    correctDemos: [],
+    correctLead: "",
+    correctLoading: false,
+    correctError: "",
   },
   onLoad(options) {
-    this.jobId = (options && options.job_id) || ""
+    this.jobId = (options && (options.job_id || options.jobId)) || ""
   },
   onShow() {
     if (!session.auth()) {
-      wx.redirectTo({ url: "/pages/home/home" })
+      wx.redirectTo({ url: "/pages/login/login" })
       return
     }
     this.paint(i18n.getLang())
@@ -82,6 +87,10 @@ Page({
       compareReason: "",
       compareWhen: "",
       deltas: [],
+      correctDemos: [],
+      correctLead: "",
+      correctLoading: false,
+      correctError: "",
     }
     this.setData(Object.assign({
       lang,
@@ -160,6 +169,12 @@ Page({
           " · " + i18n.lookup(lang, "result.later") + " " + whenLabel(card.later && card.later.created_at)
         : "",
       deltas,
+      correctDemos: issueDemos.demosForResult(payload, lang),
+      correctLead: (lang && String(lang).indexOf("en") === 0)
+        ? "Correct form matched to your problem points"
+        : "正确动作按本次问题点匹配",
+      correctLoading: false,
+      correctError: "",
     }
   },
   onSwitch(e) {
@@ -177,11 +192,30 @@ Page({
       } else {
         this.payload = body
         this.errorCode = ""
+        const grade = body.grade || (typeof body.total === "number" ? String(body.total) : "—")
+        session.pushReport({
+          id: this.jobId,
+          title: body.title || i18n.lookup(i18n.getLang(), "result.strokes." + body.stroke) || "挥拍分析",
+          grade: String(grade).toUpperCase(),
+          when: whenLabel(body.created_at || new Date().toISOString()),
+          snippet: body.focus || "",
+          failed: false,
+        })
       }
       this.paint(i18n.getLang())
     }).catch((err) => {
       this.payload = null
       this.errorCode = (err && err.code) || "generic"
+      if (this.jobId) {
+        session.pushReport({
+          id: this.jobId,
+          title: "分析",
+          grade: "失败",
+          when: whenLabel(new Date().toISOString()),
+          snippet: "",
+          failed: true,
+        })
+      }
       this.paint(i18n.getLang())
     })
   },
@@ -189,6 +223,7 @@ Page({
     wx.navigateBack({ delta: 1 })
   },
   onHome() {
-    wx.reLaunch({ url: "/pages/home/home" })
+    wx.switchTab({ url: "/pages/analysis/analysis" })
   },
 })
+

@@ -1,5 +1,5 @@
 {
-  "description": "涨球 E1 小程序",
+  "description": "涨球 · 微信小程序（web-view 对齐网页）",
   "packOptions": {
     "ignore": [],
     "include": []

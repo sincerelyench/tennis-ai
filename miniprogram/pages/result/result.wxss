@@ -1,3 +1,7 @@
+/* light-theme-override */
+page { background: #ffffff; color: #0f172a; }
+.page { background: #ffffff; color: #0f172a; }
+
 .shot { width: 100%; height: 360rpx; border-radius: 24rpx; margin: 12rpx 0 16rpx; background: #0b1712; }
 .axis { margin-bottom: 20rpx; padding-bottom: 12rpx; border-bottom: 1px solid #2d4a3a; }
 .axis-top { display: flex; justify-content: space-between; gap: 12rpx; }
@@ -36,3 +40,13 @@
 .delta { display: block; margin-bottom: 8rpx; }
 .up { color: #b7e3c4; }
 .down { color: #ffb4b4; }
+.correct { margin-top: 20rpx; }
+.correct-card {
+  border: 1px solid #2d4a3a;
+  border-radius: 20rpx;
+  padding: 16rpx;
+  margin: 12rpx 0;
+  background: #101612;
+}
+.correct-axis { display: block; color: #5eead4; font-size: 22rpx; font-weight: 600; margin-bottom: 6rpx; }
+.correct-video { width: 100%; height: 360rpx; border-radius: 16rpx; margin-top: 12rpx; background: #0b1712; }

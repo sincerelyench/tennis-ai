@@ -7,14 +7,22 @@ module.exports = {
   "home": {
     "lead": "拍一段挥拍，按引导上传，然后看四维结果和练法。",
     "sub": "适合自己练球时回看动作。这里不承诺分数会变高。",
-    "devNote": "当前是开发态模拟登录，正式微信登录以后再接入。",
-    "login": "开发态登录",
+    "devNote": "与网页同一套手机号登录。验证码会显示在本页（不发短信）。AppID 现为 touristappid。",
+    "login": "登录",
     "loggingIn": "正在登录…",
     "continue": "查看拍摄引导",
-    "codeLabel": "登录码（可留空）",
-    "codePlaceholder": "留空会自动生成开发码",
+    "phoneLabel": "手机号",
+    "phonePlaceholder": "11 位手机号",
+    "codeLabel": "验证码",
+    "codePlaceholder": "4 位验证码",
+    "sendCode": "获取验证码",
+    "sending": "发送中…",
+    "codeIs": "验证码 ",
+    "codeShown": "验证码已显示在按钮上，填入即可登录。",
+    "codeSent": "验证码已签发。",
     "loggedIn": "已登录",
-    "localCode": "没有拿到微信登录码，已改用本地开发码。"
+    "localCode": "没有拿到微信登录码，已改用本地开发码。",
+    "coachLibrary": "动作库 / 我的示范"
   },
   "guide": {
     "title": "拍摄引导",
@@ -78,6 +86,8 @@ module.exports = {
   "errors": {
     "auth_required": "请先登录后再上传",
     "auth_invalid": "登录已失效，请重新登录",
+    "phone_invalid": "请输入 11 位手机号",
+    "code_required": "请先获取并填写验证码",
     "login_code_invalid": "登录码无效，请重试",
     "login_body_invalid": "登录请求无法识别",
     "guide_invalid": "拍摄引导数据无法识别",
