@@ -1,0 +1,7 @@
+versionName=1.0.102
+versionCode=202
+applicationId=app.zhangqiu
+start_url=https://yqchen.blog/tennis
+signing=ZHANGQIU assembleRelease (no zip-inject)
+feature=apk-web-full-parity
+sha256=69e1d187f56dacb580347f977dd24435e0752daab9247604d49a208e947d5d6f

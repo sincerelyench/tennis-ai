@@ -1,0 +1,4 @@
+涨球 apk-web-full-parity 2026-11-05
+APK 1.0.102 / 202 — 壳默认打开 https://yqchen.blog/tennis（网页为唯一 UI/功能真相源）。
+assembleRelease + ZHANGQIU，无 zip-inject。iOS pbxproj 同步锁定同 URL。
+小程序 UI 对齐由 mp parity worker bc-678da1f4 负责；本包不覆盖其功能范围。
