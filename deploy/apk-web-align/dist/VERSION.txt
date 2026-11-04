@@ -1,0 +1,9 @@
+versionName=1.0.99
+versionCode=199
+applicationId=app.zhangqiu
+built=2026-11-03T18:43:06Z
+signing=ZHANGQIU assembleRelease (no zip-inject)
+feature=apk-web-align
+start_url=https://yqchen.blog/tennis
+tabOrder=分析/约球/教练/我的 (EN: Analyze/Play/Coach/Me)
+includes=tabs-swap + remove-profile-stats + match-wechat-intro + video-clip-10s (via live web)

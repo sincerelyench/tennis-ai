@@ -1,0 +1,1 @@
+涨球 apk-wechat-login 2026-11-04 — 共享 /api/auth/wechat；APK 1.0.101 微信登录按钮。小程序 UI 见 ZQ-32。

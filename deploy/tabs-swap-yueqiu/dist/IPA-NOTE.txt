@@ -1,0 +1,3 @@
+IPA WebView shell refreshed with tabs-swap-yueqiu inject (+ prior friends/coach/profile injects).
+Tab order: 分析 / 约球 / 教练 / 我的 (EN Play).
+APK 1.0.97 is fully re-signed assembleRelease.

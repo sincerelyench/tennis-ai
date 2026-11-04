@@ -1,4 +1,4 @@
-"""iOS WKWebView shell matches the Android /e1 contract. No device build."""
+"""iOS WKWebView shell opens the same product URL as Android. No device build."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 IOS = ROOT / "ios"
 APP = IOS / "Zhangqiu"
-START = "https://tennis.47.93.203.28.sslip.io/e1"
+START = "https://yqchen.blog/tennis"
 TARGET = "A10000000000000000000013"
 
 

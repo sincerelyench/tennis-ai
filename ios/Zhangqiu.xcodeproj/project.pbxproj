@@ -311,7 +311,7 @@
 				<key>TARGETED_DEVICE_FAMILY</key>
 				<string>1,2</string>
 				<key>ZQ_START_URL</key>
-				<string>https://tennis.47.93.203.28.sslip.io/e1</string>
+				<string>https://yqchen.blog/tennis</string>
 			</dict>
 			<key>name</key>
 			<string>Debug</string>
@@ -349,7 +349,7 @@
 				<key>TARGETED_DEVICE_FAMILY</key>
 				<string>1,2</string>
 				<key>ZQ_START_URL</key>
-				<string>https://tennis.47.93.203.28.sslip.io/e1</string>
+				<string>https://yqchen.blog/tennis</string>
 			</dict>
 			<key>name</key>
 			<string>Release</string>

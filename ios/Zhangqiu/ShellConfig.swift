@@ -3,7 +3,7 @@ import UIKit
 /// Build-time and launch-time start URL, plus the offline page shared with Android.
 enum ShellConfig {
     /// Same default as `android/app/build.gradle` (`ZQ_START_URL`).
-    static let defaultStartURL = "https://tennis.47.93.203.28.sslip.io/e1"
+    static let defaultStartURL = "https://yqchen.blog/tennis"
 
     /// Launch environment, then the `-ZQStartURL` argument, then the Info.plist
     /// value baked in from the `ZQ_START_URL` build setting, then the default.
@@ -70,6 +70,22 @@ enum ShellConfig {
       style.textContent = "input[type=file]{position:fixed!important;left:0!important;top:0!important;width:8px!important;height:8px!important;margin:0!important;padding:0!important;opacity:0.02!important;clip:auto!important;clip-path:none!important;-webkit-clip-path:none!important;overflow:visible!important;}";
       var root = document.head || document.documentElement;
       if (root) root.appendChild(style);
+    })();
+    """
+
+    /// Mirrors Android `ZhangqiuNative.loginWithWeChat` for the shared login page.
+    /// Real WeChat OpenSDK on iOS needs a 移动应用 AppID + Universal Link; until
+    /// then the shell returns a stable ios_&lt;idfv&gt; code → /api/auth/wechat mock.
+    static let nativeBridgeScript = """
+    (function () {
+      if (window.ZhangqiuNative && window.ZhangqiuNative.loginWithWeChat) return;
+      window.ZhangqiuNative = {
+        loginWithWeChat: function () {
+          try {
+            window.webkit.messageHandlers.zqNative.postMessage('loginWithWeChat');
+          } catch (e) {}
+        }
+      };
     })();
     """
 }
