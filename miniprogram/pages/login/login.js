@@ -11,9 +11,12 @@ Page({
   onShow() {
     const auth = session.auth()
     if (auth && auth.token) {
-      wx.switchTab({ url: "/pages/analysis/analysis" })
+      wx.redirectTo({
+        url: "/pages/web/web?token=" + encodeURIComponent(auth.token),
+      })
     }
   },
+
   onNick(e) {
     this.setData({ nickName: e.detail.value || "" })
   },
@@ -54,8 +57,11 @@ Page({
               ? "当前为开发/模拟微信会话（未配置正式小程序密钥或测试码无效时）。"
               : ""
           this.setData({ loading: false, notice })
-          wx.switchTab({ url: "/pages/analysis/analysis" })
+          wx.redirectTo({
+            url: "/pages/web/web?token=" + encodeURIComponent(body.token),
+          })
         })
+
         .catch((err) => {
           this.setData({
             loading: false,

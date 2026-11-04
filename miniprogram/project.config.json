@@ -1,5 +1,5 @@
 {
-  "description": "涨球 · 微信小程序（四 tab 全功能）",
+  "description": "涨球 · 微信小程序（web-view 对齐网页）",
   "packOptions": {
     "ignore": [],
     "include": []

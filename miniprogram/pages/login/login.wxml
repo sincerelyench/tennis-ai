@@ -5,7 +5,8 @@
   </view>
 
   <text class="h1">登录</text>
-  <text class="lead">登录后可使用分析、约球、教练与我的。首次登录会自动创建账号。</text>
+  <text class="lead">微信登录后进入与网页同源的涨球（分析 / 约球 / 教练 / 我的）。首次登录会自动创建账号。</text>
+
 
   <view class="card">
     <text class="label">怎么称呼你（可选）</text>

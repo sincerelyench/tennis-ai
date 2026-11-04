@@ -1,16 +1,7 @@
 {
   "pages": [
     "pages/login/login",
-    "pages/analysis/analysis",
-    "pages/play/play",
-    "pages/coach/coach",
-    "pages/profile/profile",
-    "pages/guide/guide",
-    "pages/upload/upload",
-    "pages/queue/queue",
-    "pages/result/result",
-    "pages/coach-library/coach-library",
-    "pages/home/home"
+    "pages/web/web"
   ],
   "window": {
     "navigationBarTitleText": "涨球",
@@ -18,38 +9,6 @@
     "navigationBarTextStyle": "black",
     "backgroundColor": "#ffffff",
     "backgroundTextStyle": "dark"
-  },
-  "tabBar": {
-    "color": "#64748b",
-    "selectedColor": "#0d9488",
-    "backgroundColor": "#ffffff",
-    "borderStyle": "black",
-    "list": [
-      {
-        "pagePath": "pages/analysis/analysis",
-        "text": "分析",
-        "iconPath": "images/tab/analysis.png",
-        "selectedIconPath": "images/tab/analysis-active.png"
-      },
-      {
-        "pagePath": "pages/play/play",
-        "text": "约球",
-        "iconPath": "images/tab/play.png",
-        "selectedIconPath": "images/tab/play-active.png"
-      },
-      {
-        "pagePath": "pages/coach/coach",
-        "text": "教练",
-        "iconPath": "images/tab/coach.png",
-        "selectedIconPath": "images/tab/coach-active.png"
-      },
-      {
-        "pagePath": "pages/profile/profile",
-        "text": "我的",
-        "iconPath": "images/tab/profile.png",
-        "selectedIconPath": "images/tab/profile-active.png"
-      }
-    ]
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json"

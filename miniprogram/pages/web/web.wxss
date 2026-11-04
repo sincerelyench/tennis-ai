@@ -1,0 +1,5 @@
+/* web-view is full-screen; no native chrome beyond navigation bar. */
+page {
+  height: 100%;
+  background: #ffffff;
+}
