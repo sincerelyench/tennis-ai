@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 正确动作按问题点</title>
+  <style>
+    :root { --teal:#0d9488; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --card:#fff; --bg:#f8fafc; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: "SF Pro Text", "PingFang SC", sans-serif; background:linear-gradient(160deg,#ecfeff,#f8fafc 40%,#f1f5f9); color:var(--ink); }
+    .wrap { max-width:720px; margin:0 auto; padding:24px 16px 64px; }
+    .brand { font-size:28px; font-weight:800; letter-spacing:-0.02em; }
+    .lead { color:var(--muted); margin:6px 0 20px; font-size:14px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; margin-bottom:14px; box-shadow:0 8px 24px rgba(15,23,42,.04); }
+    .hd { padding:12px 14px; border-bottom:1px solid var(--line); }
+    .hd strong { display:block; font-size:13px; }
+    .hd span { display:block; margin-top:4px; font-size:12px; color:var(--muted); }
+    .axis { color:var(--teal); font-size:11px; font-weight:700; margin-bottom:4px; }
+    .video { background:#0f172a; min-height:220px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:13px; }
+    .video iframe, .video video { width:100%; min-height:220px; border:0; }
+    .chips { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 20px; }
+    .chip { font-size:12px; padding:6px 10px; border-radius:999px; background:#ccfbf1; color:#115e59; font-weight:600; }
+    .states { display:grid; gap:10px; grid-template-columns:1fr; }
+    @media (min-width:720px){ .states { grid-template-columns:1fr 1fr 1fr; } }
+    .state { border:1px dashed var(--line); border-radius:12px; padding:14px; background:#fff; min-height:100px; }
+    .state h3 { margin:0 0 8px; font-size:13px; }
+    .muted { color:var(--muted); font-size:13px; }
+    .err { color:#b91c1c; font-size:13px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">涨球</div>
+    <p class="lead">分析后的「正确动作」按问题点匹配示范（重心 / 击球点 / 动力链 / 击球效果）。球星默认；已选已发布教练且有库视频时用教练示范。</p>
+    <div class="chips" id="chips"></div>
+    <div id="cards"></div>
+    <h2 style="font-size:15px;margin:24px 0 10px;">状态</h2>
+    <div class="states">
+      <div class="state" data-issue-state="loading"><h3>加载</h3><p class="muted">正在加载正确动作示范…</p></div>
+      <div class="state" data-issue-state="empty"><h3>空</h3><p class="muted">还没有示范</p></div>
+      <div class="state" data-issue-state="error"><h3>错误</h3><p class="err">问题点示范加载失败，先看该技术的球星示范。</p></div>
+    </div>
+  </div>
+  <script>
+    const findings = ["击球点偏晚，球挤在身体旁边", "动力链断裂，只动手发力", "重心偏高，准备时腿是直的"];
+    const demos = [
+      { axis: "击球点", label: "击球点偏晚", credit: "阿里娜·萨巴伦卡 · 正手上旋", embed: "https://player.bilibili.com/player.html?bvid=BV1knqeB4EpG&high_quality=1&danmaku=0&autoplay=0" },
+      { axis: "动力链", label: "动力链断裂 / 转体不足", credit: "阿里娜·萨巴伦卡 · 正手上旋", embed: "https://player.bilibili.com/player.html?bvid=BV1knqeB4EpG&high_quality=1&danmaku=0&autoplay=0" },
+      { axis: "重心", label: "重心偏高 / 不稳", credit: "阿里娜·萨巴伦卡 · 正手上旋", embed: "https://player.bilibili.com/player.html?bvid=BV1knqeB4EpG&high_quality=1&danmaku=0&autoplay=0" },
+    ];
+    const chips = document.getElementById("chips");
+    findings.forEach((f) => {
+      const el = document.createElement("span");
+      el.className = "chip";
+      el.textContent = f;
+      chips.appendChild(el);
+    });
+    const cards = document.getElementById("cards");
+    cards.setAttribute("data-issue-demos", "true");
+    cards.setAttribute("data-issue-count", String(demos.length));
+    demos.forEach((d, i) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.setAttribute("data-visual", "good-issue");
+      card.setAttribute("data-issue-id", "demo-" + i);
+      card.innerHTML = `<div class="hd"><div class="axis">正确动作 · ${d.axis}</div><strong data-issue-label="true">${d.label}</strong><span>${d.credit}</span></div><div class="video"><iframe src="${d.embed}" allowfullscreen data-demo-video="true"></iframe></div>`;
+      cards.appendChild(card);
+    });
+  </script>
+</body>
+</html>
