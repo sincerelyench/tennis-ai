@@ -1,10 +1,11 @@
 <view class="page">
-  <view class="hero">
-    <image class="logo" src="/images/logo.png" mode="aspectFit" />
-    <text class="brand">涨球</text>
-    <text class="lead">微信登录后约球</text>
-    <text class="sub">小程序暂只开放约球；分析、教练、我的请用网页或 App。</text>
+  <view class="brand-row">
+    <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
+    <text class="brand-name">涨球</text>
   </view>
+
+  <text class="h1">登录</text>
+  <text class="lead">登录后可使用分析、约球、教练与我的。首次登录会自动创建账号。</text>
 
   <view class="card">
     <text class="label">怎么称呼你（可选）</text>

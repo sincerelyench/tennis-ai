@@ -23,6 +23,7 @@ const CITIES = [
   ["hefei", "合肥"],
   ["ningbo", "宁波"],
   ["dongguan", "东莞"],
+  ["taipei", "台北"],
 ]
 const NEARBY = {
   wuxi: ["suzhou", "shanghai", "nanjing", "hangzhou"],
@@ -65,6 +66,11 @@ Page({
     buddy: null,
     players: [],
     intros: [],
+    scoreA: "",
+    scoreB: "",
+    scoreSets: "",
+    scoreBusy: false,
+    scoreNote: "",
   },
   _timer: null,
   _hintTimer: null,
@@ -78,6 +84,7 @@ Page({
       displayName: auth.displayName || "",
       draftName: auth.displayName || "",
       needName: !auth.displayName,
+      scoreA: auth.displayName || "",
     })
     this.refreshDirectory()
     this.refreshIntros()
@@ -344,6 +351,48 @@ Page({
   onLogout() {
     session.clearAuth()
     wx.redirectTo({ url: "/pages/login/login" })
+  },
+  onScoreA(e) {
+    this.setData({ scoreA: e.detail.value || "" })
+  },
+  onScoreB(e) {
+    this.setData({ scoreB: e.detail.value || "" })
+  },
+  onScoreSets(e) {
+    this.setData({ scoreSets: e.detail.value || "" })
+  },
+  onSubmitScore() {
+    const token = this.token()
+    const playerA = String(this.data.scoreA || "").trim()
+    const playerB = String(this.data.scoreB || "").trim()
+    const sets = String(this.data.scoreSets || "").trim()
+    if (!token) return
+    if (!playerA || !playerB || !sets) {
+      this.setData({ scoreNote: "请填写双方姓名与盘分" })
+      return
+    }
+    this.setData({ scoreBusy: true, scoreNote: "" })
+    api
+      .submitScore(token, {
+        playerA,
+        playerB,
+        sets,
+        cityId: this.data.cityId,
+        locale: "zh",
+      })
+      .then(() => {
+        this.setData({
+          scoreBusy: false,
+          scoreNote: "已提交，等待对方确认",
+          scoreSets: "",
+        })
+      })
+      .catch((err) => {
+        this.setData({
+          scoreBusy: false,
+          scoreNote: (err && err.detail) || "提交失败",
+        })
+      })
   },
 })
 

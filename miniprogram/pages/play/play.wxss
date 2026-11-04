@@ -1,135 +1,9 @@
-.page {
-  min-height: 100vh;
-  padding: 28rpx 28rpx 80rpx;
-  box-sizing: border-box;
-  background:
-    radial-gradient(800rpx 420rpx at 8% -8%, rgba(214, 227, 90, 0.14), transparent 55%),
-    linear-gradient(165deg, #07140e, #0d2418 50%, #0a1a12);
-  color: #eef6ee;
-}
-
-.head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 24rpx;
-}
-
-.title {
-  display: block;
-  font-size: 44rpx;
-  font-weight: 800;
-  color: #d6e35a;
-  letter-spacing: 0.08em;
-}
-
-.me {
-  display: block;
-  margin-top: 8rpx;
-  font-size: 24rpx;
-  color: #8ea196;
-}
-
-.head-actions {
-  display: flex;
-  gap: 24rpx;
-}
-
-.link {
-  font-size: 24rpx;
-  color: #d6e35a;
-}
-
-.card {
-  margin-bottom: 24rpx;
-  padding: 28rpx;
-  border-radius: 24rpx;
-  border: 1rpx solid #2d4a3a;
-  background: rgba(16, 36, 27, 0.92);
-}
-
-.h2 {
-  display: block;
-  font-size: 32rpx;
-  font-weight: 700;
-  margin-bottom: 10rpx;
-}
-
-.lead {
-  display: block;
-  font-size: 26rpx;
-  color: #8ea196;
-  line-height: 1.5;
-  margin-bottom: 24rpx;
-}
-
-.label {
-  display: block;
-  font-size: 24rpx;
-  color: #8ea196;
-  margin: 12rpx 0 10rpx;
-}
-
-.field,
-.picker {
-  height: 80rpx;
-  line-height: 80rpx;
-  padding: 0 22rpx;
-  border-radius: 14rpx;
-  background: #0a1a12;
-  border: 1rpx solid #2d4a3a;
-  color: #eef6ee;
-  font-size: 28rpx;
-  margin-bottom: 12rpx;
-}
-
-.primary {
-  margin-top: 20rpx;
-  background: #d6e35a !important;
-  color: #07140e !important;
-  font-weight: 700;
-  border-radius: 16rpx;
-  border: none !important;
-}
-
-.primary::after,
-.ghost::after {
-  border: none;
-}
-
-.ghost {
-  margin-top: 16rpx;
-  background: transparent !important;
-  color: #d6e35a !important;
-  border: 1rpx solid #2d4a3a !important;
-  border-radius: 16rpx;
-}
-
-.hint {
-  display: block;
-  margin-top: 16rpx;
-  font-size: 24rpx;
-  color: #8ea196;
-  line-height: 1.45;
-}
-
-.searching,
-.found {
-  margin-top: 12rpx;
-}
-
 .pulse {
   display: block;
   font-size: 30rpx;
-  color: #d6e35a;
-  margin-bottom: 12rpx;
-}
-
-.ok {
-  display: block;
-  color: #d6e35a;
+  color: #0d9488;
   font-weight: 700;
-  font-size: 30rpx;
+  margin-bottom: 12rpx;
 }
 
 .buddy {
@@ -139,19 +13,13 @@
   margin: 8rpx 0;
 }
 
-.meta {
-  display: block;
-  font-size: 24rpx;
-  color: #8ea196;
+.score-row {
+  display: flex;
+  gap: 16rpx;
 }
 
-.reason,
-.wechat-tip {
-  display: block;
-  margin-top: 12rpx;
-  font-size: 26rpx;
-  color: #c5d6c8;
-  line-height: 1.45;
+.score-col {
+  flex: 1;
 }
 
 .row {
@@ -159,7 +27,7 @@
   align-items: center;
   gap: 16rpx;
   padding: 18rpx 0;
-  border-bottom: 1rpx solid #1e3328;
+  border-bottom: 1rpx solid #e2e8f0;
 }
 
 .row:last-child {
@@ -176,15 +44,12 @@
   font-weight: 600;
 }
 
-.challenge {
+.action {
   font-size: 26rpx;
-  color: #d6e35a;
+  color: #0d9488;
+  font-weight: 600;
 }
 
-.foot {
-  display: block;
-  text-align: center;
-  margin-top: 12rpx;
-  font-size: 22rpx;
-  color: #5f7466;
+.card .lead {
+  margin-bottom: 12rpx;
 }

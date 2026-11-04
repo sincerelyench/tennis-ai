@@ -1,1 +1,1 @@
-涨球 wechat-mini-login 2026-11-04：mp-weixin 仅约球 + 微信登录（wx.login → /api/auth/wechat）。分析/教练/我的不在小程序开放。
+涨球 mp-full-parity 2026-11-05：微信登录 + 四 tab（分析/约球/教练/我的），UI 对齐网页浅色 teal。

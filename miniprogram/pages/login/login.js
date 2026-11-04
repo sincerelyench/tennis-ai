@@ -11,7 +11,7 @@ Page({
   onShow() {
     const auth = session.auth()
     if (auth && auth.token) {
-      wx.redirectTo({ url: "/pages/play/play" })
+      wx.switchTab({ url: "/pages/analysis/analysis" })
     }
   },
   onNick(e) {
@@ -54,7 +54,7 @@ Page({
               ? "当前为开发/模拟微信会话（未配置正式小程序密钥或测试码无效时）。"
               : ""
           this.setData({ loading: false, notice })
-          wx.redirectTo({ url: "/pages/play/play" })
+          wx.switchTab({ url: "/pages/analysis/analysis" })
         })
         .catch((err) => {
           this.setData({

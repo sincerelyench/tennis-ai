@@ -1,4 +1,7 @@
 const AUTH = "zq_auth_v2"
+const GUIDE = "zq_guide"
+const VIDEO = "zq_video"
+const REPORTS = "zq_reports_local"
 
 function read(key) {
   try {
@@ -15,6 +18,7 @@ function saveAuth(payload) {
     openid: payload.openid || "",
     displayName: payload.displayName || "",
     role: payload.role || "player",
+    cityId: payload.cityId || "",
     loginMode: payload.loginMode || "wechat",
     expiresAt: Date.now() + 30 * 24 * 3600 * 1000,
   }
@@ -44,4 +48,48 @@ function clearAuth() {
   }
 }
 
-module.exports = { saveAuth, auth, patchAuth, clearAuth }
+function saveGuide(checks) {
+  wx.setStorageSync(GUIDE, checks || {})
+}
+
+function guide() {
+  const saved = read(GUIDE) || {}
+  return {
+    side: !!saved.side,
+    full_body: !!saved.full_body,
+    racket: !!saved.racket,
+  }
+}
+
+function saveVideo(video) {
+  wx.setStorageSync(VIDEO, video || null)
+}
+
+function video() {
+  return read(VIDEO)
+}
+
+function listReports() {
+  const rows = read(REPORTS)
+  return Array.isArray(rows) ? rows : []
+}
+
+function pushReport(row) {
+  const rows = listReports()
+  rows.unshift(row)
+  wx.setStorageSync(REPORTS, rows.slice(0, 40))
+  return rows
+}
+
+module.exports = {
+  saveAuth,
+  auth,
+  patchAuth,
+  clearAuth,
+  saveGuide,
+  guide,
+  saveVideo,
+  video,
+  listReports,
+  pushReport,
+}

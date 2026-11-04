@@ -8,12 +8,15 @@ function fail(body, status) {
   let code = body && (body.code || body.error)
   if (!code) {
     if (status === 401) code = "auth_invalid"
+    else if (status === 409) code = "busy"
+    else if (status === 413) code = "video_too_large"
     else if (status >= 500) code = "server"
     else code = "generic"
   }
   const err = new Error(typeof code === "string" ? code : "generic")
   err.code = typeof code === "string" ? code : "generic"
-  err.detail = body && typeof body.error === "string" ? body.error : ""
+  err.detail =
+    (body && (body.detail || body.error) && String(body.detail || body.error)) || ""
   return err
 }
 
@@ -96,6 +99,96 @@ function introAction(token, body) {
   })
 }
 
+function listScores(token) {
+  return request({ path: "/api/friends/scores", token })
+}
+
+function submitScore(token, body) {
+  return request({
+    path: "/api/friends/scores",
+    method: "POST",
+    token,
+    data: body || {},
+  })
+}
+
+function scoreAction(token, body) {
+  return request({
+    path: "/api/friends/scores/action",
+    method: "POST",
+    token,
+    data: body || {},
+  })
+}
+
+function job(id, token) {
+  return request({ path: "/api/jobs/" + encodeURIComponent(id), token })
+}
+
+function jobResult(id, token) {
+  return request({ path: "/api/jobs/" + encodeURIComponent(id) + "/result", token })
+}
+
+function coachChat(token, body) {
+  return request({
+    path: "/api/coach/chat",
+    method: "POST",
+    token,
+    data: body || {},
+  })
+}
+
+function geoCity(token) {
+  return request({ path: "/api/geo/city", token })
+}
+
+function uploadVideo({ filePath, token, stroke, guideCompleted, guideChecks, title }) {
+  return new Promise((resolve, reject) => {
+    if (!token) {
+      reject(fail({ code: "auth_required" }, 401))
+      return
+    }
+    wx.uploadFile({
+      url: base() + "/api/analyze",
+      filePath,
+      name: "video",
+      timeout: 180000,
+      header: { Authorization: "Bearer " + token },
+      formData: {
+        stroke: stroke || "forehand",
+        client: "miniprogram",
+        sample: "0",
+        level: "",
+        title: title || "涨球挥拍分析",
+        guide_completed: guideCompleted ? "1" : "0",
+        guide_checks: JSON.stringify(guideChecks || {}),
+      },
+      success(res) {
+        let body = {}
+        try {
+          body = JSON.parse(res.data || "{}")
+        } catch (e) {
+          reject(fail({ code: "bad_response" }, res.statusCode))
+          return
+        }
+        if (res.statusCode >= 200 && res.statusCode < 300 && (body.job_id || body.jobId)) {
+          if (!body.job_id && body.jobId) body.job_id = body.jobId
+          resolve(body)
+          return
+        }
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          reject(fail({ code: "bad_response" }, res.statusCode))
+          return
+        }
+        reject(fail(body, res.statusCode))
+      },
+      fail() {
+        reject(fail({ code: "network" }, 0))
+      },
+    })
+  })
+}
+
 module.exports = {
   wechatLogin,
   session,
@@ -104,4 +197,12 @@ module.exports = {
   createIntro,
   listIntros,
   introAction,
+  listScores,
+  submitScore,
+  scoreAction,
+  job,
+  jobResult,
+  coachChat,
+  geoCity,
+  uploadVideo,
 }

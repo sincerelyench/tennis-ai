@@ -91,7 +91,7 @@ Page({
     wx.navigateTo({ url: "/pages/result/result?job_id=" + encodeURIComponent(id) })
   },
   onHome() {
-    wx.reLaunch({ url: "/pages/home/home" })
+    wx.reLaunch({ url: "/pages/login/login" })
   },
   onRetry() {
     wx.navigateBack({ delta: 1 })

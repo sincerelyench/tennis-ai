@@ -1,14 +1,11 @@
 <view class="page">
-  <view class="head">
-    <view>
-      <text class="title">约球</text>
-      <text class="me">{{displayName || "未设置显示名"}}{{cityLabel ? " · " + cityLabel : ""}}</text>
-    </view>
-    <view class="head-actions">
-      <text class="link" bindtap="onEditName">改名</text>
-      <text class="link" bindtap="onLogout">退出</text>
-    </view>
+  <view class="brand-row">
+    <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
+    <text class="brand-name">涨球</text>
   </view>
+
+  <text class="h1">约球</text>
+  <text class="lead">{{displayName || "未设置显示名"}}{{cityLabel ? " · " + cityLabel : ""}} · 水平 {{level}}</text>
 
   <view class="card" wx:if="{{needName}}">
     <text class="label">设置显示名后才能出现在匹配里</text>
@@ -20,14 +17,17 @@
     <text class="h2">匹配约球</text>
     <text class="lead">按水平、城市匹配附近球友。匹配成功后互相加微信自行约场地。</text>
 
-    <text class="label">城市</text>
-    <picker mode="selector" range="{{cityLabels}}" value="{{cityIndex}}" bindchange="onCity">
-      <view class="picker">{{cityLabels[cityIndex]}}</view>
-    </picker>
+    <text class="label">怎么称呼你</text>
+    <input class="field" maxlength="40" placeholder="可选" value="{{draftName}}" bindinput="onDraftName" bindblur="onSaveName" />
 
     <text class="label">自评水平</text>
     <picker mode="selector" range="{{levelLabels}}" value="{{levelIndex}}" bindchange="onLevel">
       <view class="picker">{{levelLabels[levelIndex]}}</view>
+    </picker>
+
+    <text class="label">城市</text>
+    <picker mode="selector" range="{{cityLabels}}" value="{{cityIndex}}" bindchange="onCity">
+      <view class="picker">{{cityLabels[cityIndex]}}</view>
     </picker>
 
     <view wx:if="{{phase === 'idle'}}">
@@ -43,9 +43,9 @@
     <view wx:if="{{phase === 'found' && buddy}}" class="found">
       <text class="ok">匹配成功</text>
       <text class="buddy">{{buddy.name}}</text>
-      <text class="meta">{{buddy.meta}}</text>
-      <text class="reason">{{buddy.reason}}</text>
-      <text class="wechat-tip">请互相加微信，自行约定场地和时间。</text>
+      <text class="muted">{{buddy.meta}}</text>
+      <text class="hint">{{buddy.reason}}</text>
+      <text class="hint">请互相加微信，自行约定场地和时间。</text>
       <button class="primary" bindtap="onSendIntro">发送约球招呼</button>
       <button class="ghost" bindtap="onRematch">再匹配一次</button>
     </view>
@@ -56,12 +56,31 @@
     </view>
   </view>
 
+  <view class="card">
+    <text class="h2">录入比分</text>
+    <text class="lead">提交后需对方确认才会更新排名。</text>
+    <view class="score-row">
+      <view class="score-col">
+        <text class="label">球员 A</text>
+        <input class="field" placeholder="姓名" value="{{scoreA}}" bindinput="onScoreA" />
+      </view>
+      <view class="score-col">
+        <text class="label">球员 B</text>
+        <input class="field" placeholder="姓名" value="{{scoreB}}" bindinput="onScoreB" />
+      </view>
+    </view>
+    <text class="label">盘分（如 6-4,3-6,7-5）</text>
+    <input class="field" placeholder="6-4" value="{{scoreSets}}" bindinput="onScoreSets" />
+    <button class="primary" size="mini" loading="{{scoreBusy}}" bindtap="onSubmitScore">提交比分</button>
+    <text class="hint" wx:if="{{scoreNote}}">{{scoreNote}}</text>
+  </view>
+
   <view class="card" wx:if="{{players.length}}">
     <text class="h2">同城可约（{{players.length}}）</text>
     <view class="row" wx:for="{{players}}" wx:key="id">
       <text class="name">{{item.name}}</text>
-      <text class="meta">水平 {{item.level}}</text>
-      <text class="challenge" data-id="{{item.id}}" data-name="{{item.name}}" bindtap="onChallenge">挑战</text>
+      <text class="muted">水平 {{item.level}}</text>
+      <text class="action" data-id="{{item.id}}" data-name="{{item.name}}" bindtap="onChallenge">挑战</text>
     </view>
   </view>
 
@@ -70,11 +89,9 @@
     <view class="row" wx:for="{{intros}}" wx:key="id">
       <view class="col">
         <text class="name">{{item.title}}</text>
-        <text class="meta">{{item.status}}</text>
+        <text class="muted">{{item.status}}</text>
       </view>
-      <text class="challenge" wx:if="{{item.canCancel}}" data-id="{{item.id}}" bindtap="onCancelIntro">取消</text>
+      <text class="action" wx:if="{{item.canCancel}}" data-id="{{item.id}}" bindtap="onCancelIntro">取消</text>
     </view>
   </view>
-
-  <text class="foot">涨球小程序 · 仅约球</text>
 </view>

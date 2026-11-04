@@ -1,0 +1,40 @@
+.section {
+  margin-top: 28rpx;
+}
+
+.report-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 8rpx;
+}
+
+.report-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  flex: 1;
+}
+
+.grade {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #0d9488;
+}
+
+.grade.fail {
+  color: #ef4444;
+  font-size: 26rpx;
+}
+
+.snippet {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.report {
+  background: #ffffff;
+}
