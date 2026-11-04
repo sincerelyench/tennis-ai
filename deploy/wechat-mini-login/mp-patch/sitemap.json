@@ -1,0 +1,7 @@
+{
+  "desc": "涨球开发态小程序，不参与索引",
+  "rules": [{
+    "action": "disallow",
+    "page": "*"
+  }]
+}

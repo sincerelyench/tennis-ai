@@ -1,0 +1,25 @@
+<view class="page">
+  <view class="hero">
+    <image class="logo" src="/images/logo.png" mode="aspectFit" />
+    <text class="brand">涨球</text>
+    <text class="lead">微信登录后约球</text>
+    <text class="sub">小程序暂只开放约球；分析、教练、我的请用网页或 App。</text>
+  </view>
+
+  <view class="card">
+    <text class="label">怎么称呼你（可选）</text>
+    <input
+      class="field"
+      type="nickname"
+      maxlength="40"
+      placeholder="优先用真实名字；可从微信昵称带入"
+      value="{{nickName}}"
+      bindinput="onNick"
+    />
+    <button class="primary" loading="{{loading}}" disabled="{{loading}}" bindtap="onWechatLogin">
+      {{loading ? "正在登录…" : "微信登录"}}
+    </button>
+    <text class="hint" wx:if="{{notice}}">{{notice}}</text>
+    <text class="error" wx:if="{{error}}">{{error}}</text>
+  </view>
+</view>
