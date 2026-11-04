@@ -1,0 +1,55 @@
+.pulse {
+  display: block;
+  font-size: 30rpx;
+  color: #0d9488;
+  font-weight: 700;
+  margin-bottom: 12rpx;
+}
+
+.buddy {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 800;
+  margin: 8rpx 0;
+}
+
+.score-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.score-col {
+  flex: 1;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #e2e8f0;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.col {
+  flex: 1;
+}
+
+.name {
+  flex: 1;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.action {
+  font-size: 26rpx;
+  color: #0d9488;
+  font-weight: 600;
+}
+
+.card .lead {
+  margin-bottom: 12rpx;
+}

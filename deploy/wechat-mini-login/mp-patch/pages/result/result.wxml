@@ -1,0 +1,54 @@
+<view class="page">
+  <view class="top">
+    <text class="brand">{{copy.appTitle}}</text>
+    <view class="langs">
+      <view class="lang {{lang === 'zh-CN' ? 'on' : ''}}" data-lang="zh-CN" bindtap="onSwitch">{{copy.lang.zh}}</view>
+      <view class="lang {{lang === 'en' ? 'on' : ''}}" data-lang="en" bindtap="onSwitch">{{copy.lang.en}}</view>
+    </view>
+  </view>
+  <view class="card">
+    <text class="kicker">{{strokeLabel}}</text>
+    <text class="h1">{{copy.result.title}}</text>
+    <text class="hint" wx:if="{{loading}}">{{copy.result.loading}}</text>
+    <block wx:if="{{!loading && !error}}">
+      <text class="sub">{{copy.result.intro}}</text>
+      <text class="warn" wx:if="{{guideWarning}}">{{copy.result.guideWarning}}</text>
+      <text class="hint" wx:if="{{serveNote}}">{{serveNote}}</text>
+      <image class="shot" wx:if="{{shot}}" src="{{shot}}" mode="aspectFill" />
+      <text class="hint" wx:if="{{contactLine}}">{{contactLine}}</text>
+      <text class="ok" wx:if="{{totalLine}}">{{totalLine}}</text>
+      <text class="sub" wx:if="{{focus}}"><text class="focus-label">{{copy.result.focusLabel}}</text> {{focus}}</text>
+      <view class="axis" wx:for="{{axes}}" wx:key="key">
+        <view class="axis-top">
+          <text class="item-title">{{item.label}}</text>
+          <text>{{item.scoreText}}</text>
+        </view>
+        <text class="hint" wx:if="{{item.band}}">{{item.band}}</text>
+        <view class="bar"><view class="bar-fill" style="width: {{item.width}}%;"></view></view>
+        <text class="tip"><text class="tip-label">{{copy.result.tipLabel}}</text> {{item.tip}}</text>
+      </view>
+      <text class="h2" wx:if="{{timeline.length}}">{{copy.result.timelineTitle}}</text>
+      <view class="tl {{item.current ? 'on' : ''}}" wx:for="{{timeline}}" wx:key="jobId">
+        <image class="tl-shot" wx:if="{{item.thumb}}" src="{{item.thumb}}" mode="aspectFill" />
+        <view>
+          <text class="item-title">{{item.when}}{{item.current ? ' · ' + copy.result.current : ''}}</text>
+          <text class="sub">{{item.bits}}</text>
+          <text class="hint" wx:if="{{item.contact}}">{{item.contact}}</text>
+        </view>
+      </view>
+      <view class="compare" wx:if="{{compareReady}}">
+        <text class="h2">{{copy.result.compareTitle}}</text>
+        <text class="hint">{{copy.result.compareNote}}</text>
+        <text class="hint">{{compareWhen}}</text>
+        <text class="delta" wx:for="{{deltas}}" wx:key="key">{{item.label}} {{item.before}} → {{item.after}} <text class="{{item.cls}}">{{item.delta}}</text></text>
+      </view>
+      <view class="compare locked" wx:else>
+        <text class="h2">{{copy.result.compareTitle}}</text>
+        <text class="sub">{{compareReason}}</text>
+      </view>
+    </block>
+    <text class="error" wx:if="{{error}}">{{error}}</text>
+    <view class="ghost" wx:if="{{jobId}}" bindtap="onQueue">{{copy.result.backQueue}}</view>
+    <view class="ghost" bindtap="onHome">{{copy.result.home}}</view>
+  </view>
+</view>

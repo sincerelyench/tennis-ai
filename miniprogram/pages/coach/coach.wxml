@@ -1,0 +1,44 @@
+<view class="page coach-page">
+  <view class="brand-row">
+    <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
+    <text class="brand-name">涨球</text>
+  </view>
+
+  <view class="head">
+    <text class="h1">教练</text>
+    <text class="link" bindtap="onLibrary">动作库</text>
+  </view>
+  <text class="lead">涨球教练根据你的近期分析回答训练问题。也可查看动作示范库。</text>
+
+  <view class="tabs">
+    <view class="chip {{tab === 'improve' ? 'on' : ''}}" data-tab="improve" bindtap="onTab">改进计划</view>
+    <view class="chip {{tab === 'chat' ? 'on' : ''}}" data-tab="chat" bindtap="onTab">对话</view>
+  </view>
+
+  <scroll-view scroll-y class="thread" scroll-into-view="{{anchor}}">
+    <view class="bubble coach" wx:for="{{messages}}" wx:key="id" id="m-{{item.id}}">
+      <text class="bubble-role">{{item.role === 'user' ? '我' : '涨球教练'}}</text>
+      <text class="bubble-text">{{item.text}}</text>
+    </view>
+    <view class="bubble coach muted" wx:if="{{pending}}">教练正在回复…</view>
+  </scroll-view>
+
+  <view class="quick" wx:if="{{tab === 'improve'}}">
+    <view class="chip" data-q="最近正手怎么改" bindtap="onQuick">最近正手怎么改</view>
+    <view class="chip" data-q="这周训练怎么安排" bindtap="onQuick">这周训练</view>
+    <view class="chip" data-q="发球没分析出来怎么办" bindtap="onQuick">发球没分析出来</view>
+  </view>
+
+  <view class="composer">
+    <input
+      class="field compose"
+      placeholder="问问正手、发球或这周的训练"
+      value="{{draft}}"
+      confirm-type="send"
+      bindinput="onDraft"
+      bindconfirm="onSend"
+    />
+    <button class="primary send" size="mini" loading="{{pending}}" disabled="{{pending}}" bindtap="onSend">发送</button>
+  </view>
+  <text class="error" wx:if="{{error}}">{{error}}</text>
+</view>

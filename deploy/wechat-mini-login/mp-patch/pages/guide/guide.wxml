@@ -1,0 +1,24 @@
+<view class="page">
+  <view class="top">
+    <text class="brand">{{copy.appTitle}}</text>
+    <view class="langs">
+      <view class="lang {{lang === 'zh-CN' ? 'on' : ''}}" data-lang="zh-CN" bindtap="onSwitch">{{copy.lang.zh}}</view>
+      <view class="lang {{lang === 'en' ? 'on' : ''}}" data-lang="en" bindtap="onSwitch">{{copy.lang.en}}</view>
+    </view>
+  </view>
+  <view class="card">
+    <text class="kicker">{{copy.guide.title}}</text>
+    <text class="h1">{{copy.guide.title}}</text>
+    <text class="sub">{{copy.guide.intro}}</text>
+    <view class="check {{item.on ? 'on' : ''}}" wx:for="{{items}}" wx:key="key" data-key="{{item.key}}" bindtap="onToggle">
+      <view class="box"></view>
+      <view>
+        <text class="item-title">{{item.title}}</text>
+        <text class="item-desc">{{item.desc}}</text>
+      </view>
+    </view>
+    <text class="ok">{{progress}}</text>
+    <text class="hint">{{copy.guide.incompleteHint}}</text>
+    <view class="primary" bindtap="onNext">{{copy.guide.continue}}</view>
+  </view>
+</view>

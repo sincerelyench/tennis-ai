@@ -1,0 +1,39 @@
+.hero {
+  background: linear-gradient(145deg, #0f766e, #0d9488 55%, #14b8a6);
+  border: none;
+  color: #ffffff;
+}
+
+.hero-name {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 800;
+  margin-bottom: 8rpx;
+}
+
+.hero .muted {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.menu .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid #e2e8f0;
+  font-size: 30rpx;
+}
+
+.menu .row:last-child {
+  border-bottom: none;
+}
+
+.chev {
+  color: #94a3b8;
+  font-size: 36rpx;
+}
+
+.logout {
+  color: #ef4444 !important;
+  border-color: #fecaca !important;
+}

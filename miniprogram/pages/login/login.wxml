@@ -1,0 +1,26 @@
+<view class="page">
+  <view class="brand-row">
+    <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
+    <text class="brand-name">涨球</text>
+  </view>
+
+  <text class="h1">登录</text>
+  <text class="lead">登录后可使用分析、约球、教练与我的。首次登录会自动创建账号。</text>
+
+  <view class="card">
+    <text class="label">怎么称呼你（可选）</text>
+    <input
+      class="field"
+      type="nickname"
+      maxlength="40"
+      placeholder="优先用真实名字；可从微信昵称带入"
+      value="{{nickName}}"
+      bindinput="onNick"
+    />
+    <button class="primary" loading="{{loading}}" disabled="{{loading}}" bindtap="onWechatLogin">
+      {{loading ? "正在登录…" : "微信登录"}}
+    </button>
+    <text class="hint" wx:if="{{notice}}">{{notice}}</text>
+    <text class="error" wx:if="{{error}}">{{error}}</text>
+  </view>
+</view>

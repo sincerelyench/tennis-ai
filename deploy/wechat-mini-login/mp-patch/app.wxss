@@ -1,0 +1,85 @@
+page {
+  background: #07140e;
+  color: #eef6ee;
+  font-size: 30rpx;
+  line-height: 1.5;
+}
+.page { padding: 32rpx 32rpx 80rpx; }
+.top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28rpx; }
+.brand { color: #d6e35a; letter-spacing: 0.18em; font-weight: 700; font-size: 26rpx; }
+.langs { display: flex; gap: 12rpx; }
+.lang, .ghost, .primary {
+  border-radius: 999rpx;
+}
+.lang {
+  border: 1px solid #2d4a3a;
+  padding: 8rpx 20rpx;
+  color: #eef6ee;
+}
+.lang.on { background: #d6e35a; color: #142117; border-color: transparent; font-weight: 700; }
+.card {
+  background: rgba(16, 36, 27, 0.92);
+  border: 1px solid #2d4a3a;
+  border-radius: 36rpx;
+  padding: 36rpx 28rpx;
+}
+.ball {
+  width: 36rpx; height: 36rpx; border-radius: 50%;
+  background: #d6e35a;
+  margin-bottom: 16rpx;
+}
+.h1 { display: block; font-size: 52rpx; font-weight: 700; margin: 8rpx 0 16rpx; }
+.lead { display: block; font-size: 34rpx; margin-bottom: 12rpx; }
+.sub, .hint { display: block; color: #8ea196; margin-bottom: 16rpx; }
+.ok { display: block; color: #b7e3c4; margin-bottom: 12rpx; }
+.error { display: block; color: #ffb4b4; min-height: 1.2em; margin-top: 16rpx; }
+.label { display: block; color: #8ea196; font-size: 24rpx; margin: 12rpx 0; }
+.field {
+  background: #0b1712;
+  border: 1px solid #2d4a3a;
+  border-radius: 20rpx;
+  color: #eef6ee;
+  padding: 20rpx;
+}
+.primary, .ghost {
+  margin-top: 20rpx;
+  text-align: center;
+  padding: 22rpx 20rpx;
+}
+.primary { background: #d6e35a; color: #142117; font-weight: 700; }
+.ghost { border: 1px solid #2d4a3a; color: #eef6ee; }
+.row { display: flex; gap: 16rpx; }
+.row .ghost { flex: 1; margin-top: 20rpx; }
+.check {
+  display: flex;
+  gap: 20rpx;
+  border: 1px solid #2d4a3a;
+  background: #0c1914;
+  border-radius: 24rpx;
+  padding: 22rpx;
+  margin-bottom: 16rpx;
+}
+.check.on { border-color: #d6e35a; }
+.box {
+  width: 36rpx; height: 36rpx; border-radius: 10rpx;
+  border: 2rpx solid #d6e35a; flex: 0 0 36rpx; margin-top: 6rpx;
+}
+.check.on .box { background: #d6e35a; }
+.item-title { display: block; font-weight: 700; }
+.item-desc { display: block; color: #8ea196; margin-top: 6rpx; }
+.seg { display: flex; gap: 16rpx; margin-bottom: 12rpx; }
+.seg .ghost { flex: 1; }
+.seg .on { background: #d6e35a; color: #142117; border-color: transparent; font-weight: 700; }
+.kicker { color: #d6e35a; letter-spacing: 0.16em; font-size: 22rpx; }
+.jobid {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  background: #0b1712;
+  border-radius: 16rpx;
+  padding: 18rpx;
+  margin: 12rpx 0 20rpx;
+}
+.pulse {
+  display: inline-block;
+  width: 16rpx; height: 16rpx; border-radius: 50%;
+  background: #d6e35a; margin-right: 12rpx;
+}
