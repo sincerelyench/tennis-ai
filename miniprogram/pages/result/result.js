@@ -3,6 +3,7 @@ const api = require("../../utils/api")
 const session = require("../../utils/session")
 const errors = require("../../utils/errors")
 const config = require("../../config")
+const issueDemos = require("../../utils/issue-correct-demos")
 
 function bandKey(score, max) {
   if (typeof score !== "number" || !max) return ""
@@ -47,6 +48,10 @@ Page({
     compareReason: "",
     compareWhen: "",
     deltas: [],
+    correctDemos: [],
+    correctLead: "",
+    correctLoading: false,
+    correctError: "",
   },
   onLoad(options) {
     this.jobId = (options && options.job_id) || ""
@@ -82,6 +87,10 @@ Page({
       compareReason: "",
       compareWhen: "",
       deltas: [],
+      correctDemos: [],
+      correctLead: "",
+      correctLoading: false,
+      correctError: "",
     }
     this.setData(Object.assign({
       lang,
@@ -160,6 +169,12 @@ Page({
           " · " + i18n.lookup(lang, "result.later") + " " + whenLabel(card.later && card.later.created_at)
         : "",
       deltas,
+      correctDemos: issueDemos.demosForResult(payload, lang),
+      correctLead: (lang && String(lang).indexOf("en") === 0)
+        ? "Correct form matched to your problem points"
+        : "正确动作按本次问题点匹配",
+      correctLoading: false,
+      correctError: "",
     }
   },
   onSwitch(e) {

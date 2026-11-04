@@ -46,6 +46,20 @@
         <text class="h2">{{copy.result.compareTitle}}</text>
         <text class="sub">{{compareReason}}</text>
       </view>
+      <view class="correct" data-issue-demos="true" data-issue-count="{{correctDemos.length}}">
+        <text class="h2">正确动作</text>
+        <text class="hint">{{correctLead}}</text>
+        <text class="hint" wx:if="{{correctLoading}}">加载中…</text>
+        <text class="error" wx:if="{{correctError}}">{{correctError}}</text>
+        <view class="correct-card" wx:for="{{correctDemos}}" wx:key="id" data-issue-id="{{item.id}}" data-issue-axis="{{item.axisLabel}}">
+          <text class="correct-axis">正确动作 · {{item.axisLabel}}</text>
+          <text class="item-title" data-issue-label="true">{{item.label}}</text>
+          <text class="hint">{{item.credit}}</text>
+          <video wx:if="{{item.embed}}" class="correct-video" src="{{item.embed}}" controls show-center-play-btn object-fit="contain" data-demo-video="true"></video>
+          <text class="hint" wx:else>还没有示范</text>
+        </view>
+        <text class="hint" wx:if="{{!correctLoading && !correctError && !correctDemos.length}}">还没有示范</text>
+      </view>
     </block>
     <text class="error" wx:if="{{error}}">{{error}}</text>
     <view class="ghost" wx:if="{{jobId}}" bindtap="onQueue">{{copy.result.backQueue}}</view>
