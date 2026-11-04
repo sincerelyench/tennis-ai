@@ -1,0 +1,8 @@
+versionName=1.0.101
+versionCode=201
+applicationId=app.zhangqiu
+built=2026-11-04T15:42:42Z
+signing=ZHANGQIU assembleRelease (no zip-inject)
+feature=apk-wechat-login
+wechatAppIdSet=
+packageSignatureMD5=18ebdb408990a7e30bafd0c43bc7c390

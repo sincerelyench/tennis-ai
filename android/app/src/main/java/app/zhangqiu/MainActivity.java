@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.net.http.SslError;
+import android.webkit.JavascriptInterface;
 import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -18,9 +19,11 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import org.json.JSONObject;
+
 /**
- * Thin shell around the existing web upload flow at /e1.
- * Analysis stays on the current backend; this activity does not reimplement it.
+ * Thin shell around the product web app at https://yqchen.blog/tennis.
+ * Exposes ZhangqiuNative.loginWithWeChat() for the login page WeChat button.
  */
 public class MainActivity extends Activity {
     private static final int FILE_CHOOSER = 4101;
@@ -30,11 +33,12 @@ public class MainActivity extends Activity {
     private boolean showingError;
     private String startUrl = "";
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         startUrl = resolveStartUrl();
+        WeChatAuth.ensureApi(this);
         webView = new WebView(this);
         webView.setBackgroundColor(Color.parseColor("#07140e"));
         WebSettings settings = webView.getSettings();
@@ -45,6 +49,7 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         settings.setUserAgentString(settings.getUserAgentString() + " ZhangqiuAndroid/1");
+        webView.addJavascriptInterface(new NativeBridge(), "ZhangqiuNative");
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
@@ -92,6 +97,39 @@ public class MainActivity extends Activity {
         });
         setContentView(webView);
         webView.loadUrl(startUrl);
+    }
+
+    private final class NativeBridge {
+        @JavascriptInterface
+        public void loginWithWeChat() {
+            runOnUiThread(() -> WeChatAuth.start(MainActivity.this, new WeChatAuth.Callback() {
+                @Override
+                public void onCode(String code) {
+                    deliverWeChatCode(code);
+                }
+
+                @Override
+                public void onError(String message) {
+                    deliverWeChatError(message);
+                }
+            }));
+        }
+    }
+
+    private void deliverWeChatCode(String code) {
+        if (webView == null) return;
+        String quoted = JSONObject.quote(code == null ? "" : code);
+        webView.evaluateJavascript(
+                "(function(c){try{if(window.__zqOnWeChatCode)window.__zqOnWeChatCode(c);}catch(e){}})(" + quoted + ")",
+                null);
+    }
+
+    private void deliverWeChatError(String message) {
+        if (webView == null) return;
+        String quoted = JSONObject.quote(message == null ? "wechat error" : message);
+        webView.evaluateJavascript(
+                "(function(m){try{if(window.__zqOnWeChatError)window.__zqOnWeChatError(m);}catch(e){}})(" + quoted + ")",
+                null);
     }
 
     private String resolveStartUrl() {

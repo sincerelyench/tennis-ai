@@ -72,6 +72,22 @@ enum ShellConfig {
       if (root) root.appendChild(style);
     })();
     """
+
+    /// Mirrors Android `ZhangqiuNative.loginWithWeChat` for the shared login page.
+    /// Real WeChat OpenSDK on iOS needs a 移动应用 AppID + Universal Link; until
+    /// then the shell returns a stable ios_&lt;idfv&gt; code → /api/auth/wechat mock.
+    static let nativeBridgeScript = """
+    (function () {
+      if (window.ZhangqiuNative && window.ZhangqiuNative.loginWithWeChat) return;
+      window.ZhangqiuNative = {
+        loginWithWeChat: function () {
+          try {
+            window.webkit.messageHandlers.zqNative.postMessage('loginWithWeChat');
+          } catch (e) {}
+        }
+      };
+    })();
+    """
 }
 
 enum ShellTheme {

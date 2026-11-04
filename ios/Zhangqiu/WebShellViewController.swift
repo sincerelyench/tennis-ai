@@ -1,9 +1,9 @@
 import UIKit
 import WebKit
 
-/// Thin WKWebView shell around the existing /e1 upload flow.
-/// Analysis stays on the current backend; this controller does not reimplement it.
-final class WebShellViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
+/// Thin WKWebView shell around the product web app (same start URL as Android).
+/// Exposes ZhangqiuNative.loginWithWeChat for the shared login page.
+final class WebShellViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
     private let startURL: URL
     private var webView: WKWebView!
     private var showingError = false
@@ -38,6 +38,14 @@ final class WebShellViewController: UIViewController, WKNavigationDelegate, WKUI
             forMainFrameOnly: true
         )
         config.userContentController.addUserScript(script)
+        config.userContentController.addUserScript(
+            WKUserScript(
+                source: ShellConfig.nativeBridgeScript,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: false
+            )
+        )
+        config.userContentController.add(self, name: "zqNative")
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
@@ -58,6 +66,23 @@ final class WebShellViewController: UIViewController, WKNavigationDelegate, WKUI
         ])
         self.webView = webView
         webView.load(URLRequest(url: startURL))
+    }
+
+    func userContentController(
+        _ userContentController: WKUserContentController,
+        didReceive message: WKScriptMessage
+    ) {
+        guard message.name == "zqNative" else { return }
+        let body = (message.body as? String) ?? String(describing: message.body)
+        if body == "loginWithWeChat" {
+            let id = UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
+            let code = "ios_" + id
+            let escaped = code
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+            let js = "(function(c){try{if(window.__zqOnWeChatCode)window.__zqOnWeChatCode(c);}catch(e){}})('\(escaped)')"
+            webView.evaluateJavaScript(js, completionHandler: nil)
+        }
     }
 
     func webView(
