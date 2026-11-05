@@ -1,0 +1,12 @@
+async def analyze_busy_guard(request: Request, call_next):
+    """Fail busy analyzes before multipart parse so phones do not upload into a 409."""
+    path = request.url.path.rstrip("/")
+    if request.method == "POST" and path.endswith("/api/analyze"):
+        _reap_stale_jobs()
+        if _busy_job():
+            snap = _busy_snapshot()
+            content = {"detail": "正在分析其他录像，请稍后再试", "code": "busy"}
+            if snap:
+                content["busy_job"] = snap
+            return JSONResponse(status_code=409, content=content)
+    return await call_next(request)
