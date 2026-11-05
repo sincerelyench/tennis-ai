@@ -889,7 +889,26 @@ def analyze_video(
             progress=88,
             message="正在写练习建议，大约还要 2 分钟…",
         )
-        report = enrich_with_cursor(report, kf_dir, progress=progress)
+        # Soft-fail coaching: a hung Cursor agent used to keep the single GPU
+        # worker busy until timeout, so the next serve/upload aborted as
+        # error.serviceTimeout in the Next client. Keep rule scores and finish.
+        try:
+            report = enrich_with_cursor(report, kf_dir, progress=progress)
+        except Exception as exc:
+            print(f"[coach] soft-fail: {exc}", flush=True)
+            report["coach"] = {
+                "status": "skipped",
+                "error": str(exc)[:200],
+            }
+            if not report.get("summary"):
+                report["summary"] = "本次已完成动作评分；教练文字点评暂不可用，请稍后再试。"
+            _emit(
+                progress,
+                step=5,
+                step_name="教练点评",
+                progress=96,
+                message="教练点评暂不可用，正在整理评分报告…",
+            )
     else:
         report["coach"] = {"status": "skipped"}
         _emit(progress, step=5, step_name="教练点评", progress=96, message="没有完整挥拍，跳过教练点评…")

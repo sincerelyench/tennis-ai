@@ -180,11 +180,45 @@ class E1ApiTests(unittest.TestCase):
 
     def test_busy_is_visible(self):
         with appmod._lock:
-            appmod._jobs["busy-job"] = {"id": "busy-job", "status": "queued"}
+            appmod._jobs["busy-job"] = {
+                "id": "busy-job",
+                "status": "queued",
+                "progress": 12,
+                "step": 2,
+                "step_name": "识别动作",
+                "message": "正在识别球员动作…",
+                "updated_at": appmod._now(),
+            }
+        health = self.client.get("/api/health")
+        self.assertEqual(health.status_code, 200)
+        self.assertTrue(health.json()["busy"])
+        self.assertEqual(health.json()["busy_job"]["id"], "busy-job")
         res = self._upload(self._token())
         self.assertEqual(res.status_code, 409)
         self.assertEqual(res.json()["code"], "busy")
         self.assertIn("稍后再试", res.json()["detail"])
+        self.assertEqual(res.json()["busy_job"]["id"], "busy-job")
+        self.assertEqual(res.json()["busy_job"]["progress"], 12)
+
+    def test_stale_busy_job_is_reaped(self):
+        old = appmod.STALE_JOB_S
+        appmod.STALE_JOB_S = 30
+        try:
+            with appmod._lock:
+                appmod._jobs["stale-job"] = {
+                    "id": "stale-job",
+                    "status": "running",
+                    "progress": 40,
+                    "updated_at": "2020-01-01T00:00:00+00:00",
+                }
+            health = self.client.get("/api/health")
+            self.assertEqual(health.status_code, 200)
+            self.assertFalse(health.json()["busy"])
+            self.assertIsNone(health.json()["busy_job"])
+            self.assertEqual(appmod._jobs["stale-job"]["status"], "error")
+            self.assertEqual(appmod._jobs["stale-job"]["error"], "stale_job")
+        finally:
+            appmod.STALE_JOB_S = old
 
     def test_e1_page_and_catalogs(self):
         page = self.client.get("/e1")
