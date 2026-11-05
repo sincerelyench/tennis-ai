@@ -615,6 +615,27 @@
     state.loading = true;
     clearError();
     render();
+    try {
+      const healthRes = await fetch("/api/health", { method: "GET" });
+      const health = await healthRes.json().catch(() => null);
+      if (!healthRes.ok || !health || !health.ok) {
+        state.loading = false;
+        setErrorCode("server");
+        render();
+        return;
+      }
+      if (health.busy) {
+        state.loading = false;
+        setErrorCode("busy");
+        render();
+        return;
+      }
+    } catch (e) {
+      state.loading = false;
+      setErrorCode("network");
+      render();
+      return;
+    }
     const body = new FormData();
     body.append("video", file, file.name || "swing.mp4");
     body.append("stroke", state.stroke);
