@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>匹配应战确认 · 通知中心</title>
+    <style>
+      :root {
+        --bg: #0f1a14;
+        --card: #163024;
+        --ink: #f2f7f3;
+        --muted: #9bb5a6;
+        --line: #2a4a3a;
+        --primary: #1f8f5f;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+        background: radial-gradient(1200px 600px at 20% -10%, #1d3b2c, var(--bg));
+        color: var(--ink);
+        min-height: 100vh;
+        padding: 24px 16px 48px;
+      }
+      .wrap { max-width: 420px; margin: 0 auto; }
+      h1 { font-size: 22px; margin: 0 0 8px; }
+      p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 0 16px; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 12px;
+      }
+      .title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+      .detail { font-size: 12px; color: var(--muted); line-height: 1.5; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+      button {
+        height: 36px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--ink);
+        font-weight: 700;
+      }
+      .primary { background: var(--primary); border-color: var(--primary); }
+      .badge {
+        display: inline-flex;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: var(--primary);
+        color: white;
+        font-size: 11px;
+        font-weight: 800;
+        align-items: center;
+        justify-content: center;
+        margin-left: 6px;
+      }
+      ol { padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>匹配应战确认</h1>
+      <p>匹配成对手后，对方会在通知中心收到邀请，可选择应战或婉拒；发起方等待对方确认。</p>
+
+      <div class="card">
+        <div class="title">发起方 · 等待确认</div>
+        <div class="detail">已匹配到 测试球友甲，等待对方确认应战。</div>
+      </div>
+
+      <div class="card" data-demo="incoming">
+        <div class="title">通知中心 · 约球邀请<span class="badge">1</span></div>
+        <div class="detail" style="margin-top:8px">测试球友甲 的挑战</div>
+        <div class="detail">测试球友甲 想和你约球，请选择是否应战。</div>
+        <div class="row">
+          <button type="button">婉拒</button>
+          <button type="button" class="primary">应战</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="title">应战之后</div>
+        <div class="detail">对方应战后进入「互相加微信，再自行约定场地和时间」引导；发起方也可取消后重新匹配或搜索挑战。</div>
+      </div>
+
+      <ol>
+        <li>约球 tab 匹配成功 → 状态 <code>awaiting_accept</code></li>
+        <li>对方铃铛有红点，通知中心可应战/婉拒</li>
+        <li>接受后 → <code>pending</code> 微信引导</li>
+      </ol>
+    </div>
+  </body>
+</html>
