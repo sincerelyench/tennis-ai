@@ -1,0 +1,1474 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/empty-state";
+import { pageClass } from "@/lib/data";
+import { rateLadder, utrSeedFromSelfLevel, playersFromDirectory, ensureSelfInPlayers, type LadderFormat, type LadderPlayer, type LadderRow } from "@/lib/local-ladder";
+import { useSessionRole } from "@/lib/session-role";
+import {
+  CITY_STORAGE_KEY,
+  DEFAULT_CITY_ID,
+  citiesForLocale,
+  cityLabel,
+  getCity,
+  loadStoredCityId,
+  matchCityFromGeo,
+  persistCityId,
+  type City,
+} from "@/lib/cities";
+import {
+  LEVEL_OPTIONS,
+  loadSelfLevel,
+  loadSelfName,
+  matchSearchMs,
+  persistSelfLevel,
+  persistSelfName,
+  pickBestMatch,
+  type MatchCandidate,
+  type MatchPhase,
+} from "@/lib/matchmaking";
+import { useI18n } from "@/components/i18n-provider";
+import { RatingHelpTip } from "@/components/rating-help-tip";
+import { cn } from "@/lib/utils";
+
+const FORMATS: LadderFormat[] = ["singles", "doubles"];
+const SCORE_KEY = "zq-match-scores-v1";
+const INTRO_KEY = "zq-match-intros-v1";
+
+type IntroStatus = "awaiting_accept" | "pending" | "replied" | "cancelled";
+
+type MatchIntroRow = {
+  id: string;
+  kind: "match" | "challenge";
+  status: IntroStatus;
+  fromName: string;
+  toName: string;
+  buddyId: string;
+  body: string;
+  canCancel?: boolean;
+  needsAccept?: boolean;
+  source?: "server" | "local";
+};
+
+type ScoreStatus = "pending" | "confirmed" | "rejected";
+
+type SavedMatch = {
+  id: string;
+  savedAt: string;
+  playerA: string;
+  playerB: string;
+  sets: [number, number][];
+  winner: "A" | "B";
+  status?: ScoreStatus;
+  opponentName?: string;
+  needsConfirm?: boolean;
+  source?: "server" | "local";
+};
+
+type LadderApiRow = LadderRow;
+
+function loadLocalScores(): SavedMatch[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(SCORE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistLocalScores(rows: SavedMatch[]) {
+  try {
+    localStorage.setItem(SCORE_KEY, JSON.stringify(rows.slice(0, 40)));
+  } catch {
+    /* ignore quota */
+  }
+}
+
+function mapApiScore(row: {
+  id: string;
+  createdAt?: string;
+  confirmedAt?: string | null;
+  playerA: string;
+  playerB: string;
+  sets: [number, number][];
+  winner: "A" | "B";
+  status?: ScoreStatus;
+  opponentName?: string;
+  needsConfirm?: boolean;
+}): SavedMatch {
+  return {
+    id: row.id,
+    savedAt: row.confirmedAt || row.createdAt || new Date().toISOString(),
+    playerA: row.playerA,
+    playerB: row.playerB,
+    sets: row.sets,
+    winner: row.winner,
+    status: row.status || "pending",
+    opponentName: row.opponentName,
+    needsConfirm: Boolean(row.needsConfirm),
+    source: "server",
+  };
+}
+
+function parseSetPair(a: string, b: string): [number, number] | null {
+  const ga = Number(a);
+  const gb = Number(b);
+  if (!Number.isFinite(ga) || !Number.isFinite(gb)) return null;
+  if (ga < 0 || gb < 0 || ga > 99 || gb > 99) return null;
+  if (ga === 0 && gb === 0) return null;
+  return [Math.floor(ga), Math.floor(gb)];
+}
+
+function winnerFromSets(sets: [number, number][]): "A" | "B" | null {
+  let wa = 0;
+  let wb = 0;
+  for (const [a, b] of sets) {
+    if (a === b) continue;
+    if (a > b) wa += 1;
+    else wb += 1;
+  }
+  if (wa === wb) return null;
+  return wa > wb ? "A" : "B";
+}
+
+function formatSets(sets: [number, number][]): string {
+  return sets.map(([a, b]) => `${a}-${b}`).join(" · ");
+}
+
+function loadLocalIntros(): MatchIntroRow[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(INTRO_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistLocalIntros(rows: MatchIntroRow[]) {
+  try {
+    localStorage.setItem(INTRO_KEY, JSON.stringify(rows.slice(0, 40)));
+  } catch {
+    /* ignore */
+  }
+}
+
+function introBodyForLocale(locale: string) {
+  return locale.toLowerCase().startsWith("zh")
+    ? "匹配成功，请互相加微信，再自行约定场地和时间。"
+    : "Match successful. Please add each other on WeChat, then arrange the venue and time yourselves.";
+}
+
+async function detectCityFromIp(locale: string): Promise<string> {
+  const pool = citiesForLocale(locale);
+  try {
+    const res = await fetch("/tennis/api/geo/city", { credentials: "include" });
+    if (res.ok) {
+      const data = (await res.json()) as {
+        cityId?: string;
+        city?: string;
+        region?: string;
+        countryCode?: string;
+      };
+      if (data.cityId && pool.some((c) => c.id === data.cityId)) return data.cityId;
+      const matched = matchCityFromGeo(data);
+      if (matched && pool.some((c) => c.id === matched.id)) return matched.id;
+      if (!locale.toLowerCase().startsWith("zh") && matched) return matched.id;
+    }
+  } catch {
+    /* fall through */
+  }
+  if (pool.some((c) => c.id === DEFAULT_CITY_ID)) return DEFAULT_CITY_ID;
+  return pool[0]?.id || DEFAULT_CITY_ID;
+}
+
+export function FriendsView() {
+  const { t, locale } = useI18n();
+  const session = useSessionRole();
+  const [format, setFormat] = useState<LadderFormat>("singles");
+  const cityOptions = useMemo(() => citiesForLocale(locale), [locale]);
+
+  const [cityId, setCityId] = useState<string>(DEFAULT_CITY_ID);
+  const [citySource, setCitySource] = useState<"ip" | "manual" | "default">("default");
+  const [cityReady, setCityReady] = useState(false);
+  const [directoryPlayers, setDirectoryPlayers] = useState<LadderPlayer[]>([]);
+  const [directoryCount, setDirectoryCount] = useState(0);
+  const [ladderRows, setLadderRows] = useState<LadderApiRow[]>([]);
+  const [ladderFromApi, setLadderFromApi] = useState(false);
+  const [pendingForMe, setPendingForMe] = useState<SavedMatch[]>([]);
+  const [minePending, setMinePending] = useState<SavedMatch[]>([]);
+  const [scoreBusy, setScoreBusy] = useState(false);
+  const [scoreNotice, setScoreNotice] = useState("");
+
+  const [playerA, setPlayerA] = useState("");
+  const [playerB, setPlayerB] = useState("");
+  const [setLines, setSetLines] = useState([
+    { a: "", b: "" },
+    { a: "", b: "" },
+    { a: "", b: "" },
+  ]);
+  const [history, setHistory] = useState<SavedMatch[]>([]);
+  const [formError, setFormError] = useState("");
+
+  const [selfName, setSelfName] = useState("");
+  const [selfLevel, setSelfLevel] = useState(3.5);
+  const [matchPhase, setMatchPhase] = useState<MatchPhase>("idle");
+  const [matchHintIdx, setMatchHintIdx] = useState(0);
+  const [matched, setMatched] = useState<MatchCandidate | null>(null);
+  const [recentMatchIds, setRecentMatchIds] = useState<string[]>([]);
+  const [activeIntro, setActiveIntro] = useState<MatchIntroRow | null>(null);
+  const [introInbox, setIntroInbox] = useState<MatchIntroRow[]>([]);
+  const [introBusy, setIntroBusy] = useState(false);
+  const [challengeQuery, setChallengeQuery] = useState("");
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hintTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const selfUtr = useMemo(() => utrSeedFromSelfLevel(selfLevel), [selfLevel]);
+
+  const ladderPlayers = useMemo(() => {
+    const name = selfName.trim() || String(session.displayName || "").trim();
+    return ensureSelfInPlayers(directoryPlayers, {
+      id: session.phone,
+      phone: session.phone,
+      name,
+      level: selfLevel,
+      cityId,
+    });
+  }, [directoryPlayers, selfName, selfLevel, cityId, session.phone, session.displayName]);
+
+  const clientLadder = useMemo(
+    () => rateLadder(format, new Date(), ladderPlayers, [], cityId),
+    [format, cityId, ladderPlayers],
+  );
+
+  const ladder = useMemo(() => {
+    if (!ladderFromApi) return clientLadder;
+    const name = selfName.trim() || String(session.displayName || "").trim();
+    if (!name || !cityId) return ladderRows;
+    const selfId = session.phone || `self:${name}`;
+    if (ladderRows.some((r) => r.id === selfId || r.name === name)) return ladderRows;
+    // API city filter lagged behind selected city — still show self locally.
+    const seed = utrSeedFromSelfLevel(selfLevel);
+    const merged: LadderApiRow[] = [
+      ...ladderRows,
+      {
+        id: selfId,
+        name,
+        cityId,
+        placeKey: "",
+        strokes: [],
+        rank: 0,
+        rating: seed,
+        seed,
+        wins: 0,
+        losses: 0,
+        played: false,
+        ntrp: selfLevel,
+        lastOpponentName: "",
+        lastResult: undefined,
+      },
+    ];
+    merged.sort((a, b) => b.rating - a.rating || a.name.localeCompare(b.name));
+    merged.forEach((r, i) => {
+      r.rank = i + 1;
+    });
+    return merged;
+  }, [
+    ladderFromApi,
+    ladderRows,
+    clientLadder,
+    selfName,
+    session.displayName,
+    session.phone,
+    cityId,
+    selfLevel,
+  ]);
+  const city = getCity(cityId);
+  const cityName = city ? cityLabel(city, locale) : cityId;
+
+  async function refreshDirectory() {
+    try {
+      const res = await fetch("/tennis/api/friends/directory?role=player&includeSelf=1", {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        setDirectoryPlayers([]);
+        setDirectoryCount(0);
+        return;
+      }
+      const data = (await res.json()) as {
+        users?: { id: string; displayName: string; cityId?: string; level?: number }[];
+        count?: number;
+        self?: { displayName?: string; cityId?: string; level?: number | null };
+      };
+      const users = Array.isArray(data.users) ? data.users : [];
+      const players = playersFromDirectory(users);
+      setDirectoryPlayers(players);
+      setDirectoryCount(typeof data.count === "number" ? data.count : players.length);
+      const dn = String(data.self?.displayName || session.displayName || "").trim();
+      if (dn) {
+        setSelfName(dn);
+        persistSelfName(dn);
+        setPlayerA((prev) => prev || dn);
+      }
+      if (typeof data.self?.level === "number") {
+        setSelfLevel(data.self.level);
+        persistSelfLevel(data.self.level);
+      }
+    } catch {
+      setDirectoryPlayers([]);
+      setDirectoryCount(0);
+    }
+  }
+
+  async function refreshLadder() {
+    try {
+      const q = new URLSearchParams({ format, cityId: cityId || "" });
+      const res = await fetch(`/tennis/api/friends/ladder?${q}`, { credentials: "include" });
+      if (!res.ok) {
+        setLadderFromApi(false);
+        return;
+      }
+      const data = (await res.json()) as {
+        rows?: LadderApiRow[];
+        count?: number;
+        empty?: boolean;
+      };
+      const rows = Array.isArray(data.rows) ? data.rows : [];
+      setLadderRows(rows);
+      setLadderFromApi(true);
+      if (typeof data.count === "number" && data.count === 0) {
+        /* empty = 0 — keep rows [] */
+      }
+    } catch {
+      setLadderFromApi(false);
+    }
+  }
+
+  async function refreshScores() {
+    try {
+      const res = await fetch("/tennis/api/friends/scores", { credentials: "include" });
+      if (!res.ok) {
+        setHistory(loadLocalScores());
+        setPendingForMe([]);
+        setMinePending([]);
+        return;
+      }
+      const data = (await res.json()) as {
+        pendingForMe?: Parameters<typeof mapApiScore>[0][];
+        minePending?: Parameters<typeof mapApiScore>[0][];
+        confirmed?: Parameters<typeof mapApiScore>[0][];
+      };
+      const pending = (data.pendingForMe || []).map(mapApiScore);
+      const mine = (data.minePending || []).map(mapApiScore);
+      const confirmed = (data.confirmed || []).map(mapApiScore);
+      setPendingForMe(pending);
+      setMinePending(mine);
+      const merged = [...pending, ...mine, ...confirmed];
+      setHistory(merged);
+      persistLocalScores(merged);
+    } catch {
+      setHistory(loadLocalScores());
+    }
+  }
+
+  useEffect(() => {
+    setHistory(loadLocalScores());
+    setSelfLevel(loadSelfLevel(session.level ?? 3.5));
+    const authName = (session.displayName || "").trim() || loadSelfName("");
+    setSelfName(authName);
+    if (authName && !playerA) setPlayerA(authName);
+  }, [session.displayName, session.level]);
+
+  async function refreshIntros() {
+    try {
+      const res = await fetch("/tennis/api/friends/intros", { credentials: "include" });
+      if (!res.ok) {
+        const local = loadLocalIntros();
+        setIntroInbox(local.filter((row) => row.status === "awaiting_accept" || row.status === "pending"));
+        const active = local.find((row) => row.status === "pending" || row.status === "awaiting_accept") || null;
+        setActiveIntro(active);
+        return;
+      }
+      const data = (await res.json()) as { active?: MatchIntroRow[]; inbox?: MatchIntroRow[] };
+      const activeRows = Array.isArray(data.active) ? data.active : [];
+      const inbox = Array.isArray(data.inbox) ? data.inbox : [];
+      setIntroInbox(inbox.filter((row) => row.status === "awaiting_accept" || row.status === "pending"));
+      const current = activeRows[0] || null;
+      setActiveIntro(current);
+      persistLocalIntros([...activeRows, ...inbox]);
+    } catch {
+      const local = loadLocalIntros();
+      setIntroInbox(local.filter((row) => row.status === "awaiting_accept" || row.status === "pending"));
+    }
+  }
+
+  async function openIntroWithBuddy(
+    buddy: { id: string; name: string },
+    kind: "match" | "challenge",
+    openIntro: boolean,
+  ) {
+    const body = introBodyForLocale(locale);
+    setIntroBusy(true);
+    try {
+      const res = await fetch("/tennis/api/friends/intros", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create",
+          kind,
+          openIntro,
+          toName: buddy.name,
+          buddyId: buddy.id,
+          cityId,
+          locale,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { intro?: MatchIntroRow };
+      if (res.ok && data.intro) {
+        setActiveIntro(data.intro);
+        setMatchPhase("found");
+        await refreshIntros();
+        setIntroBusy(false);
+        return data.intro;
+      }
+    } catch {
+      /* offline */
+    }
+    const local: MatchIntroRow = {
+      id: `local-${Date.now()}`,
+      kind,
+      status: openIntro ? "pending" : "awaiting_accept",
+      fromName: selfName.trim() || t("friends.matchYou"),
+      toName: buddy.name,
+      buddyId: buddy.id,
+      body,
+      canCancel: true,
+      needsAccept: !openIntro,
+      source: "local",
+    };
+    persistLocalIntros([local, ...loadLocalIntros().filter((row) => row.buddyId !== buddy.id)].slice(0, 40));
+    setActiveIntro(local);
+    setMatchPhase("found");
+    setIntroBusy(false);
+    return local;
+  }
+
+  async function onIntroAction(id: string, action: "cancel" | "accept" | "reply") {
+    setIntroBusy(true);
+    try {
+      const res = await fetch("/tennis/api/friends/intros", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, id, locale }),
+      });
+      if (res.ok) {
+        if (action === "cancel") {
+          setActiveIntro(null);
+          setMatched(null);
+          setMatchPhase("postCancel");
+        } else if (action === "accept") {
+          setMatchPhase("found");
+        }
+        await refreshIntros();
+        setIntroBusy(false);
+        return;
+      }
+    } catch {
+      /* local */
+    }
+    const rows = loadLocalIntros().map((row) => {
+      if (row.id !== id) return row;
+      if (action === "cancel") return { ...row, status: "cancelled" as const, canCancel: false, needsAccept: false };
+      if (action === "accept")
+        return {
+          ...row,
+          status: "pending" as const,
+          needsAccept: false,
+          canCancel: true,
+          body: introBodyForLocale(locale),
+        };
+      return { ...row, status: "replied" as const, canCancel: false };
+    });
+    persistLocalIntros(rows);
+    if (action === "cancel") {
+      setActiveIntro(null);
+      setMatched(null);
+      setMatchPhase("postCancel");
+    } else if (action === "accept") {
+      setActiveIntro(rows.find((row) => row.id === id) || null);
+      setMatchPhase("found");
+    }
+    setIntroInbox(rows.filter((row) => row.status === "awaiting_accept" || row.status === "pending"));
+    setIntroBusy(false);
+  }
+
+  useEffect(() => {
+    void refreshDirectory();
+    void refreshScores();
+    void refreshIntros();
+  }, [session.displayName, cityOptions]);
+
+  useEffect(() => {
+    if (!cityReady) return;
+    void refreshLadder();
+  }, [format, cityId, cityReady, directoryCount]);
+
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const stored = loadStoredCityId();
+      if (stored && cityOptions.some((c) => c.id === stored)) {
+        if (!cancelled) {
+          setCityId(stored);
+          setCitySource("manual");
+          setCityReady(true);
+        }
+        return;
+      }
+      const detected = await detectCityFromIp(locale);
+      if (!cancelled) {
+        setCityId(detected);
+        setCitySource(detected ? "ip" : "default");
+        setCityReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, cityOptions]);
+
+  useEffect(() => {
+    if (!cityOptions.some((c) => c.id === cityId)) {
+      const next = cityOptions.some((c) => c.id === DEFAULT_CITY_ID)
+        ? DEFAULT_CITY_ID
+        : cityOptions[0]?.id || DEFAULT_CITY_ID;
+      setCityId(next);
+    }
+  }, [cityOptions, cityId]);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+      if (hintTimer.current) clearInterval(hintTimer.current);
+    };
+  }, []);
+
+
+  async function saveAuthProfile(patch: { displayName?: string; cityId?: string; level?: number }) {
+    try {
+      await fetch("/tennis/api/auth/profile", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function onPickCity(next: string) {
+    setCityId(next);
+    setCitySource("manual");
+    persistCityId(next);
+    void saveAuthProfile({ cityId: next });
+  }
+
+  function onPickLevel(next: number) {
+    setSelfLevel(next);
+    persistSelfLevel(next);
+    void saveAuthProfile({ level: next });
+  }
+
+  function clearSearchTimers() {
+    if (searchTimer.current) {
+      clearTimeout(searchTimer.current);
+      searchTimer.current = null;
+    }
+    if (hintTimer.current) {
+      clearInterval(hintTimer.current);
+      hintTimer.current = null;
+    }
+  }
+
+  function startMatchmaking() {
+    clearSearchTimers();
+    setMatched(null);
+    setActiveIntro(null);
+    setChallengeQuery("");
+    setMatchPhase("searching");
+    setMatchHintIdx(0);
+    hintTimer.current = setInterval(() => {
+      setMatchHintIdx((i) => (i + 1) % 4);
+    }, 700);
+    const profile = {
+      name: selfName.trim() || t("friends.matchYou"),
+      level: selfLevel,
+      cityId,
+      utr: selfUtr,
+    };
+    searchTimer.current = setTimeout(() => {
+      if (hintTimer.current) {
+        clearInterval(hintTimer.current);
+        hintTimer.current = null;
+      }
+      const buddy = pickBestMatch(profile, "singles", recentMatchIds.slice(0, 3), ladderPlayers, session.phone);
+      if (!buddy) {
+        setMatchPhase("empty");
+        setMatched(null);
+        return;
+      }
+      setMatched(buddy);
+      setRecentMatchIds((prev) => [buddy.id, ...prev.filter((id) => id !== buddy.id)].slice(0, 6));
+      setMatchPhase("found");
+      void openIntroWithBuddy({ id: buddy.id, name: buddy.name }, "match", true);
+    }, matchSearchMs());
+  }
+
+  function cancelMatchmaking() {
+    clearSearchTimers();
+    setMatchPhase("idle");
+    setMatched(null);
+  }
+
+  function openSearchChallenge() {
+    clearSearchTimers();
+    setChallengeQuery("");
+    setMatchPhase("searchChallenge");
+  }
+
+  const challengeResults = useMemo(() => {
+    const q = challengeQuery.trim().toLowerCase();
+    const self = (selfName.trim() || session.displayName || "").trim().toLowerCase();
+    const pool = ladderPlayers.filter((p) => {
+      if (!p?.name) return false;
+      if (self && p.name.toLowerCase() === self) return false;
+      if (session.phone && p.id === session.phone) return false;
+      if (String(p.id || "").startsWith("self:")) return false;
+      return true;
+    });
+    if (!q) return pool.slice(0, 8);
+    return pool.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 12);
+  }, [challengeQuery, ladderPlayers, selfName, session.displayName, session.phone]);
+
+  function updateSetLine(index: number, side: "a" | "b", value: string) {
+    const cleaned = value.replace(/[^\d]/g, "").slice(0, 2);
+    setSetLines((prev) => prev.map((row, i) => (i === index ? { ...row, [side]: cleaned } : row)));
+  }
+
+  async function onSaveScore() {
+    const aName = playerA.trim();
+    const bName = playerB.trim();
+    if (!aName || !bName) {
+      setFormError(t("friends.scoreNeedNames"));
+      return;
+    }
+    if (aName === bName) {
+      setFormError(t("friends.scoreDistinctNames"));
+      return;
+    }
+    const sets: [number, number][] = [];
+    for (const line of setLines) {
+      if (!line.a && !line.b) continue;
+      const pair = parseSetPair(line.a, line.b);
+      if (!pair) {
+        setFormError(t("friends.scoreBadSets"));
+        return;
+      }
+      sets.push(pair);
+    }
+    if (!sets.length) {
+      setFormError(t("friends.scoreNeedSets"));
+      return;
+    }
+    const winner = winnerFromSets(sets);
+    if (!winner) {
+      setFormError(t("friends.scoreNeedWinner"));
+      return;
+    }
+    setFormError("");
+    setScoreNotice("");
+    setScoreBusy(true);
+    try {
+      const res = await fetch("/tennis/api/friends/scores", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerA: aName, playerB: bName, sets, format }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        score?: Parameters<typeof mapApiScore>[0];
+        message?: string;
+      };
+      if (!res.ok) {
+        setFormError(data.error || t("friends.scoreNeedNames"));
+        return;
+      }
+      setScoreNotice(t("friends.scorePendingHint"));
+      setPlayerA(selfName.trim() || aName);
+      setPlayerB("");
+      setSetLines([
+        { a: "", b: "" },
+        { a: "", b: "" },
+        { a: "", b: "" },
+      ]);
+      await refreshScores();
+      // Pending does NOT update ranking/UTR yet
+    } catch {
+      // Offline fallback: local pending only (not ranked)
+      const row: SavedMatch = {
+        id: `s-${Date.now()}`,
+        savedAt: new Date().toISOString(),
+        playerA: aName,
+        playerB: bName,
+        sets,
+        winner,
+        status: "pending",
+        source: "local",
+      };
+      const next = [row, ...history].slice(0, 40);
+      setHistory(next);
+      persistLocalScores(next);
+      setMinePending((prev) => [row, ...prev]);
+      setScoreNotice(t("friends.scorePendingHint"));
+      setFormError(t("friends.scoreOfflinePending"));
+    } finally {
+      setScoreBusy(false);
+    }
+  }
+
+  async function onScoreAction(id: string, action: "confirm" | "reject") {
+    setScoreBusy(true);
+    setFormError("");
+    try {
+      const res = await fetch("/tennis/api/friends/scores/action", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setFormError(data.error || t("friends.scoreNeedNames"));
+        return;
+      }
+      setScoreNotice(
+        action === "confirm" ? t("friends.scoreConfirmedHint") : t("friends.scoreRejectedHint"),
+      );
+      await Promise.all([refreshScores(), refreshLadder(), refreshDirectory()]);
+    } catch {
+      setFormError(t("friends.scoreNeedNames"));
+    } finally {
+      setScoreBusy(false);
+    }
+  }
+
+  function onClearHistory() {
+    setHistory([]);
+    setMinePending([]);
+    persistLocalScores([]);
+  }
+
+  const matchHints = [
+    t("friends.matchHint1"),
+    t("friends.matchHint2"),
+    t("friends.matchHint3"),
+    t("friends.matchHint4"),
+  ];
+
+  const matchedCityName = matched
+    ? cityLabel(getCity(matched.cityId) || { id: matched.cityId, zh: matched.cityId, en: matched.cityId, countryCode: "", aliases: [] }, locale)
+    : "";
+
+  return (
+    <div className={pageClass} data-page="friends" data-friends-city={cityId} data-friends-matchmaking="true">
+      <div>
+        <h1 className="text-base font-bold text-foreground">{t("friends.title")}</h1>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {cityReady
+            ? t("friends.cityCount", { n: ladder.length, city: cityName })
+            : t("friends.cityDetecting")}
+        </p>
+      </div>
+
+      <section className="space-y-3" data-matchmaking="true" aria-label={t("friends.matchTitle")}>
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">{t("friends.matchTitle")}</h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{t("friends.matchLead")}</p>
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="space-y-1">
+              <span className="text-[11px] font-medium text-muted-foreground">{t("friends.matchSelfName")}</span>
+              <input
+                data-match-self-name="true"
+                value={selfName}
+                onChange={(e) => {
+                  setSelfName(e.target.value);
+                  persistSelfName(e.target.value.trim());
+                }}
+                onBlur={(e) => {
+                  const name = e.target.value.trim();
+                  persistSelfName(name);
+                  void saveAuthProfile({ displayName: name });
+                  if (name) setPlayerA((prev) => prev || name);
+                }}
+                placeholder={t("friends.matchSelfNamePh")}
+                className="h-9 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              />
+            </label>
+            <div className="space-y-1">
+              <div className="flex items-center gap-1">
+                <label
+                  htmlFor="match-self-level"
+                  className="text-[11px] font-medium text-muted-foreground"
+                >
+                  {t("friends.matchSelfLevel")}
+                </label>
+                <RatingHelpTip
+                  kind="level"
+                  title={t("friends.levelHelpTitle")}
+                  body={t("friends.levelHelpBody")}
+                  ariaLabel={t("friends.levelHelpAria")}
+                />
+              </div>
+              <select
+                id="match-self-level"
+                data-match-self-level="true"
+                value={String(selfLevel)}
+                onChange={(e) => onPickLevel(Number(e.target.value))}
+                className="h-9 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                aria-label={t("friends.matchSelfLevel")}
+              >
+                {LEVEL_OPTIONS.map((lv) => (
+                  <option key={lv} value={lv}>
+                    {lv.toFixed(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/60 px-3 py-2" data-match-self-stats="true">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-foreground">
+                {selfName.trim() || t("friends.matchYou")}
+              </p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                {t("friends.matchSelfMeta", { city: cityName, level: selfLevel.toFixed(1), utr: selfUtr.toFixed(1) })}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-0.5">
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                {t("friends.utrLabel")}
+                <RatingHelpTip
+                  kind="utr"
+                  title={t("friends.utrHelpTitle")}
+                  body={t("friends.utrHelpBody")}
+                  ariaLabel={t("friends.utrHelpAria")}
+                />
+              </span>
+              <p className="text-lg font-bold tabular-nums text-primary" data-match-self-utr={selfUtr}>
+                {selfUtr.toFixed(1)}
+              </p>
+            </div>
+          </div>
+
+          {matchPhase === "idle" || matchPhase === "empty" ? (
+            <div className="space-y-2">
+              {matchPhase === "empty" ? (
+                <p className="text-xs text-muted-foreground" data-match-empty="true">
+                  {t("friends.matchEmpty", { city: cityName })}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                data-match-start="true"
+                onClick={startMatchmaking}
+                className="relative h-12 w-full overflow-hidden rounded-xl bg-primary text-base font-bold text-primary-foreground shadow-sm transition active:scale-[0.99]"
+              >
+                {t("friends.matchStart")}
+              </button>
+              <p className="text-[11px] leading-5 text-muted-foreground">{t("friends.matchIdleHint")}</p>
+            </div>
+          ) : null}
+
+          {matchPhase === "searching" ? (
+            <div className="space-y-3 py-2 text-center" data-match-searching="true">
+              <div className="relative mx-auto flex size-16 items-center justify-center">
+                <span className="absolute size-14 animate-ping rounded-full bg-primary/20" aria-hidden />
+                <span className="relative size-10 rounded-full bg-primary/90 shadow-inner" aria-hidden />
+              </div>
+              <p className="text-sm font-semibold text-foreground">{t("friends.matchSearching")}</p>
+              <p className="text-xs text-muted-foreground" data-match-hint={matchHintIdx}>
+                {matchHints[matchHintIdx]}
+              </p>
+              <button
+                type="button"
+                data-match-cancel="true"
+                onClick={cancelMatchmaking}
+                className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm font-medium text-muted-foreground"
+              >
+                {t("friends.matchCancel")}
+              </button>
+            </div>
+          ) : null}
+
+          {matchPhase === "found" && matched ? (
+            <div className="space-y-3" data-match-found="true" data-match-buddy={matched.id}>
+              <p className="text-center text-sm font-semibold text-primary">{t("friends.matchFound")}</p>
+              <div className="flex items-start gap-3 rounded-lg border border-primary/25 bg-primary/5 px-3 py-3">
+                <Avatar className="size-12">
+                  <AvatarFallback className="bg-primary text-base font-bold text-primary-foreground">
+                    {matched.name.slice(0, 1)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="truncate text-base font-bold text-foreground" data-match-buddy-name="true">
+                      {matched.name}
+                    </p>
+                    <p className="shrink-0 text-base font-bold tabular-nums text-foreground" data-match-buddy-utr={matched.rating}>
+                      {matched.rating.toFixed(1)}
+                    </p>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground" data-match-buddy-meta="true">
+                    {t("friends.matchBuddyMeta", {
+                      city: matchedCityName,
+                      level: matched.ntrp.toFixed(1),
+                      rank: matched.rank,
+                    })}
+                  </p>
+                  <p className="mt-1 text-[11px] leading-5 text-primary" data-match-reason={matched.reasonKey}>
+                    {t(`friends.matchReason.${matched.reasonKey}`, {
+                      utrDelta: matched.utrDelta.toFixed(1),
+                      city: matchedCityName,
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="space-y-2 rounded-lg border border-border bg-card px-3 py-3"
+                data-match-intro="true"
+                data-match-intro-id={activeIntro?.id || ""}
+              >
+                <p className="text-[11px] font-medium text-muted-foreground">{t("friends.matchIntroTitle")}</p>
+                {activeIntro?.status === "awaiting_accept" ? (
+                  <p className="text-sm leading-6 text-foreground" data-match-awaiting="true">
+                    {t("friends.matchAwaitingAccept", { name: matched.name })}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm leading-6 text-foreground" data-match-intro-body="true">
+                      {activeIntro?.body || t("friends.matchIntroBody")}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">{t("friends.matchIntroPending")}</p>
+                  </>
+                )}
+                {(activeIntro?.canCancel !== false) ? (
+                  <button
+                    type="button"
+                    data-match-intro-cancel="true"
+                    disabled={introBusy}
+                    onClick={() => {
+                      if (activeIntro?.id) void onIntroAction(activeIntro.id, "cancel");
+                      else {
+                        setActiveIntro(null);
+                        setMatched(null);
+                        setMatchPhase("postCancel");
+                      }
+                    }}
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground"
+                  >
+                    {t("friends.matchIntroCancel")}
+                  </button>
+                ) : null}
+              </div>
+
+              <button
+                type="button"
+                data-match-invite="true"
+                onClick={() => {
+                  if (!playerA.trim()) setPlayerA(selfName.trim() || t("friends.matchYou"));
+                  setPlayerB(matched.name);
+                }}
+                className="h-10 w-full rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground"
+              >
+                {t("friends.matchInvite")}
+              </button>
+            </div>
+          ) : null}
+
+          {matchPhase === "postCancel" ? (
+            <div className="space-y-3" data-match-post-cancel="true">
+              <p className="text-xs leading-5 text-muted-foreground">{t("friends.matchIntroCancelled")}</p>
+              <button
+                type="button"
+                data-match-rematch="true"
+                onClick={startMatchmaking}
+                className="h-12 w-full rounded-xl bg-primary text-base font-bold text-primary-foreground"
+              >
+                {t("friends.matchRematch")}
+              </button>
+              <button
+                type="button"
+                data-match-search-challenge="true"
+                onClick={openSearchChallenge}
+                className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground"
+              >
+                {t("friends.matchSearchChallenge")}
+              </button>
+            </div>
+          ) : null}
+
+          {matchPhase === "searchChallenge" ? (
+            <div className="space-y-3" data-match-search-challenge-panel="true">
+              <label className="block space-y-1">
+                <span className="text-[11px] font-medium text-muted-foreground">{t("friends.matchSearchChallenge")}</span>
+                <input
+                  data-match-search-input="true"
+                  value={challengeQuery}
+                  onChange={(e) => setChallengeQuery(e.target.value)}
+                  placeholder={t("friends.matchSearchPh")}
+                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                />
+              </label>
+              {challengeResults.length === 0 ? (
+                <p className="text-xs text-muted-foreground" data-match-search-empty="true">
+                  {t("friends.matchSearchEmpty")}
+                </p>
+              ) : (
+                <div className="overflow-hidden rounded-lg border border-border">
+                  {challengeResults.map((row, index) => (
+                    <div
+                      key={row.id}
+                      data-match-search-row={row.id}
+                      className={`flex items-center justify-between gap-3 px-3 py-2.5 ${
+                        index === challengeResults.length - 1 ? "" : "border-b border-border"
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">{row.name}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {(getCity(row.cityId) ? cityLabel(getCity(row.cityId) as City, locale) : row.cityId)} · {Number(row.ntrp).toFixed(1)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        data-match-challenge={row.id}
+                        disabled={introBusy}
+                        onClick={() => {
+                          setMatched({
+                            id: row.id,
+                            name: row.name,
+                            cityId: row.cityId,
+                            ntrp: row.ntrp,
+                            rating: utrSeedFromSelfLevel(row.ntrp),
+                            rank: 0,
+                            wins: 0,
+                            losses: 0,
+                            score: 0,
+                            utrDelta: 0,
+                            levelDelta: 0,
+                            sameCity: row.cityId === cityId,
+                            reasonKey: row.cityId === cityId ? "sameCityOk" : "nearbyOk",
+                          });
+                          void openIntroWithBuddy({ id: row.id, name: row.name }, "challenge", false);
+                        }}
+                        className="h-9 shrink-0 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground"
+                      >
+                        {t("friends.matchChallenge")}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button
+                type="button"
+                data-match-rematch="true"
+                onClick={startMatchmaking}
+                className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground"
+              >
+                {t("friends.matchRematch")}
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      {introInbox.some((row) => row.needsAccept || row.status === "awaiting_accept" || row.status === "pending") ? (
+        <section className="space-y-2" data-match-intro-inbox="true">
+          <h2 className="text-sm font-semibold text-foreground">{t("friends.matchIntroInbox")}</h2>
+          <div className="overflow-hidden rounded-lg border border-border bg-card">
+            {introInbox.map((row, index) => (
+              <div
+                key={row.id}
+                data-match-intro-inbox-row={row.id}
+                className={`space-y-2 px-4 py-3 ${index === introInbox.length - 1 ? "" : "border-b border-border"}`}
+              >
+                <p className="text-sm font-medium text-foreground">
+                  {row.fromName} → {row.toName}
+                </p>
+                {row.status === "pending" || !row.needsAccept ? (
+                  <p className="text-sm leading-6 text-foreground">{row.body || t("friends.matchIntroBody")}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{t("friends.matchChallengeSent", { name: row.toName })}</p>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  {row.needsAccept || row.status === "awaiting_accept" ? (
+                    <>
+                      <button
+                        type="button"
+                        data-match-intro-decline={row.id}
+                        disabled={introBusy}
+                        onClick={() => void onIntroAction(row.id, "cancel")}
+                        className="h-9 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-muted-foreground"
+                      >
+                        {t("friends.matchChallengeDecline")}
+                      </button>
+                      <button
+                        type="button"
+                        data-match-intro-accept={row.id}
+                        disabled={introBusy}
+                        onClick={() => void onIntroAction(row.id, "accept")}
+                        className="h-9 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground"
+                      >
+                        {t("friends.matchChallengeAccept")}
+                      </button>
+                    </>
+                  ) : row.canCancel !== false ? (
+                    <button
+                      type="button"
+                      data-match-intro-cancel={row.id}
+                      disabled={introBusy}
+                      onClick={() => void onIntroAction(row.id, "cancel")}
+                      className="col-span-2 h-9 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground"
+                    >
+                      {t("friends.matchIntroCancel")}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="space-y-2" data-city-scope="true">
+        <div className="flex items-end justify-between gap-3">
+          <label className="min-w-0 flex-1 space-y-1">
+            <span className="text-[11px] font-medium text-muted-foreground">{t("friends.cityLabel")}</span>
+            <select
+              data-city-select="true"
+              value={cityId}
+              onChange={(e) => onPickCity(e.target.value)}
+              className="h-9 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              aria-label={t("friends.cityLabel")}
+            >
+              {cityOptions.map((c: City) => (
+                <option key={c.id} value={c.id}>
+                  {cityLabel(c, locale)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <p className="text-[11px] leading-5 text-muted-foreground" data-city-source={citySource}>
+          {citySource === "manual"
+            ? t("friends.cityManualHint", { city: cityName })
+            : citySource === "ip"
+              ? t("friends.cityIpHint", { city: cityName })
+              : t("friends.cityDefaultHint", { city: cityName })}
+        </p>
+      </section>
+
+      <section className="space-y-3" data-score-entry="true" data-score-confirm="true">
+        <div>
+          <h2 className="text-sm font-semibold text-foreground">{t("friends.scoreTitle")}</h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">{t("friends.scoreLeadConfirm")}</p>
+        </div>
+
+        {pendingForMe.length > 0 ? (
+          <div className="space-y-2" data-score-pending-inbox="true">
+            <h3 className="text-sm font-semibold text-foreground">{t("friends.scorePendingInbox")}</h3>
+            <div className="overflow-hidden rounded-lg border border-amber-500/30 bg-amber-500/5">
+              {pendingForMe.map((row, index) => {
+                const winnerName = row.winner === "A" ? row.playerA : row.playerB;
+                return (
+                  <div
+                    key={row.id}
+                    data-score-pending-row={row.id}
+                    className={cn(
+                      "space-y-2 px-4 py-3",
+                      index === pendingForMe.length - 1 ? "" : "border-b border-border",
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {row.playerA} vs {row.playerB}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{formatSets(row.sets)}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {t("friends.winnerLine", { name: winnerName })} · {t("friends.scoreStatusPending")}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        data-score-reject={row.id}
+                        disabled={scoreBusy}
+                        onClick={() => void onScoreAction(row.id, "reject")}
+                        className="h-9 rounded-lg border border-border bg-background px-3 text-sm font-semibold text-muted-foreground"
+                      >
+                        {t("friends.scoreReject")}
+                      </button>
+                      <button
+                        type="button"
+                        data-score-confirm-btn={row.id}
+                        disabled={scoreBusy}
+                        onClick={() => void onScoreAction(row.id, "confirm")}
+                        className="h-9 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground"
+                      >
+                        {t("friends.scoreConfirm")}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="space-y-1">
+              <span className="text-[11px] font-medium text-muted-foreground">{t("friends.playerA")}</span>
+              <input
+                data-score-player="a"
+                value={playerA}
+                onChange={(e) => setPlayerA(e.target.value)}
+                placeholder={t("friends.playerAPh")}
+                className="h-9 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-[11px] font-medium text-muted-foreground">{t("friends.playerB")}</span>
+              <input
+                data-score-player="b"
+                value={playerB}
+                onChange={(e) => setPlayerB(e.target.value)}
+                placeholder={t("friends.playerBPh")}
+                className="h-9 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              />
+            </label>
+          </div>
+          <div className="space-y-2">
+            <p className="text-[11px] font-medium text-muted-foreground">{t("friends.setScores")}</p>
+            {setLines.map((line, index) => (
+              <div key={index} className="flex items-center gap-2" data-score-set={index + 1}>
+                <span className="w-10 shrink-0 text-[11px] text-muted-foreground">
+                  {t("friends.setN", { n: index + 1 })}
+                </span>
+                <input
+                  inputMode="numeric"
+                  value={line.a}
+                  onChange={(e) => updateSetLine(index, "a", e.target.value)}
+                  aria-label={t("friends.setGamesA", { n: index + 1 })}
+                  className="h-9 w-full rounded-lg border border-input bg-background px-2.5 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  placeholder="6"
+                />
+                <span className="text-sm text-muted-foreground">–</span>
+                <input
+                  inputMode="numeric"
+                  value={line.b}
+                  onChange={(e) => updateSetLine(index, "b", e.target.value)}
+                  aria-label={t("friends.setGamesB", { n: index + 1 })}
+                  className="h-9 w-full rounded-lg border border-input bg-background px-2.5 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  placeholder="4"
+                />
+              </div>
+            ))}
+          </div>
+          {formError ? (
+            <p className="text-xs text-destructive" data-score-error="true">
+              {formError}
+            </p>
+          ) : null}
+          {scoreNotice ? (
+            <p className="text-xs text-primary" data-score-notice="true">
+              {scoreNotice}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            data-score-save="true"
+            disabled={scoreBusy}
+            onClick={() => void onSaveScore()}
+            className="h-9 w-full rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+          >
+            {t("friends.saveScore")}
+          </button>
+        </div>
+
+        <div className="space-y-2" data-score-history="true">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-foreground">{t("friends.scoreHistory")}</h3>
+            {minePending.length > 0 ? (
+              <button
+                type="button"
+                onClick={onClearHistory}
+                className="text-[11px] font-medium text-muted-foreground underline-offset-2 hover:underline"
+              >
+                {t("friends.clearScores")}
+              </button>
+            ) : null}
+          </div>
+          {history.length === 0 ? (
+            <EmptyState title={t("friends.scoreEmpty")} description={t("friends.scoreEmptyDesc")} />
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
+              {history.map((row, index) => {
+                const winnerName = row.winner === "A" ? row.playerA : row.playerB;
+                const status = row.status || "confirmed";
+                const statusLabel =
+                  status === "pending"
+                    ? t("friends.scoreStatusPending")
+                    : status === "rejected"
+                      ? t("friends.scoreStatusRejected")
+                      : t("friends.scoreStatusConfirmed");
+                return (
+                  <div
+                    key={row.id}
+                    data-score-row={row.id}
+                    data-score-status={status}
+                    className={cn(
+                      "flex items-start justify-between gap-3 px-4 py-3",
+                      index === history.length - 1 ? "" : "border-b border-border",
+                    )}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {row.playerA} vs {row.playerB}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{formatSets(row.sets)}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        {t("friends.winnerLine", { name: winnerName })} · {statusLabel}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                      {row.savedAt.slice(0, 10)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="space-y-3" data-ladder={format} data-ladder-city={cityId}>
+        <div>
+          <div className="flex items-center gap-1.5">
+            <h2 className="text-sm font-semibold text-foreground">{t("friends.rankTitle")}</h2>
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              {t("friends.utrLabel")}
+              <RatingHelpTip
+                kind="utr"
+                title={t("friends.utrHelpTitle")}
+                body={t("friends.utrHelpBody")}
+                ariaLabel={t("friends.utrHelpAria")}
+              />
+            </span>
+          </div>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {t("friends.rankLeadCity", { city: cityName })}
+          </p>
+        </div>
+        <div className="flex gap-2" data-ladder-toggle="true" role="tablist" aria-label={t("friends.rankTitle")}>
+          {FORMATS.map((item) => (
+            <button
+              key={item}
+              type="button"
+              role="tab"
+              aria-selected={format === item}
+              data-ladder-format={item}
+              data-ladder-selected={format === item ? "true" : undefined}
+              onClick={() => setFormat(item)}
+              className={cn(
+                "flex-1 rounded-lg px-3 py-2 text-sm font-semibold",
+                format === item ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+              )}
+            >
+              {t(`friends.${item}`)}
+            </button>
+          ))}
+        </div>
+        {ladder.length === 0 ? (
+          <EmptyState title={t("friends.emptyRank")} description={t("friends.emptyRankCity", { city: cityName })} />
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-border bg-card">
+            {ladder.map((row, index) => (
+              <LadderRowView key={row.id} row={row} last={index === ladder.length - 1} />
+            ))}
+          </div>
+        )}
+        <p className="text-[11px] leading-5 text-muted-foreground">{t("friends.howBodyCity")}</p>
+      </section>
+    </div>
+  );
+}
+
+function LadderRowView({ row, last }: { row: LadderRow; last: boolean }) {
+  const { t } = useI18n();
+  const form = row.played
+    ? t("friends.form", { w: row.wins, l: row.losses })
+    : t("friends.seedOnly", { n: row.seed.toFixed(1) });
+  const lastLine =
+    row.lastResult && row.lastOpponentName
+      ? t(row.lastResult === "win" ? "friends.beat" : "friends.lost", { name: row.lastOpponentName })
+      : "";
+  return (
+    <div
+      data-ladder-row={row.id}
+      data-ladder-rank={row.rank}
+      data-ladder-city={row.cityId}
+      className={cn("flex items-start gap-3 px-4 py-3", last ? "" : "border-b border-border")}
+    >
+      <p className="w-6 shrink-0 text-sm font-bold text-primary">{row.rank}</p>
+      <Avatar className="size-10">
+        <AvatarFallback className="bg-primary-subtle text-sm font-semibold text-primary">
+          {row.name.slice(0, 1)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="truncate text-sm font-medium text-foreground">{row.name}</p>
+          <p className="shrink-0 text-sm font-bold text-foreground" data-ladder-rating={row.rating}>
+            {row.rating.toFixed(1)}
+          </p>
+        </div>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {form}
+          {lastLine ? ` · ${lastLine}` : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+void CITY_STORAGE_KEY;
