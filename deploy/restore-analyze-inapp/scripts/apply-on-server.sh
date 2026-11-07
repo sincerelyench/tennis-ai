@@ -66,13 +66,15 @@ if [[ -f "$ROOT/components/analyze-embed.tsx" ]]; then
 fi
 
 echo
-echo "==> build + restart tennis-ai"
+echo "==> build + restart tennis-ai (webpack; Next 16 default turbopack breaks next/font/google)"
 cd "$ROOT"
+rm -rf "$ROOT/.next"
 if id tennis >/dev/null 2>&1; then
-  sudo -u tennis -H bash -lc "cd '$ROOT' && npm run build"
+  sudo -u tennis -H bash -lc "cd '$ROOT' && npx next build --webpack"
 else
-  npm run build
+  npx next build --webpack
 fi
 systemctl restart tennis-ai
 systemctl is-active tennis-ai
+test -f "$ROOT/.next/BUILD_ID"
 echo "DONE restore-analyze-inapp @ $STAMP"
