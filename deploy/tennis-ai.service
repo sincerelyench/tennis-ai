@@ -12,6 +12,8 @@ RestartSec=4
 Environment=PYTHONUNBUFFERED=1
 Environment=OMP_NUM_THREADS=1
 Environment=MKL_NUM_THREADS=1
+Environment=TAI_WORKERS=2
+Environment=TAI_MAX_JOBS=8
 EnvironmentFile=-/opt/tennis-ai/.env
 
 [Install]

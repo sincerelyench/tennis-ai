@@ -9,6 +9,7 @@ import queue
 import shutil
 import sys
 import threading
+import time
 import traceback
 import uuid
 from datetime import datetime, timezone
@@ -60,6 +61,13 @@ _lock = threading.Lock()
 _queue: queue.Queue[str] = queue.Queue()
 _worker_started = False
 _TERMINAL = {"done", "error", "cancelled"}
+# Running/queued jobs with no progress update for this long are treated as dead
+# so a crashed worker cannot leave /api/analyze stuck returning 409 forever.
+STALE_JOB_S = int(os.environ.get("TAI_STALE_JOB_S", "1200"))
+# Parallel analyze: multiple worker threads share one GPU lock (see pipeline.session).
+# L20-2Q is ~2GB so default workers=2 (pose can overlap coaching on the other job).
+WORKER_COUNT = max(1, int(os.environ.get("TAI_WORKERS", "2")))
+MAX_JOBS = max(WORKER_COUNT, int(os.environ.get("TAI_MAX_JOBS", "8")))
 
 
 def _sample_path() -> Path | None:
@@ -205,12 +213,93 @@ def _load_status_file(job_dir: Path) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
-def _busy_job() -> dict | None:
+def _active_jobs_locked() -> list[dict]:
+    return [job for job in _jobs.values() if job.get("status") in ("queued", "running")]
+
+
+def _active_count() -> int:
     with _lock:
-        for job in _jobs.values():
-            if job.get("status") in ("queued", "running"):
-                return job
-    return None
+        return len(_active_jobs_locked())
+
+
+def _at_capacity() -> bool:
+    return _active_count() >= MAX_JOBS
+
+
+def _busy_job() -> dict | None:
+    """Prefer a running job for snapshots; else the oldest queued one."""
+    with _lock:
+        running = [j for j in _jobs.values() if j.get("status") == "running"]
+        if running:
+            return running[0]
+        queued = [j for j in _jobs.values() if j.get("status") == "queued"]
+        return queued[0] if queued else None
+
+
+def _parse_job_ts(value: object) -> float | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return datetime.fromisoformat(value).timestamp()
+    except ValueError:
+        return None
+
+
+def _busy_snapshot(job: dict | None = None) -> dict | None:
+    """Public fields for health/409 so clients can show why submit is blocked."""
+    current = job if job is not None else _busy_job()
+    if current is None:
+        return None
+    eta = _eta_fields(current)
+    return {
+        "id": current.get("id"),
+        "status": current.get("status"),
+        "progress": current.get("progress"),
+        "step": current.get("step"),
+        "step_name": current.get("step_name"),
+        "message": current.get("message"),
+        "updated_at": current.get("updated_at") or current.get("created_at"),
+        "eta_hint": eta.get("eta_hint"),
+        "eta_remaining_s": eta.get("eta_remaining_s"),
+    }
+
+
+def _raise_busy() -> None:
+    snap = _busy_snapshot()
+    raise CodedHTTPException(
+        409,
+        "busy",
+        "分析队列已满，请稍后再试",
+        extra={
+            "busy_job": snap,
+            "active_jobs": _active_count(),
+            "max_jobs": MAX_JOBS,
+        }
+        if snap
+        else {"active_jobs": _active_count(), "max_jobs": MAX_JOBS},
+    )
+
+
+def _reap_stale_jobs() -> list[str]:
+    """Mark zombie queued/running jobs as error so worker slots free."""
+    if STALE_JOB_S <= 0:
+        return []
+    now = time.time()
+    reaped: list[str] = []
+    with _lock:
+        for job_id, job in list(_jobs.items()):
+            if job.get("status") not in ("queued", "running"):
+                continue
+            ts = _parse_job_ts(job.get("updated_at")) or _parse_job_ts(job.get("created_at"))
+            if ts is None or (now - ts) < STALE_JOB_S:
+                continue
+            job["status"] = "error"
+            job["message"] = "分析超时未完成，请重新提交"
+            job["error"] = "stale_job"
+            job["updated_at"] = _now()
+            _write_status(job_id)
+            reaped.append(job_id)
+    return reaped
 
 
 def _recover_jobs() -> None:
@@ -369,8 +458,12 @@ def _start_worker() -> None:
     if _worker_started:
         return
     _worker_started = True
-    t = threading.Thread(target=_worker, name="analyze-worker", daemon=True)
-    t.start()
+    for i in range(WORKER_COUNT):
+        threading.Thread(
+            target=_worker,
+            name=f"analyze-worker-{i}",
+            daemon=True,
+        ).start()
     threading.Thread(target=warm_agent, name="cursor-warm", daemon=True).start()
     _recover_jobs()
 
@@ -439,6 +532,32 @@ def _archived_file(job_id: str, *names: str) -> Path | None:
 
 app = FastAPI(title="网球挥拍测评 2.0")
 app.add_exception_handler(CodedHTTPException, coded_handler)
+
+@app.middleware("http")
+async def analyze_busy_guard(request: Request, call_next):
+    """Reject only when the multi-job queue is full — before multipart parse."""
+    path = request.url.path.rstrip("/")
+    if request.method == "POST" and path.endswith("/api/analyze"):
+        _reap_stale_jobs()
+        if _at_capacity():
+            snap = _busy_snapshot()
+            content = {
+                "detail": "分析队列已满，请稍后再试",
+                "code": "busy",
+                "active_jobs": _active_count(),
+                "max_jobs": MAX_JOBS,
+            }
+            if snap:
+                content["busy_job"] = snap
+            # Do not await request.body() — that forced a full phone upload into
+            # a 409 (~2min). Client pingTai().busy fail-fasts when at capacity.
+            return JSONResponse(
+                status_code=409,
+                content=content,
+                headers={"Connection": "close"},
+            )
+    return await call_next(request)
+
 if os.environ.get("TENNIS_AI_NO_WORKER") != "1":
     _start_worker()
 else:
@@ -447,6 +566,7 @@ else:
 
 @app.get("/api/health")
 def health():
+    _reap_stale_jobs()
     sample = _sample_path()
     gpu = False
     try:
@@ -455,12 +575,20 @@ def health():
         gpu = bool(torch.cuda.is_available())
     except Exception:
         gpu = False
+    active = _active_count()
+    at_cap = active >= MAX_JOBS
+    snap = _busy_snapshot() if active else None
     return {
         "ok": True,
         "sample": bool(sample),
         "gpu": gpu,
         "version": "2.0",
-        "busy": bool(_busy_job()),
+        # busy=true only when the queue cannot accept another job (Next fail-fast).
+        "busy": at_cap,
+        "busy_job": snap if at_cap else None,
+        "active_jobs": active,
+        "max_jobs": MAX_JOBS,
+        "workers": WORKER_COUNT,
         "levels": public_levels(),
         "default_level": DEFAULT_LEVEL,
     }
@@ -592,8 +720,9 @@ async def analyze(
             _save_progress(job_id)
             return {"job_id": job_id, "cached": True}
 
-    if _busy_job():
-        raise CodedHTTPException(409, "busy", "正在分析其他录像，请稍后再试")
+    _reap_stale_jobs()
+    if _at_capacity():
+        _raise_busy()
 
     if use_sample and force_refresh and src is not None:
         _clear_sample_cache(src, stroke, player_level)
@@ -623,10 +752,20 @@ async def analyze(
         max_seconds = 0
 
     with _lock:
-        for job in _jobs.values():
-            if job.get("status") in ("queued", "running"):
-                shutil.rmtree(out_dir, ignore_errors=True)
-                raise CodedHTTPException(409, "busy", "正在分析其他录像，请稍后再试")
+        active = _active_jobs_locked()
+        if len(active) >= MAX_JOBS:
+            shutil.rmtree(out_dir, ignore_errors=True)
+            snap = _busy_snapshot(active[0])
+            raise CodedHTTPException(
+                409,
+                "busy",
+                "分析队列已满，请稍后再试",
+                extra={
+                    "busy_job": snap,
+                    "active_jobs": len(active),
+                    "max_jobs": MAX_JOBS,
+                },
+            )
         record = {
             "id": job_id,
             "status": "queued",
@@ -649,7 +788,7 @@ async def analyze(
         _write_status(job_id)
 
     _queue.put(job_id)
-    return {"job_id": job_id, "cached": False}
+    return {"job_id": job_id, "cached": False, "queued": True}
 
 
 @app.get("/api/history")
