@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 教练视频指导预览</title>
+  <style>
+    :root {
+      --bg: #f3f6f2;
+      --card: #fff;
+      --ink: #14201a;
+      --muted: #5b6b62;
+      --primary: #1f7a4c;
+      --border: #d5e0d8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+      background: linear-gradient(180deg, #e8f2ea, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    main { max-width: 420px; margin: 0 auto; padding: 20px 16px 48px; }
+    h1 { font-size: 18px; margin: 0 0 6px; }
+    .lead { font-size: 12px; color: var(--muted); margin: 0 0 16px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .chips { display: flex; gap: 8px; margin-bottom: 12px; }
+    .chip {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 12px;
+      background: #f7faf8;
+    }
+    .chip.active { border-color: var(--primary); background: #e8f6ee; font-weight: 700; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--primary); color: #fff; border: 0; border-radius: 8px;
+      padding: 10px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .bubble {
+      max-width: 90%; border-radius: 10px; padding: 10px 12px;
+      font-size: 13px; line-height: 1.55; white-space: pre-wrap; margin-bottom: 8px;
+    }
+    .user { margin-left: auto; background: var(--primary); color: #fff; }
+    .coach { background: #fff; border: 1px solid var(--border); }
+    .tag { font-size: 11px; color: var(--primary); font-weight: 700; margin-top: 6px; }
+    .muted { color: var(--muted); font-size: 12px; }
+    label { font-size: 12px; color: var(--muted); }
+    select { margin-left: 8px; height: 32px; border-radius: 6px; border: 1px solid var(--border); }
+    .states { display: grid; gap: 8px; margin-top: 10px; }
+    .state {
+      border: 1px dashed var(--border); border-radius: 10px; padding: 12px; text-align: center; font-size: 12px;
+    }
+    .spin {
+      display: inline-block; width: 14px; height: 14px; border: 2px solid var(--primary);
+      border-top-color: transparent; border-radius: 50%; animation: sp .8s linear infinite;
+      vertical-align: -2px; margin-right: 6px;
+    }
+    @keyframes sp { to { transform: rotate(360deg); } }
+    footer { margin-top: 18px; font-size: 11px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main data-preview="coach-video-guidance">
+    <h1>我的教练</h1>
+    <p class="lead">涨球教练是 AI 即时问答；网络教练是平台真人，用留言沟通。上传视频后双方均可给指导（分析走 tai/sslip API，结果留在对话里）。</p>
+
+    <div class="chips" data-coach-chat-personas="true">
+      <div class="chip active">涨球教练<br /><span class="muted">AI 教练 · 即时问答</span></div>
+      <div class="chip">林凯教练<br /><span class="muted">真人教练 · 留言</span></div>
+    </div>
+
+    <section class="card" data-coach-video-guidance="true" data-phase="idle">
+      <p style="margin:0;font-weight:700;font-size:14px;">上传视频求指导</p>
+      <p class="muted" style="margin:6px 0 10px;">涨球教练（AI）会立刻根据分析给意见；同时发给你选择的网络教练留言求指导。选段约 10 秒。</p>
+      <div>
+        <label for="stroke">技术动作</label>
+        <select id="stroke">
+          <option>自动识别</option>
+          <option selected>底线正手</option>
+          <option>底线反手</option>
+          <option>发球</option>
+        </select>
+      </div>
+      <div class="states">
+        <div class="state" data-state="empty">
+          还没有上传视频<br />
+          <span class="muted">选一段侧面挥拍，约 10 秒，全身入镜。</span><br />
+          <button class="btn" style="margin-top:10px" type="button" id="demo-run">演示完成态</button>
+        </div>
+        <div class="state" data-state="loading" hidden>
+          <span class="spin"></span>识别动作 · 42% — 涨球教练正在看视频…
+        </div>
+        <div class="state" data-state="error" hidden>
+          上传或分析失败<br /><span class="muted">分析队列已满，请稍后再试</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" data-coach-panel="ai-chat">
+      <div id="chat"></div>
+    </section>
+
+    <section class="card" data-coach-panel="human-board">
+      <p style="margin:0 0 8px;font-weight:700;font-size:13px;">网络教练留言板（同一次上传）</p>
+      <div id="board" class="muted">上传完成后会出现求指导留言。</div>
+    </section>
+
+    <footer>
+      Preview only — live flow posts to <code>/tai/api/analyze</code>
+      (same backend as tennis.47.93.203.28.sslip.io), then renders in coach chat.
+      Analysis tab stays hidden.
+    </footer>
+  </main>
+  <script>
+    const sampleUser = "我上传了一段「底线正手」视频（demo.mp4），请涨球教练和网络教练一起给指导。";
+    const sampleAi = [
+      "我看过你的视频了（任务 eb0fff71157e）。动作判断：底线正手 · 综合 56（D）。",
+      "四维提示：",
+      "· 重心 13/25：准备时屈膝，把重心放低并稳住。",
+      "· 击球点 8/20：先把击球点放在身前、大约胸口高度。",
+      "· 动力链 25/30：先转髋和肩膀，手臂再跟上。",
+      "· 击球效果 10/25：挥拍从低到高，随挥收到肩前。",
+      "对照「底线正手」八项要领，先盯这几条：",
+      "· 「擦玻璃」动作：拉拍完成后掌心朝向侧面（而非后下方）",
+      "· 只动手不转体：拉拍只有持拍手在动，身体没有转",
+      "· 击球时重心未向前转移：原地发力，球打不远打不深",
+      "需要分步带练时，直接说「我想学」+ 动作名即可。"
+    ].join("\n");
+    const sampleNet = [
+      "【视频求指导】底线正手 · 综合 56（D）",
+      "文件：demo.mp4",
+      "涨球教练已根据分析给出意见。请帮我看看这段挥拍，再补充你的指导。",
+      "分析任务：eb0fff71157e"
+    ].join("\n");
+
+    document.getElementById("demo-run").addEventListener("click", () => {
+      document.querySelector('[data-state="empty"]').hidden = true;
+      document.querySelector('[data-state="loading"]').hidden = false;
+      setTimeout(() => {
+        document.querySelector('[data-state="loading"]').hidden = true;
+        document.querySelector("[data-coach-video-guidance]").dataset.phase = "done";
+        const chat = document.getElementById("chat");
+        chat.innerHTML = "";
+        const u = document.createElement("div");
+        u.className = "bubble user";
+        u.textContent = sampleUser;
+        chat.appendChild(u);
+        const c = document.createElement("div");
+        c.className = "bubble coach";
+        c.textContent = sampleAi;
+        const tag = document.createElement("div");
+        tag.className = "tag";
+        tag.textContent = "涨球教练 · 视频指导";
+        c.appendChild(tag);
+        chat.appendChild(c);
+
+        const board = document.getElementById("board");
+        board.innerHTML = "";
+        board.className = "";
+        const b = document.createElement("div");
+        b.style.whiteSpace = "pre-wrap";
+        b.style.fontSize = "13px";
+        b.textContent = sampleNet;
+        board.appendChild(b);
+        const wait = document.createElement("div");
+        wait.className = "tag";
+        wait.textContent = "视频求指导已留言，等待教练回复";
+        board.appendChild(wait);
+      }, 700);
+    });
+  </script>
+</body>
+</html>
