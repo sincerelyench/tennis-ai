@@ -13,7 +13,12 @@ from pipeline.analyze import infer_view, score_and_write, swing_clip_span, view_
 from pipeline.coach import _build_prompt, _pick_keyframes, _slim_report
 from pipeline.oss import refresh_report_urls
 from pipeline.pose import KPT
-from pipeline.technique import extra_findings, flags_from_values, prompt_knowledge
+from pipeline.technique import (
+    extra_findings,
+    flags_from_values,
+    prompt_knowledge,
+    resolve_technique_intent,
+)
 
 
 class FlagTests(unittest.TestCase):
@@ -132,9 +137,21 @@ class PromptTests(unittest.TestCase):
         self.assertIn("左肩", text)
         self.assertIn("不要编 6:00", text)
         self.assertIn("底线正手", text)
-        self.assertNotIn("截击正手", text)
-        self.assertNotIn("高压：", text)
+        self.assertIn("动力链", text)
+        self.assertNotIn("【截击正手】", text)
+        self.assertNotIn("【高压球】", text)
         self.assertNotIn("只评正侧面", text)
+
+    def test_knowledge_includes_serve_when_requested(self):
+        text = prompt_knowledge(["serve"], "right")
+        self.assertIn("【发球】", text)
+        self.assertIn("侧上旋", text)
+        self.assertNotIn("【底线正手】", text)
+
+    def test_正手上旋_intent_maps_to_forehand(self):
+        self.assertEqual(resolve_technique_intent("我想学正手上旋"), "forehand")
+        self.assertEqual(resolve_technique_intent("教我截击正手"), "volley_fh")
+        self.assertEqual(resolve_technique_intent("高压球要点"), "smash")
 
     def test_lefty_swaps_front_shoulder(self):
         text = prompt_knowledge(["forehand"], "left")
