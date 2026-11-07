@@ -178,13 +178,32 @@ class E1ApiTests(unittest.TestCase):
         self.assertEqual(bad_guide.status_code, 400)
         self.assertEqual(bad_guide.json()["code"], "guide_invalid")
 
-    def test_busy_is_visible(self):
+    def test_second_job_queues_while_under_capacity(self):
         with appmod._lock:
             appmod._jobs["busy-job"] = {"id": "busy-job", "status": "queued"}
+        health = self.client.get("/api/health")
+        self.assertEqual(health.status_code, 200)
+        self.assertFalse(health.json()["busy"])
+        self.assertEqual(health.json()["active_jobs"], 1)
+        res = self._upload(self._token())
+        self.assertEqual(res.status_code, 200, res.text)
+        self.assertIn("job_id", res.json())
+
+    def test_busy_is_visible(self):
+        with appmod._lock:
+            for i in range(appmod.MAX_JOBS):
+                appmod._jobs[f"busy-job-{i}"] = {
+                    "id": f"busy-job-{i}",
+                    "status": "queued" if i else "running",
+                }
+        health = self.client.get("/api/health")
+        self.assertTrue(health.json()["busy"])
+        self.assertEqual(health.json()["active_jobs"], appmod.MAX_JOBS)
         res = self._upload(self._token())
         self.assertEqual(res.status_code, 409)
         self.assertEqual(res.json()["code"], "busy")
         self.assertIn("稍后再试", res.json()["detail"])
+        self.assertEqual(res.json()["max_jobs"], appmod.MAX_JOBS)
 
     def test_e1_page_and_catalogs(self):
         page = self.client.get("/e1")

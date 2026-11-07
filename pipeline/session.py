@@ -7,12 +7,16 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
 import cv2
 import numpy as np
+
+# Shared YOLO weights are not safe for concurrent CUDA predict on ~2GB vGPU.
+_gpu_lock = threading.Lock()
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -371,13 +375,14 @@ def _refine_contact_objects(
     for i in range(0, len(crops), step):
         chunk = crops[i : i + step]
         infos = meta[i : i + step]
-        found = det.infer_batch(
-            chunk,
-            imgsz=640,
-            conf=0.08,
-            min_ball_diam=3.0,
-            max_ball_diam=140.0,
-        )
+        with _gpu_lock:
+            found = det.infer_batch(
+                chunk,
+                imgsz=640,
+                conf=0.08,
+                min_ball_diam=3.0,
+                max_ball_diam=140.0,
+            )
         for objs, (fi, ox, oy) in zip(found, infos):
             shift_objects(objs, ox, oy)
             if fi < len(obj_list):
@@ -486,8 +491,9 @@ def analyze_video(
         nonlocal i
         if not buf:
             return
-        poses = est.infer_batch(buf)
-        objects = det.infer_batch(buf)
+        with _gpu_lock:
+            poses = est.infer_batch(buf)
+            objects = det.infer_batch(buf)
         for frame, pose, objs in zip(buf, poses, objects):
             bind_ball_to_player(objs, pose.xy, pose.conf)
             vis = draw_objects(draw_pose(frame, pose), objs)
@@ -889,7 +895,25 @@ def analyze_video(
             progress=88,
             message="正在写练习建议，大约还要 2 分钟…",
         )
-        report = enrich_with_cursor(report, kf_dir, progress=progress)
+        # Soft-fail coaching: a hung Cursor agent must not pin a worker forever.
+        # Keep rule scores and finish so other queued jobs can run.
+        try:
+            report = enrich_with_cursor(report, kf_dir, progress=progress)
+        except Exception as exc:
+            print(f"[coach] soft-fail: {exc}", flush=True)
+            report["coach"] = {
+                "status": "skipped",
+                "error": str(exc)[:200],
+            }
+            if not report.get("summary"):
+                report["summary"] = "本次已完成动作评分；教练文字点评暂不可用，请稍后再试。"
+            _emit(
+                progress,
+                step=5,
+                step_name="教练点评",
+                progress=96,
+                message="教练点评暂不可用，正在整理评分报告…",
+            )
     else:
         report["coach"] = {"status": "skipped"}
         _emit(progress, step=5, step_name="教练点评", progress=96, message="没有完整挥拍，跳过教练点评…")

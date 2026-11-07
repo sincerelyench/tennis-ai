@@ -87,7 +87,7 @@
     "video_type": "Upload an mp4, mov, or webm video",
     "video_too_small": "The video file is too small or damaged",
     "video_too_large": "The video is over 400MB. Trim it and try again",
-    "busy": "Another video is being analyzed. Try again shortly",
+    "busy": "The analysis queue is full. Try again shortly",
     "network": "Network problem. Check the connection and the server address",
     "bad_response": "Upload did not finish and no job id was returned",
     "server": "The server is busy. Try again shortly",
