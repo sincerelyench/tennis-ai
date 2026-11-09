@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 先选教练 · 全中文改进计划</title>
+  <style>
+    :root {
+      --bg: #f3f6f2;
+      --card: #fff;
+      --ink: #14201a;
+      --muted: #5b6b62;
+      --primary: #1f7a4c;
+      --border: #d5e0d8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+      background: linear-gradient(180deg, #e8f2ea, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    main { max-width: 420px; margin: 0 auto; padding: 20px 16px 48px; }
+    h1 { font-size: 18px; margin: 0 0 6px; }
+    .lead { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+    .section-label { font-size: 11px; font-weight: 700; color: var(--muted); margin: 0 0 6px; }
+    .tabs { display: flex; gap: 8px; margin: 12px 0; }
+    .tab {
+      flex: 1; border: 0; border-radius: 10px; padding: 10px 12px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      background: #e6ebe7; color: var(--muted);
+    }
+    .tab[aria-selected="true"] { background: var(--primary); color: #fff; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .chips { display: flex; gap: 8px; margin-bottom: 4px; }
+    .chip {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 12px;
+      background: #f7faf8;
+    }
+    .chip.active { border-color: var(--primary); background: #e8f6ee; font-weight: 700; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--primary); color: #fff; border: 0; border-radius: 8px;
+      padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .btn.ghost { background: #fff; color: var(--primary); border: 1px solid var(--border); }
+    .bubble {
+      max-width: 90%; border-radius: 10px; padding: 10px 12px;
+      font-size: 13px; line-height: 1.55; white-space: pre-wrap; margin-bottom: 8px;
+    }
+    .user { margin-left: auto; background: var(--primary); color: #fff; }
+    .coach { background: #fff; border: 1px solid var(--border); }
+    .tag { font-size: 11px; color: var(--primary); font-weight: 700; margin-top: 6px; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .drill {
+      margin-top: 8px; border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px 8px; font-size: 10px; line-height: 1.4; color: var(--muted);
+      background: #f7faf8;
+    }
+    .drill strong { color: var(--ink); font-size: 11px; }
+    .video-lesson {
+      margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+      background: #f7faf8; font-size: 11px;
+    }
+    .video-lesson .hd { padding: 6px 8px; font-weight: 700; color: var(--primary); font-size: 10px; }
+    .video-lesson .ph {
+      height: 120px; background: #d8e5db; display: grid; place-items: center;
+      color: var(--muted); font-size: 12px;
+    }
+    .quick { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    .quick button {
+      border: 1px solid var(--border); background: #fff; border-radius: 999px;
+      padding: 6px 10px; font-size: 11px; cursor: pointer;
+    }
+    footer { margin-top: 18px; font-size: 11px; color: var(--muted); }
+    [hidden] { display: none !important; }
+    .note-coach { border-left: 3px solid var(--primary); }
+  </style>
+</head>
+<body>
+  <main data-preview="coach-pick-then-chinese" data-coach-pick-first="true" data-coach-main-tab="plan">
+    <h1>我的教练</h1>
+    <p class="lead">先选择涨球 AI 教练或网络教练；选择对「视频指导」与「改进计划」都生效。</p>
+
+    <p class="section-label">选择教练</p>
+    <div class="chips" data-coach-pick-section="true" data-coach-pick-before-tabs="true">
+      <div class="chip active">涨球教练<br /><span class="muted">AI 教练 · 即时问答</span></div>
+      <div class="chip">林凯教练<br /><span class="muted">真人教练 · 留言</span></div>
+    </div>
+
+    <div class="tabs" data-coach-main-tabs="true" role="tablist" aria-label="教练分区">
+      <button class="tab" type="button" role="tab" data-coach-main-tab-btn="video" aria-selected="false">视频指导</button>
+      <button class="tab" type="button" role="tab" data-coach-main-tab-btn="plan" aria-selected="true">改进计划</button>
+    </div>
+
+    <section id="panel-video" data-coach-main-panel="video" hidden>
+      <div class="card" data-coach-video-guidance="true">
+        <p style="margin:0;font-weight:700;font-size:14px;">上传视频求指导</p>
+        <p class="muted" style="margin:6px 0 0;">选段约 10 秒。涨球教练即时点评；同步留言给网络教练。</p>
+      </div>
+    </section>
+
+    <section id="panel-plan" data-coach-main-panel="plan" data-plan-zh-only="true">
+      <div class="bubble user">我要提高球速</div>
+      <div class="bubble coach">
+        可以，先从这几条实用建议开始，不必套八项分步模板：
+        1）击球点再往身前半拍，拍头速度才跟得上；
+        2）转髋转肩先于手臂，别只用胳膊甩；
+        3）随挥送到对侧肩，别半途刹车。
+        <div class="tag">涨球教练 · 实用建议</div>
+        <div class="video-lesson" data-coach-video-lesson="true">
+          <div class="hd">视频讲解</div>
+          <div class="ph">正手讲解 · 公开课示意</div>
+        </div>
+      </div>
+
+      <div class="bubble user">我想学正手上旋</div>
+      <div class="bubble coach">
+        好，我们按「底线正手」来练。
+        <div class="drill" data-coach-drill="fh-topspin" data-drill-compact="true">
+          <strong>要点速览 · 底线正手</strong><br />
+          准备 · 重心降低；步幅略宽于肩
+          <div style="margin-top:4px;color:var(--primary);font-weight:700;">展开全部 6 步</div>
+        </div>
+      </div>
+
+      <div class="card note-coach" data-message-from="coach">
+        <p class="muted" style="margin:0 0 4px;font-size:11px;font-weight:700;">今天 19:20 · 网络教练指导</p>
+        <p style="margin:0;font-size:13px;">下周侧重把击球点往前送；热身后再练 20 个慢喂球。</p>
+      </div>
+
+      <div class="quick">
+        <button type="button">我想学正手上旋</button>
+        <button type="button">我要提高球速</button>
+        <button type="button">这周我只能练两次</button>
+      </div>
+      <p class="muted">已去掉「当前任务」分区；改进计划界面全中文。</p>
+    </section>
+
+    <footer>
+      预览：选教练在视频指导/改进计划之前 · 自由目标附视频讲解 · 要点框缩小 · 网络教练可留言
+    </footer>
+  </main>
+  <script>
+    const tabs = document.querySelectorAll('[data-coach-main-tab-btn]');
+    const video = document.getElementById('panel-video');
+    const plan = document.getElementById('panel-plan');
+    const main = document.querySelector('main');
+    tabs.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-coach-main-tab-btn');
+        tabs.forEach((b) => b.setAttribute('aria-selected', b === btn ? 'true' : 'false'));
+        main.setAttribute('data-coach-main-tab', id);
+        video.hidden = id !== 'video';
+        plan.hidden = id !== 'plan';
+      });
+    });
+  </script>
+</body>
+</html>
