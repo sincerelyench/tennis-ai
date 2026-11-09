@@ -91,6 +91,25 @@ function isAiCoach(id: string) {
   return !id || id === DEFAULT_COACH_ID || id === "poppy" || id === "zhangqiu";
 }
 
+/** Prefer persisted locale so first coach/chat call is not stuck on SSR default "en". */
+function resolveClientLocale(fallback: string): "zh" | "en" {
+  if (typeof window !== "undefined") {
+    try {
+      const saved = window.localStorage.getItem("tennis-locale");
+      if (saved === "zh" || saved === "en") return saved;
+    } catch {
+      /* ignore */
+    }
+  }
+  return fallback === "zh" || String(fallback).startsWith("zh") ? "zh" : "en";
+}
+
+function looksEnglishPlan(plan: CoachPlan | null | undefined) {
+  if (!plan) return false;
+  const blob = `${plan.title || ""} ${plan.summary || ""} ${(plan.items || []).join(" ")}`;
+  return /[A-Za-z]{3,}/.test(blob) && !/[\u4e00-\u9fff]/.test(blob);
+}
+
 function readSelectedNetworkCoachId(): string {
   if (typeof window === "undefined") return "";
   try {
@@ -225,8 +244,10 @@ export function CoachView() {
     nextHistory: ChatMessage[],
     flags: { daily: boolean; improve: boolean },
     nextCoach = coachId,
+    localeOverride?: "zh" | "en",
   ) {
     if (!isAiCoach(nextCoach)) return;
+    const effectiveLocale = localeOverride || resolveClientLocale(String(locale || ""));
     setPending(true);
     setError("");
     try {
@@ -239,7 +260,7 @@ export function CoachView() {
           confirmedDaily: flags.daily,
           confirmedImprove: flags.improve,
           coachId: DEFAULT_COACH_ID,
-          locale,
+          locale: effectiveLocale,
         }),
       });
       const payload = (await response.json().catch(() => null)) as
@@ -262,7 +283,7 @@ export function CoachView() {
         const skill =
           payload.suggestVideoSkill ||
           (isFreeformGoal(lastUser) || flags.improve ? inferVideoTopic(lastUser || payload.text) : "");
-        if (skill) videoSuggestion = videoForSkill(skill, locale === "zh" || String(locale).startsWith("zh") ? "zh" : "en");
+        if (skill) videoSuggestion = videoForSkill(skill, effectiveLocale);
       }
       setHistory([...nextHistory, { role: "assistant", content: payload.text }]);
       setMessages((current) => [
@@ -286,14 +307,33 @@ export function CoachView() {
 
   useEffect(() => {
     if (started) return;
-    setStarted(true);
-    if (isAiCoach(coachId)) {
-      void askCoach([], { daily: true, improve: false });
-    } else {
-      setBoard(readNetworkBoard(coachId));
-    }
+    // Defer one tick so I18nProvider can hydrate tennis-locale from localStorage
+    // before the opening improve-plan request (avoids EN plan under ZH chrome).
+    const timer = window.setTimeout(() => {
+      setStarted(true);
+      const loc = resolveClientLocale(String(locale || ""));
+      if (isAiCoach(coachId)) {
+        void askCoach([], { daily: true, improve: false }, coachId, loc);
+      } else {
+        setBoard(readNetworkBoard(coachId));
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [started]);
+  }, [started, locale]);
+
+  // If an English plan slipped in under Chinese UI, reseed once.
+  useEffect(() => {
+    if (!zh || pending || !chattingBuiltIn) return;
+    const english = planMessages.some((m) => m.role === "coach" && looksEnglishPlan(m.plan));
+    if (!english) return;
+    setMessages([]);
+    setHistory([]);
+    setImprovePlan(null);
+    setConfirmedImprove(false);
+    void askCoach([], { daily: true, improve: false }, DEFAULT_COACH_ID, "zh");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zh, planMessages.length]);
 
   useEffect(() => {
     if (!networkBoardTarget) return;
