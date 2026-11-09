@@ -855,9 +855,14 @@ function DrillCard({ drill, zh, compact }: { drill: CoachDrill; zh: boolean; com
   );
 }
 
-function isNativeTipSrc(src: string | undefined): boolean {
+function isDemoOrLocalSrc(src: string | undefined): boolean {
   if (!src) return false;
-  return /\.mp4($|\?)/i.test(src) || src.startsWith("/tennis/") || src.startsWith("/examples/");
+  return (
+    /\.mp4($|\?)/i.test(src) ||
+    src.startsWith("/tennis/") ||
+    src.startsWith("/examples/") ||
+    src.includes("/examples/")
+  );
 }
 
 function VideoLessonCard({
@@ -872,20 +877,18 @@ function VideoLessonCard({
   const platform = video.platform || (zh ? "bilibili" : "youtube");
   const platformLabel =
     platform === "xiaohongshu" ? (zh ? "小红书" : "Xiaohongshu") : platform === "bilibili" ? (zh ? "B站" : "Bilibili") : "YouTube";
-  const nativeSrc =
-    video.videoSrc ||
-    (isNativeTipSrc(video.embedUrl) ? video.embedUrl : "") ||
-    (isNativeTipSrc(video.url) ? video.url : "");
-  const iframeSrc = video.embedUrl && !isNativeTipSrc(video.embedUrl) ? video.embedUrl : "";
+  // Real platform URLs only — reject demo/placeholder mp4s.
+  const realUrl = video.url && !isDemoOrLocalSrc(video.url) ? video.url : "";
+  const iframeSrc =
+    video.embedUrl && !isDemoOrLocalSrc(video.embedUrl) && (platform === "youtube" || platform === "bilibili")
+      ? video.embedUrl
+      : "";
   /**
-   * Playable inline — never dump users on a search page:
-   * - YouTube → nocookie iframe
-   * - Bilibili / Xiaohongshu → hosted tip mp4 in-page (XHS has no iframe; B站 third-party
-   *   embeds are often blocked, so we play the tip here and link the B站原片)
+   * Real third-party lessons only:
+   * - YouTube / Bilibili → official embed iframe (+ real watch link)
+   * - Xiaohongshu → real platform link (no public iframe; never demo clips)
    */
-  const mode: "iframe" | "native" | "none" =
-    platform === "youtube" && iframeSrc ? "iframe" : nativeSrc ? "native" : iframeSrc ? "iframe" : "none";
-  const externalUrl = video.url && !isNativeTipSrc(video.url) ? video.url : "";
+  const mode: "iframe" | "link" = iframeSrc ? "iframe" : "link";
 
   return (
     <div
@@ -894,12 +897,14 @@ function VideoLessonCard({
       data-video-skill={String(video.skill)}
       data-video-platform={platform}
       data-video-embed={mode}
+      data-video-real-url={realUrl || undefined}
     >
       <div className="px-2 pt-1.5">
         <p className="text-[10px] font-semibold text-primary">
           {zh ? `视频讲解 · ${platformLabel}` : `Video lesson · ${platformLabel}`}
         </p>
         <p className="text-xs font-medium text-foreground">{video.title}</p>
+        {video.channel ? <p className="text-[10px] text-muted-foreground">{video.channel}</p> : null}
       </div>
       {mode === "iframe" ? (
         <div className="mt-1 aspect-video bg-muted">
@@ -912,27 +917,26 @@ function VideoLessonCard({
             allowFullScreen
           />
         </div>
-      ) : mode === "native" ? (
-        <div className="mt-1 aspect-video bg-zinc-900">
-          <video
-            title={video.title}
-            src={nativeSrc}
-            className="h-full w-full object-contain"
-            controls
-            playsInline
-            preload="metadata"
-            data-tip-video="true"
-          />
-        </div>
       ) : (
-        <div className="mt-1 flex aspect-video items-center justify-center bg-muted px-3 text-center text-xs text-muted-foreground">
-          {zh ? "讲解视频加载中…" : "Loading lesson video…"}
-        </div>
+        <a
+          href={realUrl || "#"}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-1 flex aspect-video flex-col items-center justify-center gap-2 bg-muted px-4 text-center"
+          data-video-open-platform={platform}
+        >
+          <span className="text-sm font-semibold text-primary">
+            {zh ? `在${platformLabel}打开真实讲解` : `Open on ${platformLabel}`}
+          </span>
+          <span className="text-[10px] text-muted-foreground">
+            {zh ? "小红书暂不支持页内嵌入，点此打开原笔记/主页视频。" : "Open the real lesson on the platform."}
+          </span>
+        </a>
       )}
       <div className="space-y-1 px-2 py-1.5 text-[10px]">
-        {externalUrl ? (
-          <a className="font-semibold text-primary underline" href={externalUrl} target="_blank" rel="noreferrer">
-            {zh ? `在${platformLabel}打开原片` : t("coach.openChannel", { channel: video.channel || platformLabel })}
+        {realUrl ? (
+          <a className="font-semibold text-primary underline" href={realUrl} target="_blank" rel="noreferrer">
+            {zh ? `打开${platformLabel}原链接` : t("coach.openChannel", { channel: video.channel || platformLabel })}
           </a>
         ) : null}
         {video.notes ? <p className="text-muted-foreground">{video.notes}</p> : null}
