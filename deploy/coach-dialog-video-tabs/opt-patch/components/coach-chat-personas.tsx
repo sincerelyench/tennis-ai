@@ -3,7 +3,7 @@
 /**
  * Compact coach header personas:
  * 「AI 教练」+ selectable 「真实网络教练」.
- * Product brand elsewhere can stay 涨球教练 — this label is AI 教练.
+ * Empty network slot shows short 「无教练」— no style/default-persona/publish essays.
  * Never shows 掌球教练 / Poppy.
  */
 
@@ -62,7 +62,7 @@ function copy(locale: Locale) {
       networkOn: "留言中",
       selectCoach: "选择",
       changeCoach: "更换",
-      none: "未选择",
+      none: "无教练",
     };
   }
   return {
@@ -74,7 +74,7 @@ function copy(locale: Locale) {
     networkOn: "Messaging",
     selectCoach: "Pick",
     changeCoach: "Change",
-    none: "None yet",
+    none: "No coach",
   };
 }
 
@@ -163,6 +163,7 @@ export function CoachChatPersonas({
       className={cn("space-y-1.5", className)}
       data-coach-chat-personas="true"
       data-coach-header-compact="true"
+      data-network-empty={network ? undefined : "true"}
     >
       <div className="flex gap-2" role="list" data-coach-persona-row="true">
         {[zhangqiu, networkSlot].map((p) => {
@@ -196,13 +197,13 @@ export function CoachChatPersonas({
               <p className="truncate text-sm font-bold text-foreground" data-coach-name="true">
                 {p.kind === "zhangqiu" ? t.ai : network ? p.name : t.network}
               </p>
-              <p className="mt-0.5 text-[11px] font-medium text-primary">
+              <p className="mt-0.5 text-[11px] font-medium text-primary" data-coach-status="true">
                 {p.kind === "zhangqiu"
                   ? selected
                     ? t.aiOn
                     : t.aiHint
                   : isPickSlot
-                    ? `${t.none} · ${t.selectCoach}`
+                    ? t.none
                     : selected
                       ? t.networkOn
                       : t.networkHint}

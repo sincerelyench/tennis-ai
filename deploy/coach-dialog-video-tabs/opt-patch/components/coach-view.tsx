@@ -188,11 +188,15 @@ export function CoachView() {
   const videoBoard = board.filter((m) => m.kind === "video-guidance" || m.from === "coach" || !m.kind);
   const networkBoardTarget =
     (!isAiCoach(coachId) ? coachId : "") ||
-    (activePersona?.kind === "network" ? activePersona.id : "") ||
+    (activePersona?.kind === "network" && activePersona.id !== "__pick_network__"
+      ? activePersona.id
+      : "") ||
     readSelectedNetworkCoachId() ||
     "";
+  /** 「网络教练留言」仅在已选择真实网络教练时展示；空态「无教练」时整块隐藏。 */
+  const hasNetworkCoach = Boolean(networkBoardTarget);
 
-  const coachBoardId = networkBoardTarget || readSelectedNetworkCoachId() || "lin_kai";
+  const coachBoardId = networkBoardTarget || "lin_kai";
   const studentOptions = listStudentKeysForCoach(coachBoardId);
 
   function selectMainTab(tab: MainTab) {
@@ -586,50 +590,48 @@ export function CoachView() {
               </div>
             ))}
 
-            <div className="space-y-2" data-coach-panel="human-board" data-board-scope="video-guidance">
-              <p className="text-xs font-semibold text-muted-foreground">
-                {zh ? "网络教练留言" : "Network coach notes"}
-              </p>
-              {videoBoard.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  {zh
-                    ? networkBoardTarget || readSelectedNetworkCoachId()
-                      ? "上传后会同步求指导；网络教练的回复也会出现在这里。"
-                      : "可先选择真实网络教练，上传后同步留言。"
-                    : networkBoardTarget || readSelectedNetworkCoachId()
-                      ? "A coaching request will appear after upload; coach replies show here too."
-                      : "Pick a network coach so the clip can be messaged."}
+            {hasNetworkCoach ? (
+              <div className="space-y-2" data-coach-panel="human-board" data-board-scope="video-guidance">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  {zh ? "网络教练留言" : "Network coach notes"}
                 </p>
-              ) : (
-                videoBoard.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-lg border border-border bg-card px-3 py-2"
-                    data-message-id={item.id}
-                    data-message-from={item.from}
-                    data-message-kind={item.kind || "note"}
-                  >
-                    <p className="text-[11px] font-semibold text-muted-foreground">{formatTime(item.at)}</p>
-                    <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-foreground">{item.text}</p>
-                    <p className="mt-1 text-[11px] font-semibold text-primary">
-                      {item.from === "coach"
-                        ? zh
-                          ? "网络教练指导"
-                          : "Network coach guidance"
-                        : item.kind === "video-guidance"
+                {videoBoard.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {zh
+                      ? "上传后会同步求指导；网络教练的回复也会出现在这里。"
+                      : "A coaching request will appear after upload; coach replies show here too."}
+                  </p>
+                ) : (
+                  videoBoard.map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-lg border border-border bg-card px-3 py-2"
+                      data-message-id={item.id}
+                      data-message-from={item.from}
+                      data-message-kind={item.kind || "note"}
+                    >
+                      <p className="text-[11px] font-semibold text-muted-foreground">{formatTime(item.at)}</p>
+                      <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-foreground">{item.text}</p>
+                      <p className="mt-1 text-[11px] font-semibold text-primary">
+                        {item.from === "coach"
                           ? zh
-                            ? "视频求指导已留言，等待教练回复"
-                            : "Video coaching request sent — waiting for coach"
-                          : zh
-                            ? "已留言，等待教练回复"
-                            : "Sent — waiting for coach"}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
+                            ? "网络教练指导"
+                            : "Network coach guidance"
+                          : item.kind === "video-guidance"
+                            ? zh
+                              ? "视频求指导已留言，等待教练回复"
+                              : "Video coaching request sent — waiting for coach"
+                            : zh
+                              ? "已留言，等待教练回复"
+                              : "Sent — waiting for coach"}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : null}
 
-            {!chattingBuiltIn ? (
+            {hasNetworkCoach && !chattingBuiltIn ? (
               <form
                 className="space-y-2"
                 data-coach-composer="network"
@@ -665,9 +667,9 @@ export function CoachView() {
           data-coach-main-panel="dialog"
           data-plan-zh-only={zh ? "true" : undefined}
         >
-          {!chattingBuiltIn ? (
+          {hasNetworkCoach && !chattingBuiltIn ? (
             <div className="space-y-2 rounded-lg border border-border bg-card px-3 py-3" data-dialog-network-notes="true">
-              <p className="text-sm font-semibold">{zh ? "真实网络教练 · 留言" : "Network coach · messages"}</p>
+              <p className="text-sm font-semibold">{zh ? "网络教练留言" : "Network coach notes"}</p>
               {board.filter((m) => m.from === "coach" || m.kind === "guidance" || m.kind === "note").length === 0 ? (
                 <EmptyState
                   title={zh ? "还没有教练留言" : "No coach notes yet"}
@@ -853,6 +855,11 @@ function DrillCard({ drill, zh, compact }: { drill: CoachDrill; zh: boolean; com
   );
 }
 
+function isNativeTipSrc(src: string | undefined): boolean {
+  if (!src) return false;
+  return /\.mp4($|\?)/i.test(src) || src.startsWith("/tennis/") || src.startsWith("/examples/");
+}
+
 function VideoLessonCard({
   video,
   zh,
@@ -865,13 +872,28 @@ function VideoLessonCard({
   const platform = video.platform || (zh ? "bilibili" : "youtube");
   const platformLabel =
     platform === "xiaohongshu" ? (zh ? "小红书" : "Xiaohongshu") : platform === "bilibili" ? (zh ? "B站" : "Bilibili") : "YouTube";
-  const canEmbed = platform === "youtube" && Boolean(video.embedUrl);
+  const nativeSrc =
+    video.videoSrc ||
+    (isNativeTipSrc(video.embedUrl) ? video.embedUrl : "") ||
+    (isNativeTipSrc(video.url) ? video.url : "");
+  const iframeSrc = video.embedUrl && !isNativeTipSrc(video.embedUrl) ? video.embedUrl : "";
+  /**
+   * Playable inline — never dump users on a search page:
+   * - YouTube → nocookie iframe
+   * - Bilibili / Xiaohongshu → hosted tip mp4 in-page (XHS has no iframe; B站 third-party
+   *   embeds are often blocked, so we play the tip here and link the B站原片)
+   */
+  const mode: "iframe" | "native" | "none" =
+    platform === "youtube" && iframeSrc ? "iframe" : nativeSrc ? "native" : iframeSrc ? "iframe" : "none";
+  const externalUrl = video.url && !isNativeTipSrc(video.url) ? video.url : "";
+
   return (
     <div
       className="overflow-hidden rounded border border-border/80 bg-background/80"
       data-coach-video-lesson="true"
       data-video-skill={String(video.skill)}
       data-video-platform={platform}
+      data-video-embed={mode}
     >
       <div className="px-2 pt-1.5">
         <p className="text-[10px] font-semibold text-primary">
@@ -879,27 +901,40 @@ function VideoLessonCard({
         </p>
         <p className="text-xs font-medium text-foreground">{video.title}</p>
       </div>
-      {canEmbed ? (
+      {mode === "iframe" ? (
         <div className="mt-1 aspect-video bg-muted">
           <iframe
             title={video.title}
-            src={video.embedUrl}
-            className="h-full w-full"
-            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            src={iframeSrc}
+            className="h-full w-full border-0"
+            referrerPolicy="no-referrer-when-downgrade"
+            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
             allowFullScreen
+          />
+        </div>
+      ) : mode === "native" ? (
+        <div className="mt-1 aspect-video bg-zinc-900">
+          <video
+            title={video.title}
+            src={nativeSrc}
+            className="h-full w-full object-contain"
+            controls
+            playsInline
+            preload="metadata"
+            data-tip-video="true"
           />
         </div>
       ) : (
         <div className="mt-1 flex aspect-video items-center justify-center bg-muted px-3 text-center text-xs text-muted-foreground">
-          {zh
-            ? `打开${platformLabel}观看最匹配的讲解，再按下方提示练习。`
-            : `Open ${platformLabel} for the best matching lesson, then practice with the tip below.`}
+          {zh ? "讲解视频加载中…" : "Loading lesson video…"}
         </div>
       )}
       <div className="space-y-1 px-2 py-1.5 text-[10px]">
-        <a className="font-semibold text-primary underline" href={video.url} target="_blank" rel="noreferrer">
-          {zh ? `打开${platformLabel}讲解` : t("coach.openChannel", { channel: video.channel || platformLabel })}
-        </a>
+        {externalUrl ? (
+          <a className="font-semibold text-primary underline" href={externalUrl} target="_blank" rel="noreferrer">
+            {zh ? `在${platformLabel}打开原片` : t("coach.openChannel", { channel: video.channel || platformLabel })}
+          </a>
+        ) : null}
         {video.notes ? <p className="text-muted-foreground">{video.notes}</p> : null}
         {video.practiceTip ? (
           <p className="font-medium text-foreground" data-video-practice-tip="true">

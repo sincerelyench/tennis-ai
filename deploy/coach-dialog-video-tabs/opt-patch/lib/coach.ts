@@ -45,6 +45,27 @@ export type ExampleVideo = {
   platform?: VideoPlatform;
   /** How to practice after watching. */
   practiceTip?: string;
+  /**
+   * Native tip clip (mp4) for inline playback when the platform has no iframe
+   * (Xiaohongshu) or as a reliable fallback beside Bilibili/YouTube embeds.
+   */
+  videoSrc?: string;
+};
+
+function biliEmbed(bvid: string, page = 1): string {
+  return `https://player.bilibili.com/player.html?bvid=${bvid}&page=${page}&high_quality=1&danmaku=0&autoplay=0`;
+}
+
+function biliWatch(bvid: string): string {
+  return `https://www.bilibili.com/video/${bvid}/`;
+}
+
+/** Hosted short tip clips — playable inline (no third-party search). */
+const TIP_CLIPS: Record<"forehand" | "backhand" | "serve" | "footwork", string> = {
+  forehand: "/tennis/examples/forehand-topspin.mp4",
+  backhand: "/tennis/examples/backhand-topspin.mp4",
+  serve: "/tennis/examples/serve.mp4",
+  footwork: "/tennis/examples/forehand-volley.mp4",
 };
 
 /** English: YouTube demos. */
@@ -93,14 +114,19 @@ const YOUTUBE_META: Record<
   },
 };
 
-/** Chinese: curated Bilibili + Xiaohongshu lesson queries/links per skill. */
+/**
+ * Chinese: curated playable lessons.
+ * - Bilibili → official player iframe (bvid)
+ * - Xiaohongshu → hosted short tip mp4 (XHS has no public iframe; still labeled 小红书短讲解)
+ * Never send users to a search page to find the lesson themselves.
+ */
 const ZH_VIDEO_META: Record<
   "forehand" | "backhand" | "serve" | "footwork",
   {
     title: string;
     practiceTip: string;
-    bilibili: { channel: string; url: string; embedUrl: string; notes: string };
-    xiaohongshu: { channel: string; url: string; notes: string };
+    bilibili: { channel: string; url: string; embedUrl: string; notes: string; videoSrc?: string };
+    xiaohongshu: { channel: string; url: string; embedUrl: string; notes: string; videoSrc: string };
   }
 > = {
   forehand: {
@@ -108,14 +134,17 @@ const ZH_VIDEO_META: Record<
     practiceTip: "先看完整挥拍路径，再上场慢喂 20 个：击球点再往身前送一个拍头。",
     bilibili: {
       channel: "B站 · 网球正手",
-      url: "https://search.bilibili.com/all?keyword=%E7%BD%91%E7%90%83%E6%AD%A3%E6%89%8B%E4%B8%8A%E6%97%8B%E6%95%99%E5%AD%A6",
-      embedUrl: "https://search.bilibili.com/all?keyword=%E7%BD%91%E7%90%83%E6%AD%A3%E6%89%8B%E4%B8%8A%E6%97%8B%E6%95%99%E5%AD%A6",
-      notes: "在 B 站打开最匹配的正手上旋教学，对照握拍与随挥。",
+      url: biliWatch("BV1sp411d7Ww"),
+      embedUrl: biliEmbed("BV1sp411d7Ww"),
+      notes: "对照握拍、击球点与随挥。可直接在下方播放。",
+      videoSrc: TIP_CLIPS.forehand,
     },
     xiaohongshu: {
       channel: "小红书 · 正手讲解",
-      url: "https://www.xiaohongshu.com/search_result?keyword=%E7%BD%91%E7%90%83%E6%AD%A3%E6%89%8B%E4%B8%8A%E6%97%8B",
-      notes: "在小红书找短视频讲解，重点看击球点与转肩。",
+      url: TIP_CLIPS.forehand,
+      embedUrl: TIP_CLIPS.forehand,
+      videoSrc: TIP_CLIPS.forehand,
+      notes: "短视频讲解：重点看击球点与转肩。可直接播放。",
     },
   },
   backhand: {
@@ -123,14 +152,17 @@ const ZH_VIDEO_META: Record<
     practiceTip: "先转身再送拍。侧面录 15 次影子挥拍，检查非持拍手引导。",
     bilibili: {
       channel: "B站 · 网球反手",
-      url: "https://search.bilibili.com/all?keyword=%E7%BD%91%E7%90%83%E5%8F%8D%E6%89%8B%E4%B8%8A%E6%97%8B%E6%95%99%E5%AD%A6",
-      embedUrl: "https://search.bilibili.com/all?keyword=%E7%BD%91%E7%90%83%E5%8F%8D%E6%89%8B%E4%B8%8A%E6%97%8B%E6%95%99%E5%AD%A6",
-      notes: "在 B 站打开反手上旋教学，对照转肩与击球点。",
+      url: biliWatch("BV1na1YBzELQ"),
+      embedUrl: biliEmbed("BV1na1YBzELQ"),
+      notes: "对照转肩与击球点。可直接在下方播放。",
+      videoSrc: TIP_CLIPS.backhand,
     },
     xiaohongshu: {
       channel: "小红书 · 反手讲解",
-      url: "https://www.xiaohongshu.com/search_result?keyword=%E7%BD%91%E7%90%83%E5%8F%8D%E6%89%8B%E4%B8%8A%E6%97%8B",
-      notes: "在小红书找反手短讲解，重点看准备与随挥。",
+      url: TIP_CLIPS.backhand,
+      embedUrl: TIP_CLIPS.backhand,
+      videoSrc: TIP_CLIPS.backhand,
+      notes: "短视频讲解：重点看准备与随挥。可直接播放。",
     },
   },
   serve: {
@@ -138,14 +170,17 @@ const ZH_VIDEO_META: Record<
     practiceTip: "先抛三次再挥一次；奖杯姿势多停一拍再加速。",
     bilibili: {
       channel: "B站 · 网球发球",
-      url: "https://search.bilibili.com/all?keyword=%E7%BD%91%E7%90%83%E5%8F%91%E7%90%83%E6%95%99%E5%AD%A6",
-      embedUrl: "https://search.bilibili.com/all?keyword=%E7%BD%91%E7%90%83%E5%8F%91%E7%90%83%E6%95%99%E5%AD%A6",
-      notes: "在 B 站打开发球教学，对照抛球与奖杯姿势。",
+      url: biliWatch("BV1b5411U7D2"),
+      embedUrl: biliEmbed("BV1b5411U7D2"),
+      notes: "对照抛球与奖杯姿势。可直接在下方播放。",
+      videoSrc: TIP_CLIPS.serve,
     },
     xiaohongshu: {
       channel: "小红书 · 发球讲解",
-      url: "https://www.xiaohongshu.com/search_result?keyword=%E7%BD%91%E7%90%83%E5%8F%91%E7%90%83%E6%95%99%E5%AD%A6",
-      notes: "在小红书找发球短讲解，重点看抛球落点。",
+      url: TIP_CLIPS.serve,
+      embedUrl: TIP_CLIPS.serve,
+      videoSrc: TIP_CLIPS.serve,
+      notes: "短视频讲解：重点看抛球落点。可直接播放。",
     },
   },
   footwork: {
@@ -153,14 +188,17 @@ const ZH_VIDEO_META: Record<
     practiceTip: "每次来球分腿垫步；练 10 次回位到中线。",
     bilibili: {
       channel: "B站 · 网球步法",
-      url: "https://search.bilibili.com/all?keyword=%E7%BD%91%E7%90%83%E6%AD%A5%E6%B3%95%E5%88%86%E8%85%BF%E5%9E%AB%E6%AD%A5",
-      embedUrl: "https://search.bilibili.com/all?keyword=%E7%BD%91%E7%90%83%E6%AD%A5%E6%B3%95%E5%88%86%E8%85%BF%E5%9E%AB%E6%AD%A5",
-      notes: "在 B 站打开分腿垫步教学，对照时机与落地。",
+      url: biliWatch("BV12f421Z7Wn"),
+      embedUrl: biliEmbed("BV12f421Z7Wn", 5),
+      notes: "对照分腿垫步时机与落地。可直接在下方播放。",
+      videoSrc: TIP_CLIPS.footwork,
     },
     xiaohongshu: {
       channel: "小红书 · 步法讲解",
-      url: "https://www.xiaohongshu.com/search_result?keyword=%E7%BD%91%E7%90%83%E6%AD%A5%E6%B3%95%E5%88%86%E8%85%BF%E5%9E%AB%E6%AD%A5",
-      notes: "在小红书找步法短讲解，重点看分腿垫步节奏。",
+      url: TIP_CLIPS.footwork,
+      embedUrl: TIP_CLIPS.footwork,
+      videoSrc: TIP_CLIPS.footwork,
+      notes: "短视频讲解：重点看分腿垫步节奏。可直接播放。",
     },
   },
 };
@@ -189,6 +227,7 @@ export function videoForSkill(skill: string, locale: Locale = "en"): ExampleVide
       notes: meta.bilibili.notes,
       platform: "bilibili",
       practiceTip: meta.practiceTip,
+      videoSrc: meta.bilibili.videoSrc || TIP_CLIPS[key],
     };
   }
   const meta = YOUTUBE_META[key];
@@ -220,16 +259,18 @@ export function videosForSkill(skill: string, locale: Locale = "en"): ExampleVid
       notes: meta.bilibili.notes,
       platform: "bilibili",
       practiceTip: meta.practiceTip,
+      videoSrc: meta.bilibili.videoSrc || TIP_CLIPS[key],
     },
     {
       skill: skillId,
       title: meta.title,
       channel: meta.xiaohongshu.channel,
       url: meta.xiaohongshu.url,
-      embedUrl: "",
+      embedUrl: meta.xiaohongshu.embedUrl,
       notes: meta.xiaohongshu.notes,
       platform: "xiaohongshu",
       practiceTip: meta.practiceTip,
+      videoSrc: meta.xiaohongshu.videoSrc,
     },
   ];
 }
