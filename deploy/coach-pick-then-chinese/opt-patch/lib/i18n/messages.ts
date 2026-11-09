@@ -671,7 +671,7 @@ export const messages = {
       weightHigh: "Weight too high",
       followShort: "Follow-through cut short"},
     coach: {
-      title: "AI coach",
+      title: "Zhangqiu Coach",
       daily: "Improvement plan",
       improve: "Improvement plan",
       videoGuidance: "Video guidance",
@@ -1635,7 +1635,7 @@ export const messages = {
       weightHigh: "重心偏高",
       followShort: "随挥被截短"},
     coach: {
-      title: "AI 教练",
+      title: "涨球教练",
       daily: "改进计划",
       improve: "改进计划",
       videoGuidance: "视频指导",
