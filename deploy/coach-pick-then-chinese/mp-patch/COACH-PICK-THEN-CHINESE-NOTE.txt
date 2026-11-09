@@ -1,0 +1,7 @@
+涨球教练页更新（四端同源 WebView）：
+1) 「我的教练」先选涨球 AI / 网络教练，再进视频指导与改进计划
+2) 网络教练可对学员留言指导
+3) 改进计划全中文；去掉「当前任务」
+4) 自由目标（如提高球速）给实用建议并附视频讲解；八项要点框缩小
+Web 源：https://yqchen.blog/tennis/coach
+Preview：https://yqchen.blog/coach-pick-then-chinese.html
