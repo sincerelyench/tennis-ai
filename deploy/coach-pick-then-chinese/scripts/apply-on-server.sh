@@ -13,6 +13,7 @@ mkdir -p "$BACKUP"
 
 for f in \
   components/coach-view.tsx \
+  components/coach-picker.tsx \
   components/coach-video-upload.tsx \
   components/coach-inbox-view.tsx \
   components/coach-students-view.tsx \
@@ -38,6 +39,7 @@ mkdir -p \
   "$ROOT/app/api/coach/chat"
 
 cp -a "$PATCH_DIR/opt-patch/components/coach-view.tsx" "$ROOT/components/"
+cp -a "$PATCH_DIR/opt-patch/components/coach-picker.tsx" "$ROOT/components/"
 cp -a "$PATCH_DIR/opt-patch/components/coach-video-upload.tsx" "$ROOT/components/"
 cp -a "$PATCH_DIR/opt-patch/components/coach-inbox-view.tsx" "$ROOT/components/"
 cp -a "$PATCH_DIR/opt-patch/components/coach-students-view.tsx" "$ROOT/components/"
@@ -94,6 +96,7 @@ if id tennis >/dev/null 2>&1; then
   chown -R tennis:tennis "$ROOT/.next" 2>/dev/null || true
   chown tennis:tennis \
     "$ROOT/components/coach-view.tsx" \
+    "$ROOT/components/coach-picker.tsx" \
     "$ROOT/components/coach-video-upload.tsx" \
     "$ROOT/components/coach-inbox-view.tsx" \
     "$ROOT/components/coach-students-view.tsx" \
