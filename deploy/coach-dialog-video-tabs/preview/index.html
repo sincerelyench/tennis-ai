@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · AI 教练 · 对话指导 / 视频指导</title>
+  <style>
+    :root {
+      --bg: #f3f6f2;
+      --card: #fff;
+      --ink: #14201a;
+      --muted: #5b6b62;
+      --primary: #1f7a4c;
+      --border: #d5e0d8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+      background: linear-gradient(180deg, #e8f2ea, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    main { max-width: 420px; margin: 0 auto; padding: 16px 14px 48px; }
+    .personas { display: flex; gap: 8px; margin-bottom: 8px; }
+    .chip {
+      flex: 1; border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px; font-size: 13px; background: #f7faf8; text-align: left;
+    }
+    .chip.active { border-color: var(--primary); background: #e8f6ee; }
+    .chip strong { display: block; font-size: 14px; }
+    .chip span { color: var(--primary); font-size: 11px; font-weight: 600; }
+    .tabs { display: flex; gap: 8px; margin: 10px 0 12px; }
+    .tab {
+      flex: 1; border: 0; border-radius: 10px; padding: 10px 12px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      background: #e6ebe7; color: var(--muted);
+    }
+    .tab[aria-selected="true"] { background: var(--primary); color: #fff; }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px; margin-bottom: 10px;
+    }
+    .bubble {
+      max-width: 92%; border-radius: 10px; padding: 10px 12px;
+      font-size: 13px; line-height: 1.55; white-space: pre-wrap; margin-bottom: 8px;
+    }
+    .user { margin-left: auto; background: var(--primary); color: #fff; }
+    .coach { background: #fff; border: 1px solid var(--border); }
+    .tag { font-size: 11px; color: var(--primary); font-weight: 700; margin-top: 6px; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .video-lesson {
+      margin-top: 8px; border: 1px solid var(--border); border-radius: 8px;
+      overflow: hidden; background: #f7faf8; font-size: 11px;
+    }
+    .video-lesson .hd { padding: 6px 8px; font-weight: 700; color: var(--primary); font-size: 10px; }
+    .video-lesson .ph {
+      height: 88px; background: #d8e5db; display: grid; place-items: center;
+      color: var(--muted); font-size: 12px; padding: 8px; text-align: center;
+    }
+    .video-lesson .bd { padding: 6px 8px; }
+    .video-lesson a { color: var(--primary); font-weight: 700; }
+    .quick { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    .quick button {
+      border: 1px solid var(--border); background: #fff; border-radius: 999px;
+      padding: 6px 10px; font-size: 11px; cursor: pointer;
+    }
+    .composer {
+      display: flex; gap: 8px; margin-top: 8px;
+    }
+    .composer input {
+      flex: 1; height: 40px; border: 1px solid var(--border); border-radius: 8px; padding: 0 10px;
+    }
+    .composer button {
+      height: 40px; border: 0; border-radius: 8px; background: var(--primary); color: #fff;
+      padding: 0 14px; font-weight: 700; cursor: pointer;
+    }
+    .upload {
+      border: 1px dashed var(--border); border-radius: 12px; padding: 16px; text-align: center;
+      background: #f7faf8; margin-bottom: 10px;
+    }
+    footer { margin-top: 18px; font-size: 11px; color: var(--muted); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main data-preview="coach-dialog-video-tabs" data-coach-header-compact="true" data-coach-main-tab="dialog">
+    <div class="personas" data-coach-chat-personas="true" data-coach-header-compact="true">
+      <div class="chip active" data-coach-kind="zhangqiu" data-coach-selected="true">
+        <strong data-coach-name="true">AI 教练</strong>
+        <span>对话中</span>
+      </div>
+      <div class="chip" data-coach-kind="network" data-coach-pick-slot="true">
+        <strong>真实网络教练</strong>
+        <span>未选择 · 选择</span>
+      </div>
+    </div>
+
+    <div class="tabs" data-coach-main-tabs="true" role="tablist">
+      <button class="tab" type="button" role="tab" aria-selected="true" data-coach-main-tab-btn="dialog" id="tab-dialog">对话指导</button>
+      <button class="tab" type="button" role="tab" aria-selected="false" data-coach-main-tab-btn="video" id="tab-video">视频指导</button>
+    </div>
+
+    <section id="panel-dialog" data-coach-panel="dialog-guidance">
+      <div class="bubble coach" data-message-kind="welcome">
+        想学什么直接说，比如正手上旋、反手、发球，或「我要提高球速」。我会用文字说明，并附上最匹配的视频讲解。
+      </div>
+      <div class="bubble user">我想学正手上旋</div>
+      <div class="bubble coach" data-message-kind="dialog">
+        正手上旋先盯击球点：准备侧身，引拍放松，在身前击球，随挥收到肩上。
+        <div class="video-lesson" data-coach-video-lesson="true" data-video-platform="bilibili">
+          <div class="hd">视频讲解 · B站</div>
+          <div class="ph">打开 B 站观看最匹配的正手上旋教学</div>
+          <div class="bd">
+            <a href="https://search.bilibili.com/all?keyword=%E7%BD%91%E7%90%83%E6%AD%A3%E6%89%8B%E4%B8%8A%E6%97%8B%E6%95%99%E5%AD%A6" target="_blank" rel="noreferrer">打开B站讲解</a>
+            <p class="muted" data-video-practice-tip="true">怎么练：先看完整挥拍路径，再上场慢喂 20 个。</p>
+          </div>
+        </div>
+        <div class="video-lesson" data-coach-video-lesson="true" data-video-platform="xiaohongshu">
+          <div class="hd">视频讲解 · 小红书</div>
+          <div class="ph">打开小红书找短视频讲解</div>
+          <div class="bd">
+            <a href="https://www.xiaohongshu.com/search_result?keyword=%E7%BD%91%E7%90%83%E6%AD%A3%E6%89%8B%E4%B8%8A%E6%97%8B" target="_blank" rel="noreferrer">打开小红书讲解</a>
+          </div>
+        </div>
+        <p class="tag">AI 教练 · 对话指导</p>
+      </div>
+      <div class="quick" data-coach-chips="true">
+        <button type="button">我想学正手上旋</button>
+        <button type="button">我想学反手上旋</button>
+        <button type="button">我想学发球</button>
+        <button type="button">我要提高球速</button>
+      </div>
+      <div class="composer" data-coach-composer="ai">
+        <input placeholder="说说你想学什么，例如：正手上旋…" />
+        <button type="button">发送</button>
+      </div>
+    </section>
+
+    <section id="panel-video" data-coach-panel="video-guidance" hidden>
+      <div class="upload" data-coach-video-upload="true">
+        <p><strong>上传挥拍 / 比赛短片</strong></p>
+        <p class="muted">约 10 秒侧面为宜。AI 在站内对话讲解，不跳转外站页面。</p>
+        <button type="button" style="margin-top:8px;border:0;background:var(--primary);color:#fff;border-radius:8px;padding:8px 12px;font-weight:700;">选择视频</button>
+      </div>
+      <div class="card">
+        <p class="muted">还没有视频指导。上传后结果会出现在这里的对话气泡里。</p>
+      </div>
+    </section>
+
+    <footer>
+      Preview · coach-dialog-video-tabs · 头部仅 AI 教练 + 真实网络教练 · 子 tab：对话指导 / 视频指导
+    </footer>
+  </main>
+  <script>
+    const dialogBtn = document.getElementById("tab-dialog");
+    const videoBtn = document.getElementById("tab-video");
+    const dialogPanel = document.getElementById("panel-dialog");
+    const videoPanel = document.getElementById("panel-video");
+    const main = document.querySelector("main");
+    function select(tab) {
+      const isDialog = tab === "dialog";
+      dialogBtn.setAttribute("aria-selected", isDialog ? "true" : "false");
+      videoBtn.setAttribute("aria-selected", isDialog ? "false" : "true");
+      dialogPanel.hidden = !isDialog;
+      videoPanel.hidden = isDialog;
+      main.setAttribute("data-coach-main-tab", tab);
+    }
+    dialogBtn.addEventListener("click", () => select("dialog"));
+    videoBtn.addEventListener("click", () => select("video"));
+  </script>
+</body>
+</html>

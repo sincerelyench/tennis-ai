@@ -1,0 +1,7 @@
+教练 tab 重做（对话指导 / 视频指导）
+- 头部：AI 教练 + 可选真实网络教练（不再用「掌球教练」称呼）
+- 子 tab：对话指导（自由问答 + 视频讲解）/ 视频指导（上传 → tai/sslip 分析，站内对话展示）
+- 中文视频讲解：小红书 + B站；英文：YouTube
+- Web 为源；APK / IPA / 小程序 WebView 同源 yqchen.blog/tennis，本改无需重打壳
+Live: https://yqchen.blog/tennis/coach
+Preview: https://yqchen.blog/coach-dialog-video-tabs.html
