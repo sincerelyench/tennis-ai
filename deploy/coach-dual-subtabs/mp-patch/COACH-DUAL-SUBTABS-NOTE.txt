@@ -1,0 +1,7 @@
+涨球教练页双分区（视频指导 / 改进计划）
+
+Web 为 APK / IPA / 微信小程序 WebView 同源（yqchen.blog/tennis）。
+本改只更新 Web 壳源；未重打 APK/IPA/mp zip。壳打开同一站点即可看到双 tab。
+
+SHOW_ANALYSIS_TAB 仍为 false（底部无「分析」）。
+品牌：涨球教练。
