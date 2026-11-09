@@ -434,9 +434,17 @@ export function CoachView() {
     }
   }
 
+  const dialogTabLabel = (() => {
+    const v = t("coach.dialogGuidance");
+    return !v || v === "coach.dialogGuidance" ? (zh ? "对话指导" : "Chat coaching") : v;
+  })();
+  const videoTabLabel = (() => {
+    const v = t("coach.videoGuidance");
+    return !v || v === "coach.videoGuidance" ? (zh ? "视频指导" : "Video guidance") : v;
+  })();
   const mainTabs: { id: MainTab; label: string }[] = [
-    { id: "dialog", label: t("coach.dialogGuidance") || (zh ? "对话指导" : "Chat coaching") },
-    { id: "video", label: t("coach.videoGuidance") || (zh ? "视频指导" : "Video guidance") },
+    { id: "dialog", label: dialogTabLabel },
+    { id: "video", label: videoTabLabel },
   ];
 
   const coachNotesPanel = isCoachRole ? (
@@ -720,7 +728,7 @@ export function CoachView() {
                       data-message-kind={message.kind || "dialog"}
                     >
                       <p className="whitespace-pre-wrap">{message.text}</p>
-                      {message.plan ? <PlanCard plan={message.plan} t={t} /> : null}
+                      {/* 改进计划不再作为主 tab；对话里也不再塞计划卡，避免干扰自由问答 */}
                       {message.drill ? <DrillCard drill={message.drill} zh={zh} compact /> : null}
                       {(message.videoSuggestions?.length
                         ? message.videoSuggestions
