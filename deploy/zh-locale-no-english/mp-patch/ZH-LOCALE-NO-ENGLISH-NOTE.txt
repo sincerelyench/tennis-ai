@@ -1,0 +1,4 @@
+涨球 ZH locale no-English (2026-11-10)
+Web source of truth: yqchen.blog/tennis with tennis-locale=zh
+APK / IPA / 微信小程序 WebView 同源，无需重打壳。
+Preview: https://yqchen.blog/zh-locale-no-english.html
