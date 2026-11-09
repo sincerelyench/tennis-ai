@@ -1,0 +1,3 @@
+约球 UX gates（Web 源；APK/IPA/mp-weixin WebView 同源）
+1) 约球成功记录出现后，不再展示该条约球邀请
+2) 录入对阵仅对方应战后显示（去录入比分）
