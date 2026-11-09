@@ -1,0 +1,3 @@
+成长旅程（Growth journey）现展示本地类 UTR / 等级分成绩变化。
+Web / APK / IPA / 微信小程序 WebView 同源：https://yqchen.blog/tennis/journey
+待确认比分不计入；需对方确认后更新。
