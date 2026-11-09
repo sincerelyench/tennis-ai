@@ -1,0 +1,7 @@
+涨球 · 我的页约球成绩 Tab
+
+- Web /opt/tennis-ai ProfileView：资料 / 约球成绩 两个子 Tab
+- 约球成绩仅展示对方已确认的比分（GET /tennis/api/friends/scores → confirmed）
+- 无成绩时空状态（0）
+- 底部「分析」Tab 仍隐藏（SHOW_ANALYSIS_TAB=false）
+- APK / IPA / 微信小程序 WebView 与网页同源，无需单独改壳
