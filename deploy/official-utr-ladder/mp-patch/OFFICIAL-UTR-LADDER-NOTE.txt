@@ -1,0 +1,7 @@
+涨球 · UTR 风格等级分（ZQ-71）
+
+Web / APK / IPA / 微信小程序共用 Next 页（WebView）。
+本包仅 Web 部署；壳包无需重打。
+
+算法：局数表现 vs 预期 → match rating → 近 12 月最多 30 场加权。
+非 Universal Tennis 官方 UTR。
