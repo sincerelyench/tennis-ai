@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>中文界面无英文残留 · 涨球</title>
+  <style>
+    :root { --bg:#0f3d2e; --card:#f7f3ea; --ink:#14231c; --line:#d9d0bf; --accent:#1f7a4c; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: "Noto Sans SC", "PingFang SC", sans-serif; background:linear-gradient(160deg,#0f3d2e,#1b5c40 45%,#0c2a20); color:var(--ink); }
+    main { max-width: 420px; margin: 0 auto; padding: 28px 16px 48px; }
+    h1 { color:#f7f3ea; font-size: 1.35rem; margin: 0 0 8px; }
+    .lead { color:#d7e8dc; font-size: .92rem; line-height: 1.55; margin: 0 0 18px; }
+    .card { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+    .card h2 { margin: 0 0 8px; font-size: 1rem; }
+    .card p { margin: 0; font-size: .88rem; line-height: 1.55; color:#33443b; }
+    .ok { display:inline-block; margin-top: 8px; font-size: .78rem; font-weight: 700; color: var(--accent); }
+    a.btn { display:inline-block; margin-top: 14px; background: #f0c24b; color:#1a2a20; text-decoration:none; font-weight:700; border-radius:999px; padding:10px 16px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>中文界面无英文残留</h1>
+    <p class="lead">locale=zh 时，教练 / 约球 / 我的 / 登录 / 通知 / 成长旅程等文案只出中文；等级分替代 UTR 字样；页面标题随语言切换。</p>
+    <section class="card">
+      <h2>约球</h2>
+      <p>匹配约球 · 本地排行 · 等级分说明 · 约球成功记录</p>
+      <span class="ok">无 UTR / NTRP 混排</span>
+    </section>
+    <section class="card">
+      <h2>教练</h2>
+      <p>对话指导 · 视频指导 · AI 教练 · 真实网络教练</p>
+      <span class="ok">保留产品标签「AI 教练」</span>
+    </section>
+    <section class="card">
+      <h2>我的 / 旅程 / 登录</h2>
+      <p>约球成绩 · 等级分随时间 · 登录 / 注册标题中文化</p>
+      <span class="ok">标题与正文一致为中文</span>
+    </section>
+    <a class="btn" href="/tennis/login">打开涨球登录</a>
+  </main>
+</body>
+</html>
