@@ -1,0 +1,5 @@
+涨球 ZQ-75：约球双 Tab「我的约球 / 本地排行」
+- Web / APK / IPA / 小程序 WebView 同源：/opt/tennis-ai
+- 子 Tab：我的约球、本地排行；两边都有匹配约球
+- 文案精简；保留应战/录分门禁
+Preview: https://yqchen.blog/yueqiu-my-and-ladder.html
