@@ -1431,7 +1431,7 @@ export function FriendsView() {
             ) : null}
           </div>
           {history.length === 0 ? (
-            <EmptyState title={t("friends.scoreEmpty")} description={t("friends.scoreEmptyDesc") || undefined} />
+            <EmptyState title={t("friends.scoreEmpty")} description={t("friends.scoreEmptyDesc")} />
           ) : (
             <div className="overflow-hidden rounded-lg border border-border bg-card">
               {history.map((row, index) => {
