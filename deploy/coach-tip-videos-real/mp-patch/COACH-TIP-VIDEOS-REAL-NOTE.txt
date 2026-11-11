@@ -1,0 +1,3 @@
+对话指导讲解视频：中文 B站 iframe + 小红书真实外链卡；英文 YouTube。
+禁止 /tennis/examples 演示 mp4。用户输入中文（如正手上旋/正手上拳）强制中文平台。
+WebView 壳（APK/IPA/小程序）打开同一 /tennis 站点即可；本包同步四端分发说明。
