@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 对话指导真实平台讲解视频</title>
+  <style>
+    :root { --bg:#f3f7f4; --card:#fff; --line:#d7e3db; --ink:#14241a; --muted:#5b6f63; --pri:#0f8f6a; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: "PingFang SC","Noto Sans SC",sans-serif; background:linear-gradient(180deg,#e8f3ec,#f7faf8); color:var(--ink); }
+    .wrap { max-width:430px; margin:0 auto; padding:16px 14px 40px; }
+    .brand { font-weight:800; font-size:20px; }
+    .personas { display:flex; gap:8px; margin:12px 0; }
+    .persona { flex:1; border:1px solid var(--line); border-radius:12px; background:var(--card); padding:10px; }
+    .persona.on { border-color:var(--pri); background:#edf9f4; }
+    .persona .n { font-weight:700; font-size:14px; }
+    .persona .s { margin-top:4px; color:var(--pri); font-size:11px; font-weight:600; }
+    .tabs { display:flex; gap:8px; margin:8px 0 14px; }
+    .tab { flex:1; border:0; border-radius:10px; padding:10px; font-weight:700; background:#e6eee9; color:var(--muted); }
+    .tab.on { background:var(--pri); color:#fff; }
+    .bubble { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; font-size:14px; line-height:1.6; }
+    .video-lesson { border:1px solid var(--line); border-radius:10px; overflow:hidden; background:#fff; margin-top:10px; }
+    .video-lesson .hd { padding:8px 10px 2px; color:var(--pri); font-size:11px; font-weight:700; }
+    .video-lesson .ttl { padding:0 10px 6px; font-size:12px; font-weight:600; }
+    .video-lesson .ch { padding:0 10px 8px; font-size:10px; color:var(--muted); }
+    .video-lesson iframe { width:100%; aspect-ratio:16/9; border:0; display:block; background:#111; }
+    .video-lesson .open { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; aspect-ratio:16/9; background:#eef3f0; text-decoration:none; color:var(--pri); font-weight:700; font-size:13px; }
+    .video-lesson .open span { color:var(--muted); font-weight:500; font-size:10px; padding:0 16px; text-align:center; }
+    .video-lesson .ft { padding:8px 10px; font-size:11px; color:var(--muted); }
+    .note { font-size:12px; color:var(--muted); margin-top:8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">涨球</div>
+    <div class="personas" data-coach-chat-personas="true" data-network-empty="true">
+      <div class="persona on"><div class="n">AI 教练</div><div class="s">对话中</div></div>
+      <div class="persona" data-coach-pick-slot="true"><div class="n">真实网络教练</div><div class="s">无教练</div></div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" type="button">对话指导</button>
+      <button class="tab" type="button">视频指导</button>
+    </div>
+    <div class="bubble">
+      想学正手上旋？下面是<strong>真实平台</strong>讲解（B站可嵌播放；小红书打开原主页/笔记），不是站内演示片。
+      <div class="video-lesson" data-coach-video-lesson="true" data-video-platform="bilibili" data-video-embed="iframe"
+           data-video-real-url="https://www.bilibili.com/video/BV1F1xPzbEWs/">
+        <div class="hd">视频讲解 · B站</div>
+        <div class="ttl">正手上旋讲解</div>
+        <div class="ch">B站 · 零基础正手</div>
+        <iframe
+          title="正手上旋讲解"
+          src="https://player.bilibili.com/player.html?bvid=BV1F1xPzbEWs&page=1&high_quality=1&danmaku=0&autoplay=0"
+          allowfullscreen
+          allow="fullscreen; encrypted-media"></iframe>
+        <div class="ft"><a href="https://www.bilibili.com/video/BV1F1xPzbEWs/" target="_blank" rel="noreferrer">打开B站原链接</a> · 怎么练：先看完整挥拍路径，再上场慢喂 20 个。</div>
+      </div>
+      <div class="video-lesson" data-coach-video-lesson="true" data-video-platform="xiaohongshu" data-video-embed="link"
+           data-video-real-url="https://www.xiaohongshu.com/user/profile/5498cf362e1d933f88a37e85">
+        <div class="hd">视频讲解 · 小红书</div>
+        <div class="ttl">正手上旋讲解</div>
+        <div class="ch">小红书 · Sara爱热汗</div>
+        <a class="open" href="https://www.xiaohongshu.com/user/profile/5498cf362e1d933f88a37e85" target="_blank" rel="noreferrer">
+          在小红书打开真实讲解
+          <span>小红书暂不支持页内嵌入，点此打开原笔记/主页视频。</span>
+        </a>
+        <div class="ft">打开小红书看她的正手教程短视频，重点看击球点与转肩。</div>
+      </div>
+    </div>
+    <p class="note">禁止 /tennis/examples 演示片。无网络教练时头部只显示「无教练」，且不展示「网络教练留言」。</p>
+  </div>
+</body>
+</html>
