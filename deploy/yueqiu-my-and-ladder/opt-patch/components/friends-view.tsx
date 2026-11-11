@@ -240,6 +240,23 @@ export function FriendsView() {
   const [friendsMainTab, setFriendsMainTab] = useState<"match" | "ladder">("match");
   /** 录入比分表单默认收起，点「录入比分 / 去录入比分」后再展开 */
   const [scoreFormOpen, setScoreFormOpen] = useState(false);
+  const [ladderDetail, setLadderDetail] = useState<{
+    id: string;
+    name: string;
+    rank: number;
+    rating: number;
+  } | null>(null);
+  const [ladderDetailMatches, setLadderDetailMatches] = useState<
+    {
+      id: string;
+      date: string;
+      opponentName: string;
+      result: "win" | "loss";
+      sets: [number, number][];
+      ratingDelta?: number;
+    }[]
+  >([]);
+  const [ladderDetailBusy, setLadderDetailBusy] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hintTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -879,6 +896,44 @@ export function FriendsView() {
     if (selfId && (row.id === selfId || String(row.id) === selfId)) return true;
     if (name && row.name.trim().toLowerCase() === name) return true;
     return false;
+  }
+
+  async function openLadderPlayerDetail(row: LadderRow) {
+    setLadderDetail({
+      id: row.id,
+      name: row.name,
+      rank: row.rank,
+      rating: row.rating,
+    });
+    setLadderDetailMatches([]);
+    setLadderDetailBusy(true);
+    try {
+      const q = new URLSearchParams({
+        playerId: row.id,
+        name: row.name,
+        format,
+      });
+      const res = await fetch(`/tennis/api/friends/player-matches?${q}`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = (await res.json()) as {
+          matches?: {
+            id: string;
+            date: string;
+            opponentName: string;
+            result: "win" | "loss";
+            sets: [number, number][];
+            ratingDelta?: number;
+          }[];
+        };
+        setLadderDetailMatches(Array.isArray(data.matches) ? data.matches : []);
+      }
+    } catch {
+      setLadderDetailMatches([]);
+    } finally {
+      setLadderDetailBusy(false);
+    }
   }
 
   function challengeLadderRow(row: LadderRow) {
@@ -1673,11 +1728,86 @@ export function FriendsView() {
                 last={index === ladder.length - 1}
                 selfRow={isSelfLadderRow(row)}
                 busy={introBusy}
+                onOpen={() => void openLadderPlayerDetail(row)}
                 onChallenge={() => challengeLadderRow(row)}
               />
             ))}
           </div>
         )}
+
+        {ladderDetail ? (
+          <div
+            className="space-y-3 rounded-lg border border-border bg-card p-4"
+            data-ladder-player-detail={ladderDetail.id}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="truncate text-sm font-semibold text-foreground">
+                  {t("friends.playerDetailTitle", { name: ladderDetail.name })}
+                </h3>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  #{ladderDetail.rank} · {ladderDetail.rating.toFixed(1)}
+                </p>
+              </div>
+              <button
+                type="button"
+                data-ladder-player-detail-close="true"
+                onClick={() => setLadderDetail(null)}
+                className="shrink-0 text-[11px] font-medium text-muted-foreground underline-offset-2 hover:underline"
+              >
+                {t("friends.playerDetailClose")}
+              </button>
+            </div>
+            <h4 className="text-xs font-semibold text-foreground">{t("friends.playerRecentTitle")}</h4>
+            {ladderDetailBusy ? (
+              <p className="text-xs text-muted-foreground">…</p>
+            ) : ladderDetailMatches.length === 0 ? (
+              <p className="text-xs text-muted-foreground" data-ladder-player-recent-empty="true">
+                {t("friends.playerRecentEmpty")}
+              </p>
+            ) : (
+              <div className="overflow-hidden rounded-lg border border-border">
+                {ladderDetailMatches.map((m, index) => (
+                  <div
+                    key={m.id}
+                    data-ladder-player-recent-row={m.id}
+                    className={cn(
+                      "flex items-start justify-between gap-3 px-3 py-2.5",
+                      index === ladderDetailMatches.length - 1 ? "" : "border-b border-border",
+                    )}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {t(
+                          m.result === "win" ? "friends.playerRecentWin" : "friends.playerRecentLoss",
+                          { name: m.opponentName || "—" },
+                        )}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        {m.sets?.length ? formatSets(m.sets) : ""}
+                        {m.sets?.length ? " · " : ""}
+                        {m.date}
+                      </p>
+                    </div>
+                    {typeof m.ratingDelta === "number" && m.ratingDelta !== 0 ? (
+                      <p
+                        className={cn(
+                          "shrink-0 text-xs font-semibold tabular-nums",
+                          m.ratingDelta > 0 ? "text-emerald-600" : "text-rose-600",
+                        )}
+                        data-ladder-player-recent-delta={m.ratingDelta}
+                      >
+                        {m.ratingDelta > 0
+                          ? t("friends.deltaRatingUp", { n: m.ratingDelta.toFixed(1) })
+                          : t("friends.deltaRatingDown", { n: m.ratingDelta.toFixed(1) })}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
       </section>
       </div>
       )}
@@ -1685,17 +1815,41 @@ export function FriendsView() {
   );
 }
 
+function formatLadderDelta(
+  t: (key: string, params?: Record<string, string | number>) => string,
+  rankDelta: number | null | undefined,
+  ratingDelta: number | null | undefined,
+) {
+  if (rankDelta == null && ratingDelta == null) return "";
+  const rank =
+    !rankDelta || rankDelta === 0
+      ? ""
+      : rankDelta > 0
+        ? t("friends.deltaRankUp", { n: rankDelta })
+        : t("friends.deltaRankDown", { n: Math.abs(rankDelta) });
+  const rating =
+    ratingDelta == null || ratingDelta === 0
+      ? ""
+      : ratingDelta > 0
+        ? t("friends.deltaRatingUp", { n: ratingDelta.toFixed(1) })
+        : t("friends.deltaRatingDown", { n: ratingDelta.toFixed(1) });
+  if (!rank && !rating) return t("friends.deltaFlat");
+  return [rank, rating].filter(Boolean).join(" ");
+}
+
 function LadderRowView({
   row,
   last,
   selfRow,
   busy,
+  onOpen,
   onChallenge,
 }: {
-  row: LadderRow;
+  row: LadderRow & { rankDelta?: number | null; ratingDelta?: number | null };
   last: boolean;
   selfRow: boolean;
   busy: boolean;
+  onOpen: () => void;
   onChallenge: () => void;
 }) {
   const { t } = useI18n();
@@ -1706,41 +1860,64 @@ function LadderRowView({
     row.lastResult && row.lastOpponentName
       ? t(row.lastResult === "win" ? "friends.beat" : "friends.lost", { name: row.lastOpponentName })
       : "";
+  const deltaLabel = formatLadderDelta(t, row.rankDelta, row.ratingDelta);
+  const deltaUp = (row.rankDelta || 0) > 0 || (row.ratingDelta || 0) > 0;
+  const deltaDown = (row.rankDelta || 0) < 0 || (row.ratingDelta || 0) < 0;
   return (
     <div
       data-ladder-row={row.id}
       data-ladder-rank={row.rank}
       data-ladder-city={row.cityId}
       data-ladder-self={selfRow ? "true" : undefined}
+      data-ladder-rank-delta={row.rankDelta ?? ""}
+      data-ladder-rating-delta={row.ratingDelta ?? ""}
       className={cn("flex items-start gap-3 px-4 py-3", last ? "" : "border-b border-border")}
     >
       <p className="w-6 shrink-0 text-sm font-bold text-primary">{row.rank}</p>
-      <Avatar className="size-10">
-        <AvatarFallback className="bg-primary-subtle text-sm font-semibold text-primary">
-          {row.name.slice(0, 1)}
-        </AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="truncate text-sm font-medium text-foreground">{row.name}</p>
-          <p
-            className="shrink-0 text-sm font-bold text-foreground"
-            data-ladder-rating={row.rating}
-            data-ladder-projected={row.projected ? "true" : "false"}
-          >
-            {row.rating.toFixed(1)}
-            {row.projected ? (
-              <span className="ml-0.5 text-[10px] font-semibold text-muted-foreground" data-ladder-projected-mark="true">
-                (P)
-              </span>
-            ) : null}
+      <button
+        type="button"
+        data-ladder-player-open={row.id}
+        onClick={onOpen}
+        className="flex min-w-0 flex-1 items-start gap-3 text-left"
+      >
+        <Avatar className="size-10">
+          <AvatarFallback className="bg-primary-subtle text-sm font-semibold text-primary">
+            {row.name.slice(0, 1)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="truncate text-sm font-medium text-foreground">{row.name}</p>
+            <p
+              className="shrink-0 text-sm font-bold text-foreground"
+              data-ladder-rating={row.rating}
+              data-ladder-projected={row.projected ? "true" : "false"}
+            >
+              {row.rating.toFixed(1)}
+              {row.projected ? (
+                <span className="ml-0.5 text-[10px] font-semibold text-muted-foreground" data-ladder-projected-mark="true">
+                  (P)
+                </span>
+              ) : null}
+            </p>
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {form}
+            {lastLine ? ` · ${lastLine}` : ""}
           </p>
+          {deltaLabel ? (
+            <p
+              className={cn(
+                "mt-0.5 text-[11px] font-medium tabular-nums",
+                deltaUp ? "text-emerald-600" : deltaDown ? "text-rose-600" : "text-muted-foreground",
+              )}
+              data-ladder-delta-label="true"
+            >
+              {deltaLabel}
+            </p>
+          ) : null}
         </div>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          {form}
-          {lastLine ? ` · ${lastLine}` : ""}
-        </p>
-      </div>
+      </button>
       {selfRow ? (
         <span
           className="shrink-0 rounded-md bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground"
