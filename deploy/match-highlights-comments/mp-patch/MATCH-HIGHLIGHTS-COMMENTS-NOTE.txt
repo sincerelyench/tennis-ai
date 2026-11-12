@@ -1,0 +1,6 @@
+约球精彩集锦 + 评论（ZQ-100）
+
+原生壳 / 微信小程序通过 WebView 加载 https://yqchen.blog/tennis 。
+部署 Web（/opt/tennis-ai）后四端同步，无需单独改 uni-app 业务页。
+
+验证：登录 → 约球 → 我的约球 → 已录分行 → 添加精彩集锦 / 评论。
