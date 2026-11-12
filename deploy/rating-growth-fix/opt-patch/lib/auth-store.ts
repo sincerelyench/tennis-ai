@@ -7,7 +7,7 @@ export const sessionMaxAge = 60 * 60 * 24 * 30;
 
 /** Known demo / seed labels — never treat as real logged-in display names. */
 const BANNED_DISPLAY_NAMES =
-  /^(林凯教练|林凯|陈晓|李佳|周宁|王硕|赵琳|孙凯|钱芳|吴迪|陆明|唐悦|何川|沈琪|韩磊|马婷|刘洋|梁浩|陈雨|黄凯|林萱|徐峰|蒋宁|顾然|Alex Chen|Alex Kim|Sam Rivera|Jamie Cole|Yuki Sato|Mei Tan|Coach Lin Kai|111|Help Tip Demo|Restore QA|Signup Demo|ZQ85|zqdemo|probe|webview测试|yanqing|chenyanqing|yanqing Chen|严庆测试|位置测试|小猪|截图账号|截图验证|测试球友甲|测试球员甲|涨球测试|空成绩测试)$/i;
+  /^(林凯教练|林凯|陈晓|李佳|周宁|王硕|赵琳|孙凯|钱芳|吴迪|陆明|唐悦|何川|沈琪|韩磊|马婷|刘洋|梁浩|陈雨|黄凯|林萱|徐峰|蒋宁|顾然|Alex Chen|Alex Kim|Sam Rivera|Jamie Cole|Yuki Sato|Mei Tan|Coach Lin Kai|111|Help Tip Demo|Restore QA|Signup Demo|ZQ85|zqdemo|probe|webview测试|yanqing|chenyanqing|yanqing Chen|严庆测试|位置测试|小朱|截图账号|截图验证|测试球友甲|测试球员甲|涨球测试|空成绩测试)$/i;
 
 export type AuthUser = {
   phone: string;
