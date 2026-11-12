@@ -1,0 +1,6 @@
+yueqiu-scored-success (2026-11-12)
+
+Web /tennis/friends: successful matches show score inline when recorded;
+no separate 比分记录 block; 录入比分 only when unscored.
+
+APK / IPA / mp-weixin load the same WebView → deploy Web covers four surfaces.
