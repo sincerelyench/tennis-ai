@@ -39,10 +39,18 @@ FLAG_SHORT = {
 _KIND_ALIAS = {
     "forehand": "forehand",
     "topspin": "forehand",
+    "fh-topspin": "forehand",
     "forehand_slice": "forehand_slice",
+    "fh-slice": "forehand_slice",
     "slice": "forehand_slice",
     "backhand": "backhand",
+    "bh-topspin": "backhand",
     "backhand_slice": "backhand_slice",
+    "bh-slice": "backhand_slice",
+    "fh-volley": "volley_fh",
+    "bh-volley": "volley_bh",
+    "serve": "serve",
+    "smash": "smash",
 }
 
 
@@ -255,9 +263,23 @@ def _card_backhand(w: dict[str, str]) -> str:
 肘角参考：双手引拍 120–140° / 击球 130–150° / 随挥 100–130°；单反各段大约再大 20°。"""
 
 
-def _scope() -> str:
-    return """写给练球的人看。只点评底线正手和底线反手。
-看不清的细节直接跳过，不要在报告里解释评价范围或拍摄规范，也不要点名切削、截击、发球、高压。"""
+def _scope(clip_ids: list[str] | None = None) -> str:
+    ids = {normalize_kind(i) for i in (clip_ids or []) if i}
+    if "serve" in ids or "smash" in ids:
+        return """写给练球的人看。球员声明了发球或高压：按【发球】/【高压】来写，不要改写成底线正手上旋。
+看不清的细节直接跳过，不要在报告里解释评价范围或拍摄规范。"""
+    return """写给练球的人看。只点评球员声明的这项技术（正手/反手/切削/截击等）。
+看不清的细节直接跳过，不要在报告里解释评价范围或拍摄规范，也不要擅自改成别的技术。"""
+
+
+def _card_serve(w: dict[str, str]) -> str:
+    return f"""【发球】
+抛球：抛到持拍手一侧稍前方，高度稳定，不要漂到脑后。
+奖杯姿势：非持拍手指向球，拍头落到背后「掏口袋」，侧身对网。
+击球：在最高点、身前偏上打到；腿蹬地，不要直立甩胳膊。
+随挥：向持拍手对侧斜下收，不要停在头顶往上拎。
+必查：①抛球漂 ②抢奖杯姿势 ③打点偏低/贴身 ④只甩胳膊不上腿。
+肘角参考：引拍 90–110°，击球 150–170°，随挥 100–120°。口令可用「抛稳、顶上再打」。右手持拍收向{w['hit_side']}对侧。"""
 
 
 def _observability() -> str:
@@ -271,10 +293,12 @@ slot_drop、body_turn、weight_shift、tech_flags 是 2D 旁证，必须和附�
 def prompt_knowledge(clip_ids: list[str], handed: str = "right", player_level: str = "3.0") -> str:
     w = _side_words(handed if handed in ("left", "right") else "right")
     wanted = {normalize_kind(i) for i in clip_ids if i}
-    parts: list[str] = [prompt_level_block(player_level), _scope()]
-    if "forehand" in wanted or not wanted:
+    parts: list[str] = [prompt_level_block(player_level), _scope(clip_ids)]
+    if "serve" in wanted or "smash" in wanted:
+        parts.append(_card_serve(w))
+    elif "forehand" in wanted or "forehand_slice" in wanted or "volley_fh" in wanted or not wanted:
         parts.append(_card_forehand(w))
-    if "backhand" in wanted:
+    if "backhand" in wanted or "backhand_slice" in wanted or "volley_bh" in wanted:
         parts.append(_card_backhand(w))
     parts.append(_observability())
     return "\n\n".join(parts)

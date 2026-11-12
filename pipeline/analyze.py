@@ -9,6 +9,7 @@ import numpy as np
 from pipeline.contact import HitPoint, measure_hit_point, racket_head_xy, refine_contact_index, score_hit_point
 from pipeline.pose import KPT
 from pipeline.level import issue_text, level_caveat, parse_level, trim_coaching
+from pipeline.stroke import stroke_label as product_stroke_label
 from pipeline.technique import extra_findings, flag_rates, flags_from_values
 from pipeline.speed import (
     ball_track_xy,
@@ -908,9 +909,11 @@ def score_and_write(
     source: str = "overlay",
     hits: list | None = None,
     player_level: str = "3.0",
+    display_stroke: str | None = None,
 ) -> dict:
     """Map measured stats to 2.0 four-axis scores + coaching text."""
     level = parse_level(player_level)
+    shown = display_stroke or stroke
     n = summary["n_swings"] or 1
     cog = summary.get("cog_ratio") or 0.55
     stable = summary.get("cog_stable")
@@ -1106,7 +1109,17 @@ def score_and_write(
         level_caveat(level),
     ]
 
-    label = "底线反手" if stroke == "backhand" else "底线正手"
+    if shown in ("forehand", "backhand") or shown.startswith(("fh-", "bh-")):
+        if stroke == "backhand" or str(shown).startswith("bh-"):
+            label = "底线反手" if shown in ("backhand", "bh-topspin") else product_stroke_label(shown)
+        else:
+            label = "底线正手" if shown in ("forehand", "fh-topspin") else product_stroke_label(shown)
+    else:
+        label = product_stroke_label(shown)
+    # Make the declared technique visible in findings so reports don't look like
+    # a silent forehand default when the user picked 发球 / 高压 / …
+    if shown not in ("forehand", "backhand", "fh-topspin", "bh-topspin", ""):
+        strengths.insert(0, f"这次按【{label}】来看。")
     return {
         "label": label,
         "scores": scores,

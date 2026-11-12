@@ -9,6 +9,7 @@ import queue
 import shutil
 import sys
 import threading
+import time
 import traceback
 import uuid
 from datetime import datetime, timezone
@@ -24,7 +25,8 @@ if str(ROOT) not in sys.path:
 from pipeline.cursor_client import warm_agent
 from pipeline.level import DEFAULT_LEVEL, parse_level, public_levels
 from pipeline.oss import refresh_report_urls
-from pipeline.session import analyze_video, get_detector, get_estimator, json_default
+from pipeline.session import FAST_MAX_SECONDS, analyze_video, get_detector, get_estimator, json_default
+from pipeline.stroke import normalize_stroke
 from web.api_errors import CodedHTTPException, coded_handler
 from web.dev_auth import bearer_token, issue_dev_token, verify_dev_token
 from web.history import archive_report, find_archive, list_history
@@ -43,6 +45,7 @@ JOBS_DIR = ROOT / "outputs" / "jobs"
 REPORTS_DIR = ROOT / "outputs" / "reports"
 PROGRESS_DIR = ROOT / "outputs" / "progress"
 SAMPLE_CACHE_DIR = ROOT / "outputs" / "sample_cache"
+CONTENT_CACHE_DIR = ROOT / "outputs" / "content_cache"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 I18N_DIR = ROOT / "i18n"
 E1_ASSETS = {"e1.css": "text/css", "e1.js": "text/javascript"}
@@ -50,16 +53,26 @@ SAMPLE_CANDIDATES = [
     ROOT / "samples" / "demo.mp4",
 ]
 SAMPLE_CACHE_VERSION = "2.8-player-level"
+CONTENT_CACHE_VERSION = "1.0-fast"
+AUTO_FAST_MAX_SECONDS = 10.5
 
 JOBS_DIR.mkdir(parents=True, exist_ok=True)
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 SAMPLE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+CONTENT_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 _jobs: dict[str, dict] = {}
 _lock = threading.Lock()
 _queue: queue.Queue[str] = queue.Queue()
 _worker_started = False
 _TERMINAL = {"done", "error", "cancelled"}
+# Running/queued jobs with no progress update for this long are treated as dead
+# so a crashed worker cannot leave /api/analyze stuck returning 409 forever.
+STALE_JOB_S = int(os.environ.get("TAI_STALE_JOB_S", "1200"))
+# Parallel analyze: multiple worker threads share one GPU lock (see pipeline.session).
+# L20-2Q is ~2GB so default workers=2 (pose can overlap coaching on the other job).
+WORKER_COUNT = max(1, int(os.environ.get("TAI_WORKERS", "2")))
+MAX_JOBS = max(WORKER_COUNT, int(os.environ.get("TAI_MAX_JOBS", "8")))
 
 
 def _sample_path() -> Path | None:
@@ -90,6 +103,93 @@ def _clear_sample_cache(src: Path, stroke: str, level: str = DEFAULT_LEVEL) -> N
     cache = _sample_cache_dir(src, stroke, level)
     if cache.is_dir():
         shutil.rmtree(cache, ignore_errors=True)
+
+
+def _content_fingerprint(digest: str, stroke: str, level: str, mode: str) -> str:
+    raw = f"{CONTENT_CACHE_VERSION}|{digest}|{stroke}|{level}|{mode}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:20]
+
+
+def _content_cache_dir(digest: str, stroke: str, level: str, mode: str) -> Path:
+    return CONTENT_CACHE_DIR / _content_fingerprint(digest, stroke, level, mode)
+
+
+def _load_content_cache(digest: str, stroke: str, level: str, mode: str) -> Path | None:
+    cache = _content_cache_dir(digest, stroke, level, mode)
+    if (cache / "report.json").is_file():
+        return cache
+    return None
+
+
+def _save_content_cache(job_id: str, digest: str, stroke: str, level: str, mode: str) -> None:
+    cache = _content_cache_dir(digest, stroke, level, mode)
+    cache.mkdir(parents=True, exist_ok=True)
+    job_dir = JOBS_DIR / job_id
+    report = job_dir / "report.json"
+    if report.is_file():
+        shutil.copy2(report, cache / "report.json")
+    kf_src = job_dir / "keyframes"
+    if kf_src.is_dir():
+        kf_dst = cache / "keyframes"
+        if kf_dst.exists():
+            shutil.rmtree(kf_dst, ignore_errors=True)
+        shutil.copytree(kf_src, kf_dst)
+    for name in ("preview.jpg", "cover.jpg"):
+        src = job_dir / name
+        if src.is_file():
+            shutil.copy2(src, cache / name)
+
+
+def _install_report_cache(job_id: str, cache: Path) -> dict:
+    job_dir = JOBS_DIR / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    report = cache / "report.json"
+    if report.is_file():
+        shutil.copy2(report, job_dir / "report.json")
+    kf_src = cache / "keyframes"
+    if kf_src.is_dir():
+        kf_dst = job_dir / "keyframes"
+        if kf_dst.exists():
+            shutil.rmtree(kf_dst, ignore_errors=True)
+        shutil.copytree(kf_src, kf_dst)
+    for name in ("preview.jpg", "cover.jpg"):
+        src = cache / name
+        if src.is_file():
+            shutil.copy2(src, job_dir / name)
+    data = json.loads((job_dir / "report.json").read_text(encoding="utf-8"))
+    overall = data.get("overall") or {}
+    return {
+        "score": overall.get("score"),
+        "n_swings": overall.get("n_swings"),
+        "source_name": data.get("source_name"),
+        "analyze_mode": data.get("analyze_mode") or "fast",
+        "report": data,
+    }
+
+
+def _video_duration_s(path: Path) -> float:
+    cap = None
+    try:
+        import cv2
+
+        cap = cv2.VideoCapture(str(path))
+        if not cap.isOpened():
+            return 0.0
+        fps = float(cap.get(cv2.CAP_PROP_FPS) or 0.0)
+        n = float(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0.0)
+        if fps > 1e-3 and n > 0:
+            return n / fps
+    except Exception:
+        return 0.0
+    finally:
+        if cap is not None:
+            cap.release()
+    return 0.0
+
+
+def _truthy(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
 
 
 def _save_sample_cache(job_id: str, src: Path, stroke: str, level: str = DEFAULT_LEVEL) -> None:
@@ -132,6 +232,17 @@ def _public_job(job: dict) -> dict:
 
 
 def _eta_fields(job: dict) -> dict:
+    mode = str(job.get("analyze_mode") or "full")
+    if mode == "fast":
+        steps = [
+            {"step": 1, "name": "读取视频", "seconds": 2, "label": "约 2 秒"},
+            {"step": 2, "name": "识别动作", "seconds": 6, "label": "约 6 秒"},
+            {"step": 3, "name": "找出挥拍", "seconds": 1, "label": "约 1 秒"},
+            {"step": 4, "name": "整理数据", "seconds": 1, "label": "约 1 秒"},
+            {"step": 5, "name": "教练点评", "seconds": 1, "label": "约 1 秒"},
+        ]
+        remain = max(0, int(sum(s["seconds"] for s in steps) * (1 - float(job.get("progress") or 0) / 100.0)))
+        return {"eta_steps": steps, "eta_remaining_s": remain, "eta_hint": "快速分析约 10 秒内", "analyze_mode": mode}
     duration = float(job.get("max_seconds") or 0)
     if duration <= 0:
         duration = 90.0
@@ -205,12 +316,93 @@ def _load_status_file(job_dir: Path) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
-def _busy_job() -> dict | None:
+def _active_jobs_locked() -> list[dict]:
+    return [job for job in _jobs.values() if job.get("status") in ("queued", "running")]
+
+
+def _active_count() -> int:
     with _lock:
-        for job in _jobs.values():
-            if job.get("status") in ("queued", "running"):
-                return job
-    return None
+        return len(_active_jobs_locked())
+
+
+def _at_capacity() -> bool:
+    return _active_count() >= MAX_JOBS
+
+
+def _busy_job() -> dict | None:
+    """Prefer a running job for snapshots; else the oldest queued one."""
+    with _lock:
+        running = [j for j in _jobs.values() if j.get("status") == "running"]
+        if running:
+            return running[0]
+        queued = [j for j in _jobs.values() if j.get("status") == "queued"]
+        return queued[0] if queued else None
+
+
+def _parse_job_ts(value: object) -> float | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return datetime.fromisoformat(value).timestamp()
+    except ValueError:
+        return None
+
+
+def _busy_snapshot(job: dict | None = None) -> dict | None:
+    """Public fields for health/409 so clients can show why submit is blocked."""
+    current = job if job is not None else _busy_job()
+    if current is None:
+        return None
+    eta = _eta_fields(current)
+    return {
+        "id": current.get("id"),
+        "status": current.get("status"),
+        "progress": current.get("progress"),
+        "step": current.get("step"),
+        "step_name": current.get("step_name"),
+        "message": current.get("message"),
+        "updated_at": current.get("updated_at") or current.get("created_at"),
+        "eta_hint": eta.get("eta_hint"),
+        "eta_remaining_s": eta.get("eta_remaining_s"),
+    }
+
+
+def _raise_busy() -> None:
+    snap = _busy_snapshot()
+    raise CodedHTTPException(
+        409,
+        "busy",
+        "分析队列已满，请稍后再试",
+        extra={
+            "busy_job": snap,
+            "active_jobs": _active_count(),
+            "max_jobs": MAX_JOBS,
+        }
+        if snap
+        else {"active_jobs": _active_count(), "max_jobs": MAX_JOBS},
+    )
+
+
+def _reap_stale_jobs() -> list[str]:
+    """Mark zombie queued/running jobs as error so worker slots free."""
+    if STALE_JOB_S <= 0:
+        return []
+    now = time.time()
+    reaped: list[str] = []
+    with _lock:
+        for job_id, job in list(_jobs.items()):
+            if job.get("status") not in ("queued", "running"):
+                continue
+            ts = _parse_job_ts(job.get("updated_at")) or _parse_job_ts(job.get("created_at"))
+            if ts is None or (now - ts) < STALE_JOB_S:
+                continue
+            job["status"] = "error"
+            job["message"] = "分析超时未完成，请重新提交"
+            job["error"] = "stale_job"
+            job["updated_at"] = _now()
+            _write_status(job_id)
+            reaped.append(job_id)
+    return reaped
 
 
 def _recover_jobs() -> None:
@@ -269,7 +461,10 @@ def _run_job(job_id: str) -> None:
     job = _jobs[job_id]
     out_dir = JOBS_DIR / job_id
     try:
-        _set(job_id, status="running", step=1, step_name="读取视频", progress=1, message="开始分析你的录像…")
+        mode = str(job.get("analyze_mode") or "full")
+        fast = mode == "fast"
+        msg = "快速分析短片段…" if fast else "开始分析你的录像…"
+        _set(job_id, status="running", step=1, step_name="读取视频", progress=1, message=msg)
 
         def progress(payload: dict) -> None:
             with _lock:
@@ -288,7 +483,12 @@ def _run_job(job_id: str) -> None:
             title=job.get("title") or "网球挥拍测评报告",
             player_level=job.get("player_level") or DEFAULT_LEVEL,
             progress=progress,
+            fast=fast,
         )
+        if report.get("analyze_mode"):
+            with _lock:
+                if job_id in _jobs:
+                    _jobs[job_id]["analyze_mode"] = report.get("analyze_mode")
         _set(
             job_id,
             status="done",
@@ -310,6 +510,15 @@ def _run_job(job_id: str) -> None:
                     str(job.get("stroke_mode") or "forehand"),
                     str(job.get("player_level") or DEFAULT_LEVEL),
                 )
+        digest = str(job.get("content_sha256") or "")
+        if digest:
+            _save_content_cache(
+                job_id,
+                digest,
+                str(job.get("stroke_mode") or "forehand"),
+                str(job.get("player_level") or DEFAULT_LEVEL),
+                str(job.get("analyze_mode") or report.get("analyze_mode") or "full"),
+            )
     except Exception as exc:
         user_msg = str(exc) if isinstance(exc, RuntimeError) else "分析失败，请稍后重试"
         _set(
@@ -369,8 +578,12 @@ def _start_worker() -> None:
     if _worker_started:
         return
     _worker_started = True
-    t = threading.Thread(target=_worker, name="analyze-worker", daemon=True)
-    t.start()
+    for i in range(WORKER_COUNT):
+        threading.Thread(
+            target=_worker,
+            name=f"analyze-worker-{i}",
+            daemon=True,
+        ).start()
     threading.Thread(target=warm_agent, name="cursor-warm", daemon=True).start()
     _recover_jobs()
 
@@ -439,6 +652,32 @@ def _archived_file(job_id: str, *names: str) -> Path | None:
 
 app = FastAPI(title="网球挥拍测评 2.0")
 app.add_exception_handler(CodedHTTPException, coded_handler)
+
+@app.middleware("http")
+async def analyze_busy_guard(request: Request, call_next):
+    """Reject only when the multi-job queue is full — before multipart parse."""
+    path = request.url.path.rstrip("/")
+    if request.method == "POST" and path.endswith("/api/analyze"):
+        _reap_stale_jobs()
+        if _at_capacity():
+            snap = _busy_snapshot()
+            content = {
+                "detail": "分析队列已满，请稍后再试",
+                "code": "busy",
+                "active_jobs": _active_count(),
+                "max_jobs": MAX_JOBS,
+            }
+            if snap:
+                content["busy_job"] = snap
+            # Do not await request.body() — that forced a full phone upload into
+            # a 409 (~2min). Client pingTai().busy fail-fasts when at capacity.
+            return JSONResponse(
+                status_code=409,
+                content=content,
+                headers={"Connection": "close"},
+            )
+    return await call_next(request)
+
 if os.environ.get("TENNIS_AI_NO_WORKER") != "1":
     _start_worker()
 else:
@@ -447,6 +686,7 @@ else:
 
 @app.get("/api/health")
 def health():
+    _reap_stale_jobs()
     sample = _sample_path()
     gpu = False
     try:
@@ -455,12 +695,20 @@ def health():
         gpu = bool(torch.cuda.is_available())
     except Exception:
         gpu = False
+    active = _active_count()
+    at_cap = active >= MAX_JOBS
+    snap = _busy_snapshot() if active else None
     return {
         "ok": True,
         "sample": bool(sample),
         "gpu": gpu,
         "version": "2.0",
-        "busy": bool(_busy_job()),
+        # busy=true only when the queue cannot accept another job (Next fail-fast).
+        "busy": at_cap,
+        "busy_job": snap if at_cap else None,
+        "active_jobs": active,
+        "max_jobs": MAX_JOBS,
+        "workers": WORKER_COUNT,
         "levels": public_levels(),
         "default_level": DEFAULT_LEVEL,
     }
@@ -543,10 +791,12 @@ async def analyze(
     client: str = Form(default=""),
     guide_completed: str = Form(default=""),
     guide_checks: str = Form(default=""),
+    fast: str = Form(default=""),
     authorization: str | None = Header(default=None),
 ):
     if stroke not in ("auto", "forehand", "backhand", "serve"):
         stroke = "forehand"
+    stroke = normalize_stroke(stroke, default="forehand")
     player_level = parse_level(level).code
     _client_name, metadata = _prepare_upload_meta(
         client, guide_completed, guide_checks, authorization
@@ -592,8 +842,9 @@ async def analyze(
             _save_progress(job_id)
             return {"job_id": job_id, "cached": True}
 
-    if _busy_job():
-        raise CodedHTTPException(409, "busy", "正在分析其他录像，请稍后再试")
+    _reap_stale_jobs()
+    if _at_capacity():
+        _raise_busy()
 
     if use_sample and force_refresh and src is not None:
         _clear_sample_cache(src, stroke, player_level)
@@ -602,10 +853,14 @@ async def analyze(
     out_dir = JOBS_DIR / job_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    want_fast = _truthy(fast)
+    content_sha = ""
+    analyze_mode = "full"
     if use_sample:
         video_path = src
         source_name = src.name
-        max_seconds = 60
+        analyze_mode = "fast" if want_fast else "full"
+        max_seconds = FAST_MAX_SECONDS if want_fast else 60
     else:
         if video is None or not video.filename:
             shutil.rmtree(out_dir, ignore_errors=True)
@@ -617,23 +872,87 @@ async def analyze(
             shutil.rmtree(out_dir, ignore_errors=True)
             code, message = rejection
             raise CodedHTTPException(400, code, message)
+        content_sha = hashlib.sha256(data).hexdigest()
         video_path = out_dir / f"source{suffix}"
         video_path.write_bytes(data)
         source_name = Path(video.filename).name
-        max_seconds = 0
+        duration = _video_duration_s(video_path)
+        if want_fast or (duration > 0 and duration <= AUTO_FAST_MAX_SECONDS):
+            analyze_mode = "fast"
+            max_seconds = FAST_MAX_SECONDS if (not max_seconds or max_seconds <= 0) else min(
+                float(max_seconds), FAST_MAX_SECONDS
+            )
+        else:
+            max_seconds = float(max_seconds or 0)
+
+        if not force_refresh and content_sha:
+            cache = _load_content_cache(content_sha, stroke, player_level, analyze_mode)
+            if cache is not None:
+                meta = _install_report_cache(job_id, cache)
+                now = _now()
+                mode = str(meta.get("analyze_mode") or analyze_mode)
+                with _lock:
+                    _jobs[job_id] = {
+                        "id": job_id,
+                        "status": "done",
+                        "step": 5,
+                        "step_name": "教练点评",
+                        "progress": 100,
+                        "message": "分析完成",
+                        "max_seconds": max_seconds or FAST_MAX_SECONDS,
+                        "stroke_mode": stroke,
+                        "player_level": player_level,
+                        "title": title,
+                        "source_name": source_name,
+                        "score": meta.get("score"),
+                        "n_swings": meta.get("n_swings"),
+                        "cached": True,
+                        "is_sample": False,
+                        "analyze_mode": mode,
+                        "created_at": now,
+                        "updated_at": now,
+                    }
+                    if metadata:
+                        _jobs[job_id]["metadata"] = metadata
+                    _write_status(job_id)
+                archive_report(JOBS_DIR / job_id, REPORTS_DIR)
+                _save_progress(job_id)
+                out = {
+                    "job_id": job_id,
+                    "cached": True,
+                    "queued": False,
+                    "analyze_mode": mode,
+                    "fast": mode == "fast",
+                }
+                if isinstance(meta.get("report"), dict):
+                    out["report"] = meta["report"]
+                    out["status"] = "done"
+                    out["progress"] = 100
+                    out["score"] = meta.get("score")
+                return out
 
     with _lock:
-        for job in _jobs.values():
-            if job.get("status") in ("queued", "running"):
-                shutil.rmtree(out_dir, ignore_errors=True)
-                raise CodedHTTPException(409, "busy", "正在分析其他录像，请稍后再试")
+        active = _active_jobs_locked()
+        if len(active) >= MAX_JOBS:
+            shutil.rmtree(out_dir, ignore_errors=True)
+            snap = _busy_snapshot(active[0])
+            raise CodedHTTPException(
+                409,
+                "busy",
+                "分析队列已满，请稍后再试",
+                extra={
+                    "busy_job": snap,
+                    "active_jobs": len(active),
+                    "max_jobs": MAX_JOBS,
+                },
+            )
         record = {
             "id": job_id,
             "status": "queued",
             "step": 0,
             "step_name": "准备中",
             "progress": 0,
-            "message": "开始分析…",
+            "message": "快速分析…" if analyze_mode == "fast" else "开始分析…",
             "max_seconds": max_seconds,
             "stroke_mode": stroke,
             "player_level": player_level,
@@ -641,6 +960,8 @@ async def analyze(
             "source_name": source_name,
             "video_path": str(video_path),
             "is_sample": use_sample,
+            "analyze_mode": analyze_mode,
+            "content_sha256": content_sha,
             "created_at": _now(),
         }
         if metadata:
@@ -649,7 +970,13 @@ async def analyze(
         _write_status(job_id)
 
     _queue.put(job_id)
-    return {"job_id": job_id, "cached": False}
+    return {
+        "job_id": job_id,
+        "cached": False,
+        "queued": True,
+        "analyze_mode": analyze_mode,
+        "fast": analyze_mode == "fast",
+    }
 
 
 @app.get("/api/history")

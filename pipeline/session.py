@@ -7,12 +7,16 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
 import cv2
 import numpy as np
+
+# Shared YOLO weights are not safe for concurrent CUDA predict on ~2GB vGPU.
+_gpu_lock = threading.Lock()
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -40,6 +44,7 @@ from pipeline.level import level_caveat, parse_level
 from pipeline.technique import flag_notes
 from pipeline.speed import mean_speeds
 from pipeline.detect import (
+    FrameObjects,
     ObjectDetector,
     bind_ball_to_player,
     default_detect_path,
@@ -371,13 +376,14 @@ def _refine_contact_objects(
     for i in range(0, len(crops), step):
         chunk = crops[i : i + step]
         infos = meta[i : i + step]
-        found = det.infer_batch(
-            chunk,
-            imgsz=640,
-            conf=0.08,
-            min_ball_diam=3.0,
-            max_ball_diam=140.0,
-        )
+        with _gpu_lock:
+            found = det.infer_batch(
+                chunk,
+                imgsz=640,
+                conf=0.08,
+                min_ball_diam=3.0,
+                max_ball_diam=140.0,
+            )
         for objs, (fi, ox, oy) in zip(found, infos):
             shift_objects(objs, ox, oy)
             if fi < len(obj_list):
@@ -393,9 +399,23 @@ def _publish(job_id: str, rel: str, path: Path) -> dict:
     return upload_file(path, object_key(job_id, rel))
 
 
+def _publish_local(job_id: str, rel: str, path: Path) -> dict:
+    """Serve assets from /jobs/{id}/… — skips OSS round-trips for the fast path."""
+    if not path.is_file():
+        raise RuntimeError("保存文件失败，请稍后重试")
+    rel = rel.replace("\\", "/").lstrip("/")
+    return {"key": "", "url": f"/jobs/{job_id}/{rel}", "expires_at": None}
+
+
 def _emit(cb: ProgressCb | None, **payload) -> None:
     if cb:
         cb(payload)
+
+
+# Fast path for typical ~10s clips: analyze the opening window with real pose/score,
+# skip overlay encode / clip cut / coach LLM / per-frame object detect. Window kept
+# short so e2e stays near ~10s on the GPU box.
+FAST_MAX_SECONDS = 4.0
 
 
 def analyze_video(
@@ -408,6 +428,7 @@ def analyze_video(
     player_level: str = "3.0",
     estimator: PoseEstimator | None = None,
     progress: ProgressCb | None = None,
+    fast: bool = False,
 ) -> dict:
     level = parse_level(player_level)
     video_path = Path(video_path)
@@ -416,7 +437,8 @@ def analyze_video(
     kf_dir = out_dir / "keyframes"
     kf_dir.mkdir(parents=True, exist_ok=True)
     job_id = out_dir.name
-    require_configured()
+    if not fast:
+        require_configured()
 
     _emit(progress, step=1, step_name="读取视频", progress=3, message="正在打开你的录像…")
 
@@ -428,6 +450,8 @@ def analyze_video(
     n_total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 960)
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 544)
+    if fast and (not max_seconds or max_seconds <= 0 or max_seconds > FAST_MAX_SECONDS):
+        max_seconds = FAST_MAX_SECONDS
     if max_seconds and max_seconds > 0:
         max_frames = int(max_seconds * fps)
         if n_total > 0:
@@ -435,6 +459,9 @@ def analyze_video(
     else:
         max_frames = n_total if n_total > 0 else 10**9
     target = max(1, max_frames)
+    publish = (lambda rel, path: _publish_local(job_id, rel, path)) if fast else (
+        lambda rel, path: _publish(job_id, rel, path)
+    )
 
     est = estimator or get_estimator()
     det = get_detector()
@@ -445,9 +472,6 @@ def analyze_video(
         progress=8,
         message="正在识别球员动作…",
     )
-
-    est = estimator or get_estimator()
-    det = get_detector()
     ts: list[float] = []
     xy_list: list[np.ndarray] = []
     conf_list: list[np.ndarray] = []
@@ -486,18 +510,26 @@ def analyze_video(
         nonlocal i
         if not buf:
             return
-        poses = est.infer_batch(buf)
-        objects = det.infer_batch(buf)
+        with _gpu_lock:
+            poses = est.infer_batch(buf)
+            objects = (
+                [FrameObjects() for _ in buf]
+                if fast
+                else det.infer_batch(buf)
+            )
         for frame, pose, objs in zip(buf, poses, objects):
-            bind_ball_to_player(objs, pose.xy, pose.conf)
-            vis = draw_objects(draw_pose(frame, pose), objs)
-            vis = _draw_hud(vis, i / fps, pose.ok, i + 1, target)
+            if not fast:
+                bind_ball_to_player(objs, pose.xy, pose.conf)
             xy_list.append(pose.xy)
             conf_list.append(pose.conf)
             ok_flags.append(bool(pose.ok))
             obj_list.append(objs)
             ts.append(i / fps)
-            if (i % 18) == 0:
+            # Preview less often on fast path to cut CPU encode cost.
+            preview_every = 30 if fast else 18
+            if (i % preview_every) == 0:
+                vis = draw_objects(draw_pose(frame, pose), objs)
+                vis = _draw_hud(vis, i / fps, pose.ok, i + 1, target)
                 cv2.imwrite(str(preview_path), vis, [int(cv2.IMWRITE_JPEG_QUALITY), 72])
                 _emit(
                     progress,
@@ -546,17 +578,20 @@ def analyze_video(
             labels.append(classify_swing(xy_list, conf_list, t_arr, p, handed, fps))
 
     _emit(progress, step=3, step_name="找出挥拍", progress=80, message="正在对准击球点…")
-    refine_ids = _contact_frame_ids(peaks, fps, len(ts))
-    n_refined = _refine_contact_objects(
-        video_path,
-        det,
-        refine_ids,
-        xy_list,
-        conf_list,
-        obj_list,
-        target,
-        batch,
-    )
+    if fast:
+        n_refined = 0
+    else:
+        refine_ids = _contact_frame_ids(peaks, fps, len(ts))
+        n_refined = _refine_contact_objects(
+            video_path,
+            det,
+            refine_ids,
+            xy_list,
+            conf_list,
+            obj_list,
+            target,
+            batch,
+        )
 
     ball_xy = interpolate_xy([o.ball_xy if o is not None else None for o in obj_list])
     racket_xy = [o.racket_xy if o is not None else None for o in obj_list]
@@ -773,25 +808,33 @@ def analyze_video(
         overall_n = 0
         total_swings = 0
 
-    overlay_path = out_dir / "overlay.mp4"
-    _emit(progress, step=4, step_name="整理数据", progress=86, message="正在生成回放，并标出击球点…")
-    overlay_pub, preview_pub = _write_overlay(
-        video_path,
-        overlay_path,
-        preview_path,
-        job_id,
-        fps,
-        width,
-        height,
-        target,
-        xy_list,
-        conf_list,
-        ok_flags,
-        obj_list,
-        contact_hits,
-    )
-    _emit(progress, step=4, step_name="整理数据", progress=87, message="正在剪出每一次完整挥拍…")
-    _attach_swing_videos(job_id, overlay_path, clips, fps, out_dir)
+    if fast:
+        _emit(progress, step=4, step_name="整理数据", progress=86, message="快速路径：跳过整段回放编码…")
+        if preview_path.is_file():
+            preview_pub = publish("preview.jpg", preview_path)
+        else:
+            preview_pub = {"key": "", "url": "", "expires_at": None}
+        overlay_pub = {"key": "", "url": "", "expires_at": None}
+    else:
+        overlay_path = out_dir / "overlay.mp4"
+        _emit(progress, step=4, step_name="整理数据", progress=86, message="正在生成回放，并标出击球点…")
+        overlay_pub, preview_pub = _write_overlay(
+            video_path,
+            overlay_path,
+            preview_path,
+            job_id,
+            fps,
+            width,
+            height,
+            target,
+            xy_list,
+            conf_list,
+            ok_flags,
+            obj_list,
+            contact_hits,
+        )
+        _emit(progress, step=4, step_name="整理数据", progress=87, message="正在剪出每一次完整挥拍…")
+        _attach_swing_videos(job_id, overlay_path, clips, fps, out_dir)
 
     grade, grade_label = grade_from_score(int(overall_scores["综合"]))
 
@@ -810,7 +853,7 @@ def analyze_video(
         cover_abs.write_bytes(preview_path.read_bytes())
     if not cover_abs.is_file():
         raise RuntimeError("无法生成封面，请换一段录像再试")
-    cover_pub = _publish(job_id, cover_rel, cover_abs)
+    cover_pub = publish(cover_rel, cover_abs)
 
     if dummy_series is not None:
         combined_series = {
@@ -841,6 +884,7 @@ def analyze_video(
         "detect_rate": round(detect_rate, 3),
         "max_seconds": max_seconds,
         "stroke_mode": stroke_mode,
+        "analyze_mode": "fast" if fast else "full",
         "tracking": {
             "ball_frames": int(sum(1 for b in ball_xy if b is not None)),
             "racket_frames": int(sum(1 for r in racket_xy if r is not None)),
@@ -881,7 +925,32 @@ def analyze_video(
         ],
     }
 
-    if clips:
+    if fast:
+        report.setdefault("caveats", [])
+        report["caveats"] = list(report.get("caveats") or [])
+        report["caveats"].insert(
+            0,
+            f"快速分析：处理约 {int(max_seconds or FAST_MAX_SECONDS)} 秒内片段，跳过整段回放与涨球教练长文案；评分与动作截图仍来自真实识别。",
+        )
+        strengths: list[str] = []
+        problems: list[str] = []
+        drills: list[str] = []
+        for clip in clips:
+            analysis = clip.get("analysis") or {}
+            strengths.extend(analysis.get("strengths") or [])
+            problems.extend(analysis.get("problems") or [])
+            drills.extend(analysis.get("drills") or [])
+        report["coach"] = {
+            "status": "fast",
+            "summary": "快速分析结果（教练长文案已跳过，可再跑完整分析）。",
+            "strengths": strengths[:4],
+            "problems": problems[:4],
+            "drills": drills[:4],
+        }
+        if not report.get("summary"):
+            report["summary"] = report["coach"]["summary"]
+        _emit(progress, step=5, step_name="教练点评", progress=96, message="快速路径：已用规则引擎整理建议…")
+    elif clips:
         _emit(
             progress,
             step=5,
@@ -889,7 +958,25 @@ def analyze_video(
             progress=88,
             message="正在写练习建议，大约还要 2 分钟…",
         )
-        report = enrich_with_cursor(report, kf_dir, progress=progress)
+        # Soft-fail coaching: a hung Cursor agent must not pin a worker forever.
+        # Keep rule scores and finish so other queued jobs can run.
+        try:
+            report = enrich_with_cursor(report, kf_dir, progress=progress)
+        except Exception as exc:
+            print(f"[coach] soft-fail: {exc}", flush=True)
+            report["coach"] = {
+                "status": "skipped",
+                "error": str(exc)[:200],
+            }
+            if not report.get("summary"):
+                report["summary"] = "本次已完成动作评分；教练文字点评暂不可用，请稍后再试。"
+            _emit(
+                progress,
+                step=5,
+                step_name="教练点评",
+                progress=96,
+                message="教练点评暂不可用，正在整理评分报告…",
+            )
     else:
         report["coach"] = {"status": "skipped"}
         _emit(progress, step=5, step_name="教练点评", progress=96, message="没有完整挥拍，跳过教练点评…")

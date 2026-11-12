@@ -1,0 +1,9 @@
+涨球 ZQ-81 · 分析约10秒内 + 关页不中断
+
+Web: https://yqchen.blog/tennis/coach （视频指导）
+GPU: https://yqchen.blog/tai/api/health
+Preview: https://yqchen.blog/analyze-10s-persist.html
+
+- 短片 ≤~10.5s / fast=1 → analyze_mode=fast（跳过 overlay + LLM）
+- 教练视频指导 job_id 持久化 tennis-coach-active-job-v1；离开不取消
+- 四端：Web 源更新；APK/IPA/mp WebView 同源继承
