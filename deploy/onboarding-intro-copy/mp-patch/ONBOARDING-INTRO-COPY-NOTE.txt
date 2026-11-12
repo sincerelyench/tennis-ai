@@ -1,0 +1,7 @@
+onboarding-intro-copy (2026-11-12)
+
+Web: /opt/tennis-ai lib/i18n/messages.ts onboard.title/lead updated.
+APK / IPA / mp-weixin: WebView shells → https://yqchen.blog/tennis (no native rebuild required for this copy-only change).
+
+zh lead (exact):
+掌球可以帮助你，有AI教练和真实教练帮助你提高水平，还能让你约到合适的球友，通过比赛提高水平。让我们大家一起涨球。
