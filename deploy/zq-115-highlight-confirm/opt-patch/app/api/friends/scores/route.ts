@@ -1,0 +1,92 @@
+import { cookies } from "next/headers";
+import { getSession, sessionCookie } from "@/lib/auth-store";
+import { bearerToken, json, preflight } from "@/lib/auth-http";
+import {
+  createPendingScore,
+  listScoresForUser,
+  publicScore,
+  type MatchScore,
+} from "@/lib/match-scores";
+import type { LadderFormat } from "@/lib/local-ladder";
+
+export async function OPTIONS(request: Request) {
+  return preflight(request);
+}
+
+/**
+ * GET /api/friends/scores
+ * Lists pending-for-me, my pending submissions, and confirmed matches for the session.
+ * Empty → counts 0 (no demo rows).
+ */
+export async function GET(request: Request) {
+  const jar = await cookies();
+  const token = bearerToken(request) || jar.get(sessionCookie)?.value || "";
+  const session = getSession(token);
+  if (!session) return json(request, { error: "Please sign in" }, 401);
+
+  const listed = listScoresForUser({
+    phone: session.phone,
+    displayName: session.displayName || "",
+  });
+
+  return json(request, {
+    ok: true,
+    pendingForMe: listed.pendingForMe.map(publicScore),
+    minePending: listed.minePending.map(publicScore),
+    confirmed: listed.confirmed.map(publicScore),
+    count: listed.count,
+    empty: listed.count === 0,
+    self: {
+      phone: session.phone,
+      displayName: session.displayName || "",
+    },
+  });
+}
+
+/**
+ * POST /api/friends/scores
+ * Create a pending score. Opponent must confirm before ranking/UTR update.
+ */
+export async function POST(request: Request) {
+  const jar = await cookies();
+  const token = bearerToken(request) || jar.get(sessionCookie)?.value || "";
+  const session = getSession(token);
+  if (!session) return json(request, { error: "Please sign in" }, 401);
+
+  let body: {
+    playerA?: string;
+    playerB?: string;
+    sets?: [number, number][];
+    format?: LadderFormat;
+    description?: string;
+    highlightUrl?: string;
+    highlightName?: string;
+  } = {};
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return json(request, { error: "Invalid JSON" }, 400);
+  }
+
+  const sets = Array.isArray(body.sets) ? body.sets : [];
+  const result = createPendingScore({
+    submitterPhone: session.phone,
+    submitterName: session.displayName || String(body.playerA || ""),
+    playerA: String(body.playerA || ""),
+    playerB: String(body.playerB || ""),
+    sets,
+    format: body.format,
+    description: typeof body.description === "string" ? body.description : undefined,
+    highlightUrl: typeof body.highlightUrl === "string" ? body.highlightUrl : undefined,
+    highlightName: typeof body.highlightName === "string" ? body.highlightName : undefined,
+  });
+  if ("error" in result) return json(request, { error: result.error }, 400);
+
+  const score: MatchScore = result.score;
+  return json(request, {
+    ok: true,
+    pending: true,
+    score: publicScore(score, { revealPendingMedia: true }),
+    message: "Waiting for opponent confirmation",
+  });
+}
