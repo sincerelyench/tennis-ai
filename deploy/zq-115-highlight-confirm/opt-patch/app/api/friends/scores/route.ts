@@ -31,9 +31,9 @@ export async function GET(request: Request) {
 
   return json(request, {
     ok: true,
-    pendingForMe: listed.pendingForMe.map(publicScore),
-    minePending: listed.minePending.map(publicScore),
-    confirmed: listed.confirmed.map(publicScore),
+    pendingForMe: listed.pendingForMe.map((s) => publicScore(s)),
+    minePending: listed.minePending.map((s) => publicScore(s)),
+    confirmed: listed.confirmed.map((s) => publicScore(s)),
     count: listed.count,
     empty: listed.count === 0,
     self: {
