@@ -1,0 +1,8 @@
+ZQ-78 本地排行：点用户名弹窗看最近战绩
+
+- Web：https://yqchen.blog/tennis/friends （本地排行 → 点用户名）
+- APK / IPA / mp-weixin：WebView 同源，刷新壳内页面即可（无需单独改原生包逻辑）
+- API：GET /tennis/api/friends/player-matches?playerId=…
+- 非整页跳转；挑战/应战/录分门禁不变
+
+Preview: https://yqchen.blog/yueqiu-player-modal.html
