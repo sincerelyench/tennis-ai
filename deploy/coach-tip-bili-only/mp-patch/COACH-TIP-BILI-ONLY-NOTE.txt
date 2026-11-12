@@ -1,0 +1,10 @@
+ZQ-80 对话指导去掉小红书只留 B站
+
+Web live: https://yqchen.blog/tennis/coach
+Preview: https://yqchen.blog/coach-tip-bili-only.html
+
+四端：APK / IPA / 微信小程序 WebView 同源 yqchen.blog/tennis，
+本改未重打壳；打开教练 → 对话指导 → 说「我想学正手上旋」
+应只见 B站 iframe（可附原链接），无小红书卡片、无本地 demo mp4。
+
+英文 locale 仍可用 YouTube。

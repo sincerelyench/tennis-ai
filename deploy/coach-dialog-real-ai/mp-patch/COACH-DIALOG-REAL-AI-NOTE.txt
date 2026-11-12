@@ -1,0 +1,5 @@
+ZQ-82 对话指导自由问答接真 AI
+- Web: https://yqchen.blog/tennis/coach
+- Freeform goals (e.g. 我想练稳定性) call live Doubao via ha2; no canned planReady/tasksReady bank.
+- Tip videos: Bilibili only (zh), YouTube (en); no Xiaohongshu.
+- APK / IPA / mp-weixin WebView inherit live web; shells not rebuilt this change.
