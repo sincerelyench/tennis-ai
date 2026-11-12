@@ -1,0 +1,3 @@
+four-surface: web source of truth; native shells WebView → yqchen.blog/tennis
+apk/ipa/mp-weixin: unchanged packages (mtime left as prior); content inherits after web deploy
+preview: https://yqchen.blog/coach-dialog-real-ai.html

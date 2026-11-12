@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>对话指导 · 真 AI</title>
+    <style>
+      :root {
+        --bg: #0f1c14;
+        --ink: #e8f2ea;
+        --accent: #6bcf8e;
+        --muted: #9bb5a3;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Source Han Sans SC", "Noto Sans SC", system-ui, sans-serif;
+        background:
+          radial-gradient(ellipse at 20% 0%, #1a3a28 0%, transparent 50%),
+          radial-gradient(ellipse at 90% 80%, #243d2c 0%, transparent 45%),
+          var(--bg);
+        color: var(--ink);
+        padding: 2rem 1.25rem 3rem;
+      }
+      main { max-width: 42rem; margin: 0 auto; }
+      h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); margin: 0 0 0.5rem; letter-spacing: 0.02em; }
+      p { color: var(--muted); line-height: 1.55; }
+      .badge {
+        display: inline-block;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        padding: 0.2rem 0.55rem;
+        font-size: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      ul { padding-left: 1.1rem; color: var(--ink); line-height: 1.6; }
+      a { color: var(--accent); }
+      code { font-size: 0.9em; background: rgba(255,255,255,0.06); padding: 0.1em 0.35em; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="badge">ZQ-82 · coach-dialog-real-ai</div>
+      <h1>对话指导接真 AI</h1>
+      <p>自由输入（如「我想练稳定性」）由服务端 Harmonix / 豆包实时生成，不再回落固定「计划已确认」话术库。中文讲解视频仍只嵌 B站，无小红书。</p>
+      <ul>
+        <li>API：<code>POST /tennis/api/coach/chat</code> → ha2 <code>/ha2/api/llm/chat</code></li>
+        <li>模型：<code>DOUBAO_LLM_MODEL</code>（pro），不用已关闭的 lite endpoint</li>
+        <li>响应带 <code>replySource: "llm"</code></li>
+      </ul>
+      <p>线上入口：<a href="/tennis/coach">/tennis/coach</a></p>
+    </main>
+  </body>
+</html>
