@@ -15,8 +15,8 @@ android {
         applicationId "app.zhangqiu"
         minSdk 24
         targetSdk 34
-        versionCode 204
-        versionName "1.0.104"
+        versionCode 205
+        versionName "1.0.105"
         resValue "string", "start_url", zqStartUrl
         buildConfigField "String", "WECHAT_APP_ID", "\"${zqWechatAppId.replace("\"", "\\\"")}\""
     }
