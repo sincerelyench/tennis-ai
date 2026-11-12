@@ -188,38 +188,13 @@ function findScoreForOpponent(opponent: string, scores: SavedMatch[]): SavedMatc
   return candidates[0];
 }
 
-function successOpponentLabel(row: MatchIntroRow): string {
-  return (
-    row.opponentName ||
-    (row.iAmFrom === false ? row.fromName : row.toName) ||
-    row.toName ||
-    row.fromName ||
-    ""
-  );
-}
-
-function successDedupeKey(row: MatchIntroRow): string {
-  const opp = normName(successOpponentLabel(row));
-  if (opp) return `opp:${opp}`;
-  const pair = [normName(row.fromName), normName(row.toName)].filter(Boolean).sort().join("|");
-  return pair ? `pair:${pair}` : `id:${row.id}`;
-}
-
 function successSortTs(row: MatchIntroRow): string {
   return String(row.acceptedAt || row.updatedAt || row.createdAt || "");
 }
 
-/** 同一对手只保留最新一条约球成功（重匹归档的旧 replied 不再重复展示）。 */
-function dedupeSuccessRecords(rows: MatchIntroRow[]): MatchIntroRow[] {
-  const best = new Map<string, MatchIntroRow>();
-  for (const row of rows) {
-    const key = successDedupeKey(row);
-    const prev = best.get(key);
-    if (!prev || successSortTs(row).localeCompare(successSortTs(prev)) > 0) {
-      best.set(key, row);
-    }
-  }
-  return Array.from(best.values()).sort((a, b) => successSortTs(b).localeCompare(successSortTs(a)));
+/** 严格跟库：API 已按真实成功 intro 返回，前端不再按对手折叠。 */
+function orderSuccessRecords(rows: MatchIntroRow[]): MatchIntroRow[] {
+  return [...rows].sort((a, b) => successSortTs(b).localeCompare(successSortTs(a)));
 }
 
 function formatSets(sets: [number, number][]): string {
@@ -516,12 +491,11 @@ export function FriendsView() {
         const active = local.find((row) => row.status === "pending" || row.status === "awaiting_accept") || null;
         setActiveIntro(active);
         setSuccessRecords(
-          dedupeSuccessRecords(
+          orderSuccessRecords(
             local.filter(
               (row) =>
                 row.matchSuccess ||
                 row.status === "pending" ||
-                row.status === "replied" ||
                 Boolean(row.acceptedAt),
             ),
           ),
@@ -537,7 +511,7 @@ export function FriendsView() {
       const activeRows = Array.isArray(data.active) ? data.active : [];
       const inbox = Array.isArray(data.inbox) ? data.inbox : [];
       const pendingAccept = Array.isArray(data.pendingAccept) ? data.pendingAccept : [];
-      const success = dedupeSuccessRecords(Array.isArray(data.success) ? data.success : []);
+      const success = orderSuccessRecords(Array.isArray(data.success) ? data.success : []);
       const openInvites =
         pendingAccept.length > 0 ? pendingAccept.filter(isOpenInvite) : inbox.filter(isOpenInvite);
       setIntroInbox(openInvites);
@@ -549,12 +523,11 @@ export function FriendsView() {
       const local = loadLocalIntros();
       setIntroInbox(local.filter(isOpenInvite));
       setSuccessRecords(
-        dedupeSuccessRecords(
+        orderSuccessRecords(
           local.filter(
             (row) =>
               row.matchSuccess ||
               row.status === "pending" ||
-              row.status === "replied" ||
               Boolean(row.acceptedAt),
           ),
         ),
@@ -1454,7 +1427,7 @@ export function FriendsView() {
         data-score-mine-pending={minePending.length}
         aria-label={t("friends.matchSuccessListTitle")}
       >
-        <div className="space-y-2" data-match-success-list="true" data-match-success-deduped="true">
+        <div className="space-y-2" data-match-success-list="true" data-match-success-db-fidelity="true">
           <div>
             <h2 className="text-sm font-semibold text-foreground">{t("friends.matchSuccessListTitle")}</h2>
           </div>
@@ -1848,12 +1821,21 @@ export function FriendsView() {
                       className={cn(!ladderDetail.played ? "italic text-muted-foreground" : "")}
                       data-ladder-detail-rating={ladderDetail.rating}
                       data-ladder-detail-untested={!ladderDetail.played ? "true" : "false"}
+                      title={!ladderDetail.played ? t("friends.seedOnly") : undefined}
                     >
                       #{ladderDetail.rank} ·{" "}
                       {ladderDetail.played
                         ? ladderDetail.rating.toFixed(1)
                         : `${ladderDetail.rating.toFixed(1)}?`}
                     </span>
+                    {!ladderDetail.played ? (
+                      <span
+                        className="mt-1 block italic text-muted-foreground"
+                        data-ladder-detail-untested-hint="true"
+                      >
+                        {t("friends.seedOnly")}
+                      </span>
+                    ) : null}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3" data-ladder-player-recent="true">
@@ -1965,9 +1947,8 @@ function LadderRowView({
 }) {
   const { t } = useI18n();
   const unplayed = !row.played;
-  const form = unplayed
-    ? t("friends.seedOnly")
-    : t("friends.form", { w: row.wins, l: row.losses });
+  const form = t("friends.form", { w: row.wins, l: row.losses });
+  const untestedHint = t("friends.seedOnly");
   // Always show numeric seed/level score; untested (no confirmed matches) → trailing ? + italic.
   const ratingLabel = unplayed ? `${row.rating.toFixed(1)}?` : row.rating.toFixed(1);
   const lastLine =
@@ -1996,7 +1977,7 @@ function LadderRowView({
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between gap-2">
+          <div className="flex items-start justify-between gap-2">
             <button
               type="button"
               data-ladder-player-open={row.id}
@@ -2006,33 +1987,43 @@ function LadderRowView({
             >
               {row.name}
             </button>
-            <p
-              className={cn(
-                "shrink-0 text-sm font-bold tabular-nums text-foreground",
-                unplayed ? "italic text-muted-foreground" : "",
-              )}
-              data-ladder-rating={row.rating}
-              data-ladder-rating-display={ratingLabel}
-              data-ladder-untested={unplayed ? "true" : "false"}
-              data-ladder-projected={unplayed ? "false" : row.projected ? "true" : "false"}
-              title={unplayed ? t("friends.seedOnly") : undefined}
-            >
-              {ratingLabel}
-              {!unplayed && row.projected ? (
-                <span className="ml-0.5 text-[10px] font-semibold not-italic text-muted-foreground" data-ladder-projected-mark="true">
-                  (P)
-                </span>
+            <div className="flex shrink-0 flex-col items-end gap-0.5" data-ladder-rating-block={unplayed ? "untested" : "tested"}>
+              <p
+                className={cn(
+                  "text-sm font-bold tabular-nums text-foreground",
+                  unplayed ? "italic text-muted-foreground" : "",
+                )}
+                data-ladder-rating={row.rating}
+                data-ladder-rating-display={ratingLabel}
+                data-ladder-untested={unplayed ? "true" : "false"}
+                data-ladder-projected={unplayed ? "false" : row.projected ? "true" : "false"}
+                title={unplayed ? untestedHint : undefined}
+                aria-label={unplayed ? `${ratingLabel} · ${untestedHint}` : ratingLabel}
+              >
+                {ratingLabel}
+                {!unplayed && row.projected ? (
+                  <span className="ml-0.5 text-[10px] font-semibold not-italic text-muted-foreground" data-ladder-projected-mark="true">
+                    (P)
+                  </span>
+                ) : null}
+              </p>
+              {unplayed ? (
+                <p
+                  className="max-w-[7.5rem] text-right text-[10px] font-normal italic leading-snug text-muted-foreground"
+                  data-ladder-untested-hint="true"
+                  title={untestedHint}
+                >
+                  {untestedHint}
+                </p>
               ) : null}
-            </p>
+            </div>
           </div>
-          <p
-            className={cn("mt-0.5 text-xs text-muted-foreground", unplayed ? "italic" : "")}
-            data-ladder-record={unplayed ? "0-0" : `${row.wins}-${row.losses}`}
-            data-ladder-untested-hint={unplayed ? "true" : undefined}
-          >
-            {form}
-            {lastLine ? ` · ${lastLine}` : ""}
-          </p>
+          {!unplayed ? (
+            <p className="mt-0.5 text-xs text-muted-foreground" data-ladder-record={`${row.wins}-${row.losses}`}>
+              {form}
+              {lastLine ? ` · ${lastLine}` : ""}
+            </p>
+          ) : null}
           {deltaLabel ? (
             <p
               className={cn(

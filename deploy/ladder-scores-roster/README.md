@@ -6,7 +6,7 @@
    - Unban keeper **小猪** (ban **小朱** instead).
    - Dedupe by `name|cityId` (not global name) so Shanghai phone twins cannot hide Wuxi `u_*` keepers (Ivy / 有名无微信 / 陈燕青).
    - Ladder API scopes to `cityId` **before** dedupe; self inject only replaces same-name twin in the viewed city.
-2. **Score UX**: Always show numeric seed/rating; untested (no confirmed matches) → trailing `?` + italic + 「尚未经比赛考验」. Confirmed-match users keep normal score.
+2. **Score UX**: Always show numeric seed/rating; untested (no confirmed matches) → trailing `?` + italic, with inline/tooltip hint 「尚未经过比赛考验」 next to the rating. Confirmed-match users keep normal score.
 
 ## Apply (code only — no DB)
 
