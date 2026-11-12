@@ -1,0 +1,5 @@
+ZQ-105 rating + growth journey fix
+- 陈燕青 level=3 → UTR-style seed/display 6.5
+- Cleared duplicate displayName on u_111 (was seeding 7.5 via default 3.5)
+- Growth journey loads rating-history; generic error copy no longer says only「训练数据」
+- WebView clients inherit https://yqchen.blog/tennis
