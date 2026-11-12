@@ -1,0 +1,4 @@
+ZQ-95 follow-up: remove tip-chip selector block from coach dialog.
+
+Web source: yqchen.blog/tennis. APK/IPA/mp-weixin WebView inherit; shells not rebuilt.
+Specialty blurbs under coach names remain (PR #103).
