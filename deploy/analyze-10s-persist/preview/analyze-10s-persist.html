@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 分析10秒内且关页不中断</title>
+  <style>
+    body { font-family: "PingFang SC", "Noto Sans SC", sans-serif; margin: 2rem; max-width: 40rem; line-height: 1.5; color: #1a1a1a; background: #f7f5f1; }
+    h1 { font-size: 1.4rem; }
+    code { background: #eee; padding: 0.1rem 0.3rem; border-radius: 4px; }
+    .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 1rem 1.2rem; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+  <h1>涨球 · 分析约 10 秒内 + 关页不中断</h1>
+  <div class="card">
+    <p><strong>速度</strong>：短片（约 10 秒选段）走 <code>analyze_mode=fast</code>，跳过回放编码与教练长文案 LLM。</p>
+    <p><strong>关页</strong>：教练「视频指导」把 <code>job_id</code> 记在 <code>tennis-coach-active-job-v1</code>；离开只停本地轮询，服务器任务继续；回来继续进度或结果。</p>
+    <p>入口：登录后打开 <a href="https://yqchen.blog/tennis/coach">教练 → 视频指导</a>。</p>
+  </div>
+</body>
+</html>

@@ -17,7 +17,18 @@ from pipeline.analyze import SCORE_AXES, grade_from_score
 _LOCK = threading.Lock()
 _USER_ID = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 _JOB_ID = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
-_STROKES = ("forehand", "backhand", "serve")
+_STROKES = (
+    "forehand",
+    "backhand",
+    "serve",
+    "fh-topspin",
+    "fh-slice",
+    "bh-topspin",
+    "bh-slice",
+    "fh-volley",
+    "bh-volley",
+    "smash",
+)
 _UNSAFE = ("医疗", "治伤", "伤病", "诊断", "保证涨分", "实验室级")
 
 # key, Chinese axis name, keywords that tie an existing drill to that axis.
