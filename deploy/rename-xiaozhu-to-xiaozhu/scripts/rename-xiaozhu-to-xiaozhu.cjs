@@ -104,17 +104,15 @@ function renameAuth(auth) {
     if (!String(user.cityId || "").trim()) user.cityId = "wuxi";
   }
 
-  // Also rewrite any stray 小朱 on non-keeper phones to empty (do not keep second 小猪).
+  // Clear every non-keeper display name (including duplicate 陈燕青 on u_111).
   const keeperPhones = new Set(Object.keys(KEEPER_PHONE_TARGETS));
   for (const [phone, user] of Object.entries(users)) {
     if (!user || typeof user !== "object") continue;
     if (keeperPhones.has(phone)) continue;
     const before = String(user.displayName || "").trim();
     if (!before) continue;
-    if (toKeeper(before) === "小猪" || before === "小朱") {
-      user.displayName = "";
-      report.renamed.push({ phone, from: before, to: "", note: "cleared-duplicate-alias" });
-    }
+    user.displayName = "";
+    report.renamed.push({ phone, from: before, to: "", note: "cleared-non-keeper" });
   }
 
   auth.users = users;

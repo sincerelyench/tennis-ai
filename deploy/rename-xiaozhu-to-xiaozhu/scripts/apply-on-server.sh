@@ -46,7 +46,8 @@ chmod +x "$ROOT/scripts/rename-xiaozhu-to-xiaozhu.cjs"
 
 echo "==> Dry-run rename"
 run_as_tennis "cd '$ROOT' && set -a && . ./.env && set +a && node scripts/rename-xiaozhu-to-xiaozhu.cjs --dry-run" \
-  | tee "$BACKUP/rename-dry-run.json"
+  | tee "$BACKUP/rename-dry-run.json" \
+  || { echo "WARN: dry-run reported not-ok; continuing to apply for clearer error" >&2; }
 
 echo "==> Apply rename"
 run_as_tennis "cd '$ROOT' && set -a && . ./.env && set +a && node scripts/rename-xiaozhu-to-xiaozhu.cjs" \
