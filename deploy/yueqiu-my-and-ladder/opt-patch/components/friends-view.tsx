@@ -1350,7 +1350,8 @@ export function FriendsView() {
       </div>
 
       {friendsMainTab === "match" ? (
-      <div className="space-y-6" data-friends-main-panel="match" data-friends-match-panel="true" data-match-panel-order="records-invites-matchmaking">
+      <div className="space-y-6" data-friends-main-panel="match" data-friends-match-panel="true" data-match-panel-order="matchmaking-records-invites">
+      {matchmakingBlock}
       <section className="space-y-4" data-match-records="true" aria-label={t("friends.matchRecordsTitle")}>
         <div>
           <h2 className="text-sm font-semibold text-foreground">{t("friends.matchRecordsTitle")}</h2>
@@ -1677,12 +1678,9 @@ export function FriendsView() {
           </div>
         </section>
       ) : null}
-
-      {matchmakingBlock}
       </div>
       ) : (
-      <div className="space-y-6" data-friends-main-panel="ladder" data-friends-ladder-panel="true">
-      {matchmakingBlock}
+      <div className="space-y-6" data-friends-main-panel="ladder" data-friends-ladder-panel="true" data-ladder-panel-order="ladder-matchmaking">
       <section className="space-y-3" data-ladder={format} data-ladder-city={cityId}>
         <div>
           <div className="flex items-center gap-1.5">
@@ -1809,6 +1807,7 @@ export function FriendsView() {
           </div>
         ) : null}
       </section>
+      {matchmakingBlock}
       </div>
       )}
     </div>
