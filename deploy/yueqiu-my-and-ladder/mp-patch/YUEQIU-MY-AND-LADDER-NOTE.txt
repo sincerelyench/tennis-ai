@@ -1,0 +1,4 @@
+涨球 ZQ-75：约球双 Tab「我的约球 / 本地排行」+ 排行升降与战绩
+- Web / APK / IPA / 小程序 WebView 同源：/opt/tennis-ai
+- 两边匹配约球；本地排行显示名次/分数升降；点球员看最近战绩
+Preview: https://yqchen.blog/yueqiu-my-and-ladder.html

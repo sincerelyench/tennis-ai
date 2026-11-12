@@ -1,0 +1,5 @@
+涨球 ZQ-72：UTR 风格等级分 + 约球录分布局
+- Web / APK / IPA / 小程序 WebView 同源：/opt/tennis-ai
+- 录分表单默认收起；成功记录+比赛记录优先于邀请与匹配
+- 等级分：局数表现 vs 预期 → match rating → 近12月≤30场加权
+Preview: https://yqchen.blog/utr-and-score-layout.html
