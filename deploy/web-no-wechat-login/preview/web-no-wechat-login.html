@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>网页版去掉微信登录 · 涨球</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #111; }
+    a { color: #0a7; }
+    code { background: #f4f4f4; padding: 0.1em 0.35em; border-radius: 4px; }
+    ul { padding-left: 1.2rem; }
+  </style>
+</head>
+<body>
+  <h1>网页版去掉微信登录 · 默认先注册</h1>
+  <p>浏览器登录页不再展示微信登录入口；默认打开<strong>注册</strong>；用户名密码与手机验证码保留。APK / 小程序微信登录不变。</p>
+  <ul>
+    <li>线上：<a href="https://yqchen.blog/tennis/login">https://yqchen.blog/tennis/login</a></li>
+    <li>补丁：<code>components/login-view.tsx</code>（仅壳 UA 显示微信；默认 <code>signup</code>）</li>
+  </ul>
+</body>
+</html>
