@@ -1,0 +1,2 @@
+Synced with live /opt/tennis-ai coach tip path (ZQ-80).
+Web is source of truth for APK / IPA / mp-weixin WebView shells.
