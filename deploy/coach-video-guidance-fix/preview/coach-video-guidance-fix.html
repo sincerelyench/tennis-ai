@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>ZQ-87 教练视频指导修复</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 40rem; line-height: 1.5; color: #0f172a; }
+    code { background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; }
+    a { color: #0f766e; }
+  </style>
+</head>
+<body>
+  <h1>ZQ-87：修好教练视频指导出结果</h1>
+  <p>离开页面 / 切到「对话指导」时，轮询被中断会把任务标成 <code>Failed to fetch</code> error，回来只剩「还没有视频指导」。</p>
+  <p>修复：卸载不再毒化 job；error 可恢复；视频指导气泡写入 localStorage；上传组件在子 tab 间保持挂载。</p>
+  <p>入口：登录后打开 <a href="https://yqchen.blog/tennis/coach">教练 → 视频指导</a>。</p>
+</body>
+</html>
