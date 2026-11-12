@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useI18n } from "@/components/i18n-provider";
-import { refreshSessionProfile, useSessionRole } from "@/lib/session-role";
+import {
+  hasCachedCompleteProfile,
+  profileNeedsSetup,
+  refreshSessionProfile,
+  useSessionRole,
+} from "@/lib/session-role";
 import {
   CITY_STORAGE_KEY,
   DEFAULT_CITY_ID,
@@ -42,10 +47,10 @@ async function detectCityFromIp(locale: string): Promise<string> {
 }
 
 /**
- * Blocking gate ONLY when logged in and display name is missing/empty.
+ * 「完善资料」 gate — only after session hydrate, and only when logged in
+ * with missing required key fields (display name and/or city).
+ * Complete profiles must never see this after F5 / cold load / tab return.
  * Not logged in → never show (normal login/register).
- * Logged in with a display name → never show, even if city is empty.
- * New users without a display name still fill name + city here.
  */
 export function ProfileSetup() {
   const { t, locale } = useI18n();
@@ -59,21 +64,41 @@ export function ProfileSetup() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Wait for session restore so we never flash the dialog on a partial client state.
-    if (!session.hydrated) return;
+    // Never decide from a pre-hydrate / mid-refresh snapshot.
+    if (!session.hydrated) {
+      setOpen(false);
+      return;
+    }
     if (!session.phone) {
       setOpen(false);
       return;
     }
     const displayName = String(session.displayName || "").trim();
-    // Unified with auth-store.needsProfileSetup: display name only (not city).
+    const city = String(session.cityId || "").trim();
+    const missingKeys = profileNeedsSetup(displayName, city);
     const needs =
       typeof session.needsProfileSetup === "boolean"
         ? session.needsProfileSetup
-        : !displayName;
-    setOpen(needs);
-    if (needs && displayName) setName(displayName);
-  }, [session.hydrated, session.phone, session.displayName, session.needsProfileSetup]);
+        : missingKeys;
+    // Extra safety: if we previously persisted "complete" and server fields
+    // still look complete, never open (covers sticky/odd client state).
+    if (!needs && hasCachedCompleteProfile()) {
+      setOpen(false);
+      return;
+    }
+    if (!needs) {
+      setOpen(false);
+      return;
+    }
+    setOpen(true);
+    if (displayName) setName(displayName);
+  }, [
+    session.hydrated,
+    session.phone,
+    session.displayName,
+    session.cityId,
+    session.needsProfileSetup,
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -169,6 +194,7 @@ export function ProfileSetup() {
                 return;
               }
               setOpen(false);
+              setPending(false);
             } catch {
               setError(t("profileSetup.saveFail"));
               setPending(false);

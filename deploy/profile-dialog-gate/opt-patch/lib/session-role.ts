@@ -9,7 +9,11 @@ type SessionState = {
   displayName: string;
   cityId: string;
   level: number | null;
-  /** Server/client-unified: missing display name only (city alone is not enough). */
+  /**
+   * Missing required key fields (display name and/or city).
+   * Always false until the first /api/auth/session attempt finishes (hydrated),
+   * so refresh never flashes 「完善资料」 on a partial client snapshot.
+   */
   needsProfileSetup: boolean;
   /** True after the first /api/auth/session attempt finishes (ok or fail). */
   hydrated: boolean;
@@ -18,6 +22,8 @@ type SessionState = {
 const ROLE_KEY = "tennis-ai-role";
 const NAME_KEY = "tennis-ai-display-name";
 const CITY_KEY = "zq-friends-city-v1";
+/** Cached "profile already complete" — prevents re-prompt across refresh. */
+const COMPLETE_KEY = "tennis-ai-profile-complete-v1";
 const listeners = new Set<() => void>();
 
 function readStoredRole(): UserRole {
@@ -40,16 +46,46 @@ function readStoredName(): string {
   }
 }
 
-function missingDisplayName(name: string | null | undefined) {
-  return !String(name || "").trim();
+function readStoredCity(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return String(window.localStorage.getItem(CITY_KEY) || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function readCompleteFlag(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(COMPLETE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeCompleteFlag(complete: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    if (complete) window.localStorage.setItem(COMPLETE_KEY, "1");
+    else window.localStorage.removeItem(COMPLETE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Required key fields: display name + city (same as the setup form). */
+export function profileNeedsSetup(displayName: string, cityId: string) {
+  return !String(displayName || "").trim() || !String(cityId || "").trim();
 }
 
 let session: SessionState = {
   phone: "",
   role: readStoredRole(),
   displayName: readStoredName(),
-  cityId: "",
+  cityId: readStoredCity(),
   level: null,
+  // Never open the gate from a pre-hydrate snapshot.
   needsProfileSetup: false,
   hydrated: false,
 };
@@ -75,6 +111,9 @@ function persistClient(next: SessionState) {
     if (next.cityId) {
       window.localStorage.setItem(CITY_KEY, next.cityId);
     }
+    const complete =
+      Boolean(next.phone) && !profileNeedsSetup(next.displayName, next.cityId);
+    writeCompleteFlag(complete);
   } catch {
     /* ignore */
   }
@@ -91,10 +130,11 @@ function applySessionPayload(payload: {
   const displayName = String(payload.displayName || "").trim();
   const cityId = String(payload.cityId || "").trim();
   const phone = payload.phone || "";
+  const computed = Boolean(phone) && profileNeedsSetup(displayName, cityId);
   const needs =
     typeof payload.needsProfileSetup === "boolean"
       ? payload.needsProfileSetup
-      : Boolean(phone) && missingDisplayName(displayName);
+      : computed;
   session = {
     phone,
     role: payload.role || session.role || "player",
@@ -131,6 +171,8 @@ export function useSessionRole() {
       } catch {
         /* keep defaults */
       }
+      // Logged out / session miss: never prompt 完善资料.
+      writeCompleteFlag(false);
       session = {
         ...session,
         phone: "",
@@ -167,6 +209,11 @@ export async function refreshSessionProfile() {
   };
   emit();
   return session;
+}
+
+/** Whether a prior complete profile was cached locally (refresh hint only). */
+export function hasCachedCompleteProfile() {
+  return readCompleteFlag();
 }
 
 export function isCoachRole(role?: UserRole | null) {

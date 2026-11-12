@@ -122,15 +122,16 @@ function findUserForPasswordLogin(db: Db, username: string, phoneHint: string): 
 }
 
 /**
- * True when the signed-in user still needs a real display name.
- * Missing city alone must NOT force the 「完善资料」 gate — city is collected
- * inside that dialog for new users, or later on 约球 / 我的.
+ * True when the signed-in user is missing required profile key fields.
+ * Required (same as the 「完善资料」 form): real display name + city/location.
+ * Callers must only open the dialog after session hydrate — never on a
+ * transient empty client snapshot during refresh.
  */
 export function needsProfileSetup(user: {
   displayName?: string | null;
   cityId?: string | null;
 } | null | undefined) {
-  return !sanitizeDisplayName(user?.displayName);
+  return !sanitizeDisplayName(user?.displayName) || !String(user?.cityId || "").trim();
 }
 
 function issueSession(db: Db, user: AuthUser) {
@@ -150,7 +151,7 @@ function issueSession(db: Db, user: AuthUser) {
     displayName,
     cityId,
     username: normalizeUsername(user.username || "") || undefined,
-    needsProfileSetup: needsProfileSetup({ displayName }),
+    needsProfileSetup: needsProfileSetup({ displayName, cityId }),
   };
 }
 
@@ -362,7 +363,7 @@ export function getSession(token: string | undefined | null) {
     displayName,
     cityId,
     level: typeof user?.level === "number" ? user.level : null,
-    needsProfileSetup: needsProfileSetup({ displayName }),
+    needsProfileSetup: needsProfileSetup({ displayName, cityId }),
   };
 }
 
@@ -402,7 +403,7 @@ export function updateProfile(phone: string, patch: ProfilePatch) {
     displayName,
     cityId,
     level: typeof user.level === "number" ? user.level : null,
-    needsProfileSetup: needsProfileSetup({ displayName }),
+    needsProfileSetup: needsProfileSetup({ displayName, cityId }),
   };
 }
 

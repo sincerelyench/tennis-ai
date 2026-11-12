@@ -1,29 +1,22 @@
 # Profile dialog gate (完善资料)
 
-## Bug
-`ProfileSetup` opened when **either** `displayName` **or** `cityId` was empty. Logged-in users who already had a display name could still see 「完善资料」 whenever city was missing or not yet hydrated — odd popup on restore / friends / coach / me.
+## Product rule (2026-11-12)
+Show 「完善资料」 **only** when logged in and missing required key fields:
+**display name** and/or **city**. Otherwise never show — including after F5 / cold load / tab return. Not logged in → normal login/register only.
 
 ## Fix
-Unified condition (server + client):
+1. Server `needsProfileSetup` = missing display name **or** missing city (form-required keys).
+2. Client waits for `hydrated` from `/api/auth/session` before deciding — never opens on a transient empty snapshot.
+3. Persist `tennis-ai-profile-complete-v1` when name+city are present so complete users are not re-prompted across refresh.
 
-1. **Not logged in** → never show `ProfileSetup` (normal login/register).
-2. **Logged in + has display name** → never show, even if `cityId` is empty.
-3. **Logged in + missing/empty display name** → show dialog; form still collects **name + city** for new users.
-
-Files:
-
-- `opt-patch/lib/auth-store.ts` — `needsProfileSetup` checks display name only
-- `opt-patch/lib/session-role.ts` — expose `needsProfileSetup` + `hydrated`; wait for session restore
-- `opt-patch/components/profile-setup.tsx` — gate on hydrated + phone + missing name (not city)
+## Files
+- `opt-patch/lib/auth-store.ts`
+- `opt-patch/lib/session-role.ts`
+- `opt-patch/components/profile-setup.tsx`
 
 ## Apply
-
 ```bash
-# from this kit (on the Next host):
-bash scripts/apply-on-server.sh /opt/tennis-ai
-
-# or from a laptop / cloud VM with SSHPASS:
 SSHPASS=… bash scripts/apply-on-server.sh
+# or on host:
+bash scripts/apply-on-server.sh /opt/tennis-ai
 ```
-
-APK / IPA / mp-weixin load the same `/tennis` WebView — no shell rebuild required for this gate.
