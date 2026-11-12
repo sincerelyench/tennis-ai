@@ -1897,6 +1897,48 @@ export function FriendsView() {
           </p>
         ) : null}
 
+        {minePending.length > 0 ? (
+          <div className="space-y-2" data-score-mine-pending-list="true">
+            <h3 className="text-sm font-semibold text-foreground">{t("friends.scorePendingHint")}</h3>
+            <div className="overflow-hidden rounded-lg border border-border bg-card">
+              {minePending.map((row, index) => {
+                const winnerName = row.winner === "A" ? row.playerA : row.playerB;
+                return (
+                  <div
+                    key={row.id}
+                    data-score-mine-pending-row={row.id}
+                    className={cn(
+                      "space-y-2 px-4 py-3",
+                      index === minePending.length - 1 ? "" : "border-b border-border",
+                    )}
+                  >
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {row.playerA} vs {row.playerB}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{formatSets(row.sets)}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {t("friends.winnerLine", { name: winnerName })} · {t("friends.scoreStatusPending")}
+                    </p>
+                    {row.description || row.highlightUrl ? (
+                      <div className="space-y-2" data-score-mine-pending-highlight={row.id}>
+                        {row.description ? (
+                          <p className="text-xs leading-5 text-foreground">{row.description}</p>
+                        ) : null}
+                        {row.highlightUrl ? (
+                          <MatchMedia url={row.highlightUrl} name={row.highlightName} />
+                        ) : null}
+                        <p className="text-[11px] text-muted-foreground">
+                          {t("friends.highlightPendingNote")}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
         {pendingForMe.length > 0 ? (
           <div className="space-y-2" data-score-pending-inbox="true">
             <h3 className="text-sm font-semibold text-foreground">{t("friends.scorePendingInbox")}</h3>
