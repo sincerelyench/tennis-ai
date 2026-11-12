@@ -17,15 +17,18 @@
 | `opt-patch/components/friends-view.tsx` | 内联成绩；`dedupeSuccessRecords`；`data-match-success-deduped` |
 | `opt-patch/lib/match-intros.ts` | `dedupeSuccessfulIntros`（按无向 phone 对 / 对手名） |
 | `opt-patch/lib/i18n/messages.ts` | 约球成功相关文案 |
-| `scripts/cleanup-ivy-dupes.on-server.sh` | 清演示账号旧 Ivy 重复 intro |
+| `scripts/cleanup-ivy-dupes.*` | **默认拒绝执行**；未获 Yanqing 事先同意不得删/改线上库 |
 
 ## Apply（谨慎）
+
+**只部署 UI/API 去重**（展示层折叠同对手；不写库）。
 
 先确认 `systemctl is-active tennis-ai` 为 active，再：
 
 ```bash
-bash deploy/yueqiu-scored-success/scripts/cleanup-ivy-dupes.on-server.sh
 bash deploy/yueqiu-scored-success/scripts/apply-on-server.sh /opt/tennis-ai
 ```
+
+`cleanup-ivy-dupes.on-server.sh` 会直接 exit 2。若仍需删库内旧 Ivy intro，须经 coordinator 取得 Yanqing 事先同意后再做。
 
 Preview: https://yqchen.blog/yueqiu-scored-success.html
