@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apply: 约球成功已录分内联展示，去掉单独比分记录
+# Apply: 约球成功已录分内联 + 同一对手去重（ZQ-104）
 set -euo pipefail
 
 ROOT="${1:-${ROOT:-/opt/tennis-ai}}"
@@ -8,15 +8,17 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP="$ROOT/.yueqiu-scored-success-backup-$STAMP"
 
 echo "==> Backup -> $BACKUP"
-mkdir -p "$BACKUP/lib/i18n" "$BACKUP/components"
+mkdir -p "$BACKUP/lib/i18n" "$BACKUP/components" "$BACKUP/lib"
 
 cp -a "$ROOT/lib/i18n/messages.ts" "$BACKUP/lib/i18n/" 2>/dev/null || true
+cp -a "$ROOT/lib/match-intros.ts" "$BACKUP/lib/" 2>/dev/null || true
 cp -a "$ROOT/components/friends-view.tsx" "$BACKUP/components/" 2>/dev/null || true
 
 echo "==> Install opt-patch"
-mkdir -p "$ROOT/lib/i18n" "$ROOT/components"
+mkdir -p "$ROOT/lib/i18n" "$ROOT/components" "$ROOT/lib"
 
 cp -a "$PATCH_DIR/opt-patch/lib/i18n/messages.ts" "$ROOT/lib/i18n/messages.ts"
+cp -a "$PATCH_DIR/opt-patch/lib/match-intros.ts" "$ROOT/lib/match-intros.ts"
 cp -a "$PATCH_DIR/opt-patch/components/friends-view.tsx" "$ROOT/components/friends-view.tsx"
 
 if [[ -f "$PATCH_DIR/preview/index.html" ]]; then

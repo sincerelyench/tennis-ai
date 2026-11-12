@@ -174,6 +174,40 @@ function findScoreForOpponent(opponent: string, scores: SavedMatch[]): SavedMatc
   return candidates[0];
 }
 
+function successOpponentLabel(row: MatchIntroRow): string {
+  return (
+    row.opponentName ||
+    (row.iAmFrom === false ? row.fromName : row.toName) ||
+    row.toName ||
+    row.fromName ||
+    ""
+  );
+}
+
+function successDedupeKey(row: MatchIntroRow): string {
+  const opp = normName(successOpponentLabel(row));
+  if (opp) return `opp:${opp}`;
+  const pair = [normName(row.fromName), normName(row.toName)].filter(Boolean).sort().join("|");
+  return pair ? `pair:${pair}` : `id:${row.id}`;
+}
+
+function successSortTs(row: MatchIntroRow): string {
+  return String(row.acceptedAt || row.updatedAt || row.createdAt || "");
+}
+
+/** 同一对手只保留最新一条约球成功（重匹归档的旧 replied 不再重复展示）。 */
+function dedupeSuccessRecords(rows: MatchIntroRow[]): MatchIntroRow[] {
+  const best = new Map<string, MatchIntroRow>();
+  for (const row of rows) {
+    const key = successDedupeKey(row);
+    const prev = best.get(key);
+    if (!prev || successSortTs(row).localeCompare(successSortTs(prev)) > 0) {
+      best.set(key, row);
+    }
+  }
+  return Array.from(best.values()).sort((a, b) => successSortTs(b).localeCompare(successSortTs(a)));
+}
+
 function formatSets(sets: [number, number][]): string {
   return sets.map(([a, b]) => `${a}-${b}`).join(" · ");
 }
@@ -467,12 +501,14 @@ export function FriendsView() {
         const active = local.find((row) => row.status === "pending" || row.status === "awaiting_accept") || null;
         setActiveIntro(active);
         setSuccessRecords(
-          local.filter(
-            (row) =>
-              row.matchSuccess ||
-              row.status === "pending" ||
-              row.status === "replied" ||
-              Boolean(row.acceptedAt),
+          dedupeSuccessRecords(
+            local.filter(
+              (row) =>
+                row.matchSuccess ||
+                row.status === "pending" ||
+                row.status === "replied" ||
+                Boolean(row.acceptedAt),
+            ),
           ),
         );
         return;
@@ -486,7 +522,7 @@ export function FriendsView() {
       const activeRows = Array.isArray(data.active) ? data.active : [];
       const inbox = Array.isArray(data.inbox) ? data.inbox : [];
       const pendingAccept = Array.isArray(data.pendingAccept) ? data.pendingAccept : [];
-      const success = Array.isArray(data.success) ? data.success : [];
+      const success = dedupeSuccessRecords(Array.isArray(data.success) ? data.success : []);
       const openInvites =
         pendingAccept.length > 0 ? pendingAccept.filter(isOpenInvite) : inbox.filter(isOpenInvite);
       setIntroInbox(openInvites);
@@ -498,12 +534,14 @@ export function FriendsView() {
       const local = loadLocalIntros();
       setIntroInbox(local.filter(isOpenInvite));
       setSuccessRecords(
-        local.filter(
-          (row) =>
-            row.matchSuccess ||
-            row.status === "pending" ||
-            row.status === "replied" ||
-            Boolean(row.acceptedAt),
+        dedupeSuccessRecords(
+          local.filter(
+            (row) =>
+              row.matchSuccess ||
+              row.status === "pending" ||
+              row.status === "replied" ||
+              Boolean(row.acceptedAt),
+          ),
         ),
       );
     }
@@ -1385,7 +1423,7 @@ export function FriendsView() {
         data-score-mine-pending={minePending.length}
         aria-label={t("friends.matchSuccessListTitle")}
       >
-        <div className="space-y-2" data-match-success-list="true">
+        <div className="space-y-2" data-match-success-list="true" data-match-success-deduped="true">
           <div>
             <h2 className="text-sm font-semibold text-foreground">{t("friends.matchSuccessListTitle")}</h2>
           </div>
