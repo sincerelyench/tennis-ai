@@ -1,0 +1,3 @@
+ZQ-116: remove duplicate「成长旅程」on Me page — keep my-data card only.
+
+Web source: yqchen.blog/tennis. APK/IPA/mp-weixin WebView inherit; shells not rebuilt.
