@@ -27,8 +27,8 @@ export const messages = {
       close: "Close",
       tryAgain: "Try again"},
     onboard: {
-      title: "Welcome to 掌球",
-      lead: "掌球 can help you improve with an AI coach and real coaches, and help you find the right hitters so you can raise your game through matches. Let's all level up together.",
+      title: "Welcome to 涨球",
+      lead: "涨球 can help you improve with an AI coach and real coaches, and help you find the right hitters so you can raise your game through matches. Let's all level up together.",
       level: "Your current level",
       levelDesc: "Pick your NTRP first. Advice follows that stage.",
       score: "A score for each stroke",
@@ -774,8 +774,8 @@ export const messages = {
       close: "关闭",
       tryAgain: "再试一次"},
     onboard: {
-      title: "欢迎来到掌球",
-      lead: "掌球可以帮助你，有AI教练和真实教练帮助你提高水平，还能让你约到合适的球友，通过比赛提高水平。让我们大家一起涨球。",
+      title: "欢迎来到涨球",
+      lead: "涨球可以帮助你，有AI教练和真实教练帮助你提高水平，还能让你约到合适的球友，通过比赛提高水平。让我们大家一起涨球。",
       level: "当前水平阶段",
       levelDesc: "先选自己的 NTRP。后面的建议按这个阶段来。",
       score: "每个动作的分数",

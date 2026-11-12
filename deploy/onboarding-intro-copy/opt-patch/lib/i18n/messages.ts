@@ -76,8 +76,8 @@ export const messages = {
       fullscreen: "Fullscreen",
       exitFullscreen: "Exit fullscreen"},
     onboard: {
-      title: "Welcome to 掌球",
-      lead: "掌球 can help you improve with an AI coach and real coaches, and help you find the right hitters so you can raise your game through matches. Let's all level up together.",
+      title: "Welcome to 涨球",
+      lead: "涨球 can help you improve with an AI coach and real coaches, and help you find the right hitters so you can raise your game through matches. Let's all level up together.",
       level: "Pick a stroke",
       levelDesc: "Choose the stroke you want to work on, then upload a clip.",
       score: "A score for each stroke",
@@ -1115,8 +1115,8 @@ export const messages = {
       fullscreen: "全屏",
       exitFullscreen: "退出全屏"},
     onboard: {
-      title: "欢迎来到掌球",
-      lead: "掌球可以帮助你，有AI教练和真实教练帮助你提高水平，还能让你约到合适的球友，通过比赛提高水平。让我们大家一起涨球。",
+      title: "欢迎来到涨球",
+      lead: "涨球可以帮助你，有AI教练和真实教练帮助你提高水平，还能让你约到合适的球友，通过比赛提高水平。让我们大家一起涨球。",
       level: "先选技术动作",
       levelDesc: "先选要练的技术，再上传视频。",
       score: "每个动作的分数",

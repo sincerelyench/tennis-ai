@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apply: new-user onboarding intro copy (掌球 pitch, Yanqing wording)
+# Apply: new-user onboarding intro copy (涨球 pitch, Yanqing wording)
 set -euo pipefail
 
 ROOT="${1:-${ROOT:-/opt/tennis-ai}}"
