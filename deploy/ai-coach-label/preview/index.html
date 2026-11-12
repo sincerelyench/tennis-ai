@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · AI 教练标签</title>
+  <style>
+    :root { --bg:#f4f7f5; --card:#fff; --ink:#14201a; --muted:#5b6b63; --line:#d7e0db; --brand:#0f8f6c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "PingFang SC", "Noto Sans SC", sans-serif; background: linear-gradient(180deg,#e8f3ee,#f7faf8 40%); color: var(--ink); }
+    main { max-width: 420px; margin: 0 auto; padding: 20px 16px 40px; }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    .lead { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+    .row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .card { flex: 1; border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 12px; }
+    .card.on { border-color: var(--brand); background: #eefaf5; }
+    .name { font-weight: 700; font-size: 15px; }
+    .hint { color: var(--brand); font-size: 12px; margin-top: 4px; }
+    .profile { border: 1px solid var(--line); border-radius: 10px; background: var(--card); padding: 10px 12px; }
+    .profile .meta { color: var(--muted); font-size: 12px; margin-top: 6px; }
+    .ok { color: var(--brand); font-size: 12px; margin-top: 10px; }
+    .tag { display:inline-block; background:#e8f3ee; color:var(--brand); border-radius:6px; padding:2px 8px; font-size:11px; margin:2px 4px 0 0; }
+    footer { margin-top: 18px; font-size: 11px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main data-ai-coach-label-preview="true">
+    <h1>教练 Tab · AI 教练</h1>
+    <p class="lead">显示名固定为「AI 教练」；不展示背景介绍与专业水平。真人网络教练可保留各自资料。</p>
+    <div class="row" data-coach-persona-row="true">
+      <div class="card on" data-coach-kind="zhangqiu" data-coach-selected="true">
+        <div class="name" data-coach-name="true">AI 教练</div>
+        <div class="hint">对话中</div>
+      </div>
+      <div class="card" data-coach-kind="network">
+        <div class="name">真实网络教练</div>
+        <div class="hint">可保留背景 / 水平</div>
+      </div>
+    </div>
+    <section class="profile" data-coach-profile="poppy" data-coach-hide-bio="true" data-coach-hide-level="true">
+      <div class="name" data-coach-name="true">AI 教练</div>
+      <div class="meta">无背景介绍 · 无专业水平 / 履历</div>
+      <div style="margin-top:8px">
+        <span class="tag">正手</span>
+        <span class="tag">反手</span>
+        <span class="tag">发球</span>
+      </div>
+      <p class="ok">✓ 不显示 USTA / NTRP / 履历等 bio·level 文案</p>
+    </section>
+    <footer>Preview · ai-coach-label · ZQ-79 · 产品品牌仍为「涨球」</footer>
+  </main>
+</body>
+</html>

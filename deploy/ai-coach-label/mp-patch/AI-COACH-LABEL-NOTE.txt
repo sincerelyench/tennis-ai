@@ -1,0 +1,7 @@
+ZQ-79 AI coach label (2026-11-12)
+- Coach-tab AI display name: 「AI 教练」 / AI Coach
+- Not: 涨球教练 / 掌球教练 / Poppy / 东东
+- AI coach UI hides background/bio and professional level (履历 / NTRP / USTA)
+- Network (human) coaches keep their own bio/level
+- Product brand elsewhere remains 涨球
+- Surfaces: Web source of truth; APK / IPA / mp-weixin WebView inherit yqchen.blog/tennis
