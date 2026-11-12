@@ -8,21 +8,20 @@ type SessionState = {
   role: UserRole;
   displayName: string;
   cityId: string;
+  wechatId: string;
   level: number | null;
   /**
-   * Missing required key fields (display name and/or city).
-   * Always false until the first /api/auth/session attempt finishes (hydrated),
-   * so refresh never flashes 「完善资料」 on a partial client snapshot.
+   * Missing display name and/or WeChat ID (约球 required).
+   * Always false until /api/auth/session hydrates.
    */
   needsProfileSetup: boolean;
-  /** True after the first /api/auth/session attempt finishes (ok or fail). */
   hydrated: boolean;
 };
 
 const ROLE_KEY = "tennis-ai-role";
 const NAME_KEY = "tennis-ai-display-name";
 const CITY_KEY = "zq-friends-city-v1";
-/** Cached "profile already complete" — prevents re-prompt across refresh. */
+const WECHAT_KEY = "tennis-ai-wechat-id";
 const COMPLETE_KEY = "tennis-ai-profile-complete-v1";
 const listeners = new Set<() => void>();
 
@@ -55,12 +54,12 @@ function readStoredCity(): string {
   }
 }
 
-function readCompleteFlag(): boolean {
-  if (typeof window === "undefined") return false;
+function readStoredWechat(): string {
+  if (typeof window === "undefined") return "";
   try {
-    return window.localStorage.getItem(COMPLETE_KEY) === "1";
+    return String(window.localStorage.getItem(WECHAT_KEY) || "").trim();
   } catch {
-    return false;
+    return "";
   }
 }
 
@@ -74,9 +73,18 @@ function writeCompleteFlag(complete: boolean) {
   }
 }
 
-/** Required key fields: display name + city (same as the setup form). */
-export function profileNeedsSetup(displayName: string, cityId: string) {
-  return !String(displayName || "").trim() || !String(cityId || "").trim();
+function readCompleteFlag(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(COMPLETE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** 约球-required: display name + WeChat ID (city alone never). */
+export function profileNeedsSetup(displayName: string, wechatId?: string) {
+  return !String(displayName || "").trim() || !String(wechatId || "").trim();
 }
 
 let session: SessionState = {
@@ -84,8 +92,8 @@ let session: SessionState = {
   role: readStoredRole(),
   displayName: readStoredName(),
   cityId: readStoredCity(),
+  wechatId: readStoredWechat(),
   level: null,
-  // Never open the gate from a pre-hydrate snapshot.
   needsProfileSetup: false,
   hydrated: false,
 };
@@ -108,12 +116,12 @@ function persistClient(next: SessionState) {
     if (next.displayName) {
       window.localStorage.setItem("zq-friends-self-name-v1", next.displayName);
     }
-    if (next.cityId) {
-      window.localStorage.setItem(CITY_KEY, next.cityId);
-    }
-    const complete =
-      Boolean(next.phone) && !profileNeedsSetup(next.displayName, next.cityId);
-    writeCompleteFlag(complete);
+    if (next.cityId) window.localStorage.setItem(CITY_KEY, next.cityId);
+    if (next.wechatId) window.localStorage.setItem(WECHAT_KEY, next.wechatId);
+    else window.localStorage.removeItem(WECHAT_KEY);
+    writeCompleteFlag(
+      Boolean(next.phone) && !profileNeedsSetup(next.displayName, next.wechatId),
+    );
   } catch {
     /* ignore */
   }
@@ -124,13 +132,15 @@ function applySessionPayload(payload: {
   role?: UserRole;
   displayName?: string;
   cityId?: string;
+  wechatId?: string;
   level?: number | null;
   needsProfileSetup?: boolean;
 }) {
   const displayName = String(payload.displayName || "").trim();
   const cityId = String(payload.cityId || "").trim();
+  const wechatId = String(payload.wechatId || "").trim();
   const phone = payload.phone || "";
-  const computed = Boolean(phone) && profileNeedsSetup(displayName, cityId);
+  const computed = Boolean(phone) && profileNeedsSetup(displayName, wechatId);
   const needs =
     typeof payload.needsProfileSetup === "boolean"
       ? payload.needsProfileSetup
@@ -140,6 +150,7 @@ function applySessionPayload(payload: {
     role: payload.role || session.role || "player",
     displayName,
     cityId,
+    wechatId,
     level: typeof payload.level === "number" ? payload.level : null,
     needsProfileSetup: needs,
     hydrated: true,
@@ -160,9 +171,9 @@ export function useSessionRole() {
           role?: UserRole;
           displayName?: string;
           cityId?: string;
+          wechatId?: string;
           level?: number | null;
           needsProfileSetup?: boolean;
-          error?: string;
         };
         if (response.ok && payload.role) {
           applySessionPayload(payload);
@@ -171,7 +182,6 @@ export function useSessionRole() {
       } catch {
         /* keep defaults */
       }
-      // Logged out / session miss: never prompt 完善资料.
       writeCompleteFlag(false);
       session = {
         ...session,
@@ -193,6 +203,7 @@ export async function refreshSessionProfile() {
       role?: UserRole;
       displayName?: string;
       cityId?: string;
+      wechatId?: string;
       level?: number | null;
       needsProfileSetup?: boolean;
     };
@@ -203,15 +214,11 @@ export async function refreshSessionProfile() {
   } catch {
     /* ignore */
   }
-  session = {
-    ...session,
-    hydrated: true,
-  };
+  session = { ...session, hydrated: true };
   emit();
   return session;
 }
 
-/** Whether a prior complete profile was cached locally (refresh hint only). */
 export function hasCachedCompleteProfile() {
   return readCompleteFlag();
 }

@@ -47,10 +47,9 @@ async function detectCityFromIp(locale: string): Promise<string> {
 }
 
 /**
- * 「完善资料」 gate — only after session hydrate, and only when logged in
- * with missing required key fields (display name and/or city).
- * Complete profiles must never see this after F5 / cold load / tab return.
- * Not logged in → never show (normal login/register).
+ * 「完善资料」 — logged in AND missing display name and/or WeChat ID.
+ * City alone never opens the dialog. Wait for session hydrate (no refresh flash).
+ * Form still collects name + WeChat + city when shown.
  */
 export function ProfileSetup() {
   const { t, locale } = useI18n();
@@ -58,13 +57,13 @@ export function ProfileSetup() {
   const cityOptions = useMemo(() => citiesForLocale(locale), [locale]);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [wechatId, setWechatId] = useState("");
   const [cityId, setCityId] = useState(DEFAULT_CITY_ID);
   const [cityReady, setCityReady] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Never decide from a pre-hydrate / mid-refresh snapshot.
     if (!session.hydrated) {
       setOpen(false);
       return;
@@ -74,29 +73,24 @@ export function ProfileSetup() {
       return;
     }
     const displayName = String(session.displayName || "").trim();
-    const city = String(session.cityId || "").trim();
-    const missingKeys = profileNeedsSetup(displayName, city);
+    const wx = String(session.wechatId || "").trim();
+    const missing = profileNeedsSetup(displayName, wx);
     const needs =
       typeof session.needsProfileSetup === "boolean"
         ? session.needsProfileSetup
-        : missingKeys;
-    // Extra safety: if we previously persisted "complete" and server fields
-    // still look complete, never open (covers sticky/odd client state).
-    if (!needs && hasCachedCompleteProfile()) {
-      setOpen(false);
-      return;
-    }
-    if (!needs) {
+        : missing;
+    if (!needs || (hasCachedCompleteProfile() && !missing)) {
       setOpen(false);
       return;
     }
     setOpen(true);
     if (displayName) setName(displayName);
+    if (wx) setWechatId(wx);
   }, [
     session.hydrated,
     session.phone,
     session.displayName,
-    session.cityId,
+    session.wechatId,
     session.needsProfileSetup,
   ]);
 
@@ -152,8 +146,13 @@ export function ProfileSetup() {
           onSubmit={async (event) => {
             event.preventDefault();
             const displayName = name.trim();
+            const wx = wechatId.trim();
             if (!displayName) {
               setError(t("profileSetup.badName"));
+              return;
+            }
+            if (!wx) {
+              setError(t("profileSetup.badWechat"));
               return;
             }
             if (!cityOptions.some((c) => c.id === cityId)) {
@@ -167,12 +166,13 @@ export function ProfileSetup() {
                 method: "PATCH",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ displayName, cityId }),
+                body: JSON.stringify({ displayName, cityId, wechatId: wx }),
               });
               const data = (await res.json()) as {
                 error?: string;
                 displayName?: string;
                 cityId?: string;
+                wechatId?: string;
                 needsProfileSetup?: boolean;
               };
               if (!res.ok) {
@@ -188,6 +188,13 @@ export function ProfileSetup() {
                 /* ignore */
               }
               await refreshSessionProfile();
+              const savedName = String(data.displayName || displayName).trim();
+              const savedWx = String(data.wechatId || wx).trim();
+              if (savedName && savedWx && !data.needsProfileSetup) {
+                setOpen(false);
+                setPending(false);
+                return;
+              }
               if (data.needsProfileSetup) {
                 setError(t("profileSetup.saveFail"));
                 setPending(false);
@@ -218,6 +225,23 @@ export function ProfileSetup() {
             />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="profile-setup-wechat">{t("profileSetup.wechat")}</Label>
+            <Input
+              id="profile-setup-wechat"
+              data-profile-setup-wechat="true"
+              autoComplete="off"
+              placeholder={t("profileSetup.wechatPh")}
+              value={wechatId}
+              maxLength={32}
+              onChange={(e) => {
+                setWechatId(e.target.value);
+                if (error) setError("");
+              }}
+              className="h-10 bg-background"
+            />
+            <p className="text-xs text-muted-foreground">{t("profileSetup.wechatHint")}</p>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="profile-setup-city">{t("profileSetup.city")}</Label>
             <select
               id="profile-setup-city"
@@ -235,7 +259,16 @@ export function ProfileSetup() {
             </select>
             <p className="text-xs text-muted-foreground">
               {t("profileSetup.cityHint", {
-                city: cityLabel(getCity(cityId) || { id: cityId, zh: cityId, en: cityId, countryCode: "", aliases: [] }, locale),
+                city: cityLabel(
+                  getCity(cityId) || {
+                    id: cityId,
+                    zh: cityId,
+                    en: cityId,
+                    countryCode: "",
+                    aliases: [],
+                  },
+                  locale,
+                ),
               })}
             </p>
           </div>

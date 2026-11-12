@@ -22,6 +22,11 @@ export type AuthUser = {
   cityId?: string;
   /** Self-level seed for UTR-like ladder (2–5). */
   level?: number;
+  /**
+   * WeChat ID for 约球 (required in 完善资料).
+   * Private: never expose via directory; only reveal to counterpart after match accept.
+   */
+  wechatId?: string;
   /** WeChat mini-program openid when account was created via wx.login. */
   openid?: string;
   unionid?: string;
@@ -121,17 +126,28 @@ function findUserForPasswordLogin(db: Db, username: string, phoneHint: string): 
   return null;
 }
 
+/** Sanitize WeChat ID for 约球 (letters/digits/_/- , 3–32). */
+export function sanitizeWechatId(raw: string | null | undefined): string {
+  const id = String(raw || "")
+    .trim()
+    .replace(/\s+/g, "")
+    .slice(0, 32);
+  if (!id) return "";
+  if (!/^[A-Za-z0-9_-]{3,32}$/.test(id)) return "";
+  return id;
+}
+
 /**
- * True when the signed-in user is missing required profile key fields.
- * Required (same as the 「完善资料」 form): real display name + city/location.
- * Callers must only open the dialog after session hydrate — never on a
- * transient empty client snapshot during refresh.
+ * True when signed-in user still needs 约球-required profile fields.
+ * Required: display name + WeChat ID. City alone must NOT open the gate.
+ * Callers open the dialog only after session hydrate.
  */
 export function needsProfileSetup(user: {
   displayName?: string | null;
   cityId?: string | null;
+  wechatId?: string | null;
 } | null | undefined) {
-  return !sanitizeDisplayName(user?.displayName) || !String(user?.cityId || "").trim();
+  return !sanitizeDisplayName(user?.displayName) || !sanitizeWechatId(user?.wechatId);
 }
 
 function issueSession(db: Db, user: AuthUser) {
@@ -144,14 +160,16 @@ function issueSession(db: Db, user: AuthUser) {
   save(db);
   const displayName = sanitizeDisplayName(user.displayName);
   const cityId = String(user.cityId || "").trim();
+  const wechatId = sanitizeWechatId(user.wechatId);
   return {
     token,
     phone: user.phone,
     role: user.role || roleForPhone(user.phone),
     displayName,
     cityId,
+    wechatId,
     username: normalizeUsername(user.username || "") || undefined,
-    needsProfileSetup: needsProfileSetup({ displayName, cityId }),
+    needsProfileSetup: needsProfileSetup({ displayName, wechatId }),
   };
 }
 
@@ -356,20 +374,23 @@ export function getSession(token: string | undefined | null) {
   const role = session.role || user?.role || roleForPhone(session.phone);
   const displayName = sanitizeDisplayName(user?.displayName);
   const cityId = user?.cityId || "";
+  const wechatId = sanitizeWechatId(user?.wechatId);
   return {
     phone: session.phone,
     createdAt: session.createdAt,
     role,
     displayName,
     cityId,
+    wechatId,
     level: typeof user?.level === "number" ? user.level : null,
-    needsProfileSetup: needsProfileSetup({ displayName, cityId }),
+    needsProfileSetup: needsProfileSetup({ displayName, wechatId }),
   };
 }
 
 export type ProfilePatch = {
   displayName?: string;
   cityId?: string;
+  wechatId?: string;
   level?: number | null;
 };
 
@@ -384,6 +405,9 @@ export function updateProfile(phone: string, patch: ProfilePatch) {
     const city = String(patch.cityId || "").trim().slice(0, 40);
     user.cityId = city;
   }
+  if (patch.wechatId !== undefined) {
+    user.wechatId = sanitizeWechatId(patch.wechatId);
+  }
   if (patch.level !== undefined) {
     const n = Number(patch.level);
     if (patch.level === null || !Number.isFinite(n)) {
@@ -397,14 +421,41 @@ export function updateProfile(phone: string, patch: ProfilePatch) {
   save(db);
   const displayName = sanitizeDisplayName(user.displayName);
   const cityId = user.cityId || "";
+  const wechatId = sanitizeWechatId(user.wechatId);
   return {
     phone: user.phone,
     role: user.role,
     displayName,
     cityId,
+    wechatId,
     level: typeof user.level === "number" ? user.level : null,
-    needsProfileSetup: needsProfileSetup({ displayName, cityId }),
+    needsProfileSetup: needsProfileSetup({ displayName, wechatId }),
   };
+}
+
+/** Own WeChat ID lookup (never put this on public directory rows). */
+export function getWechatIdForPhone(phone: string | null | undefined): string {
+  if (!phone) return "";
+  const user = getUser(phone);
+  return sanitizeWechatId(user?.wechatId);
+}
+
+/** Resolve WeChat ID by phone or display name (for post-accept reveal only). */
+export function getWechatIdForPlayer(opts: {
+  phone?: string | null;
+  displayName?: string | null;
+}): string {
+  const byPhone = getWechatIdForPhone(opts.phone);
+  if (byPhone) return byPhone;
+  const name = sanitizeDisplayName(opts.displayName).toLowerCase();
+  if (!name) return "";
+  const db = load();
+  for (const user of Object.values(db.users)) {
+    if (sanitizeDisplayName(user.displayName).toLowerCase() === name) {
+      return sanitizeWechatId(user.wechatId);
+    }
+  }
+  return "";
 }
 
 export type DirectoryUser = {
