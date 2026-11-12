@@ -2,8 +2,10 @@ plugins {
     id "com.android.application"
 }
 
-// 打包时覆盖：./gradlew assembleDebug -PZQ_START_URL=http://10.0.2.2:27116/e1
-def zqStartUrl = (project.findProperty("ZQ_START_URL") ?: "https://tennis.47.93.203.28.sslip.io/e1").toString()
+// 默认对齐网页源：https://yqchen.blog/tennis（可用 -PZQ_START_URL 覆盖本地调试）
+def zqStartUrl = (project.findProperty("ZQ_START_URL") ?: "https://yqchen.blog/tennis").toString()
+// 微信开放平台 · 移动应用 AppID（与小程序 AppID 不同）。未配置时走 apk_<androidId> mock。
+def zqWechatAppId = (project.findProperty("ZQ_WECHAT_APP_ID") ?: "").toString()
 
 android {
     namespace "app.zhangqiu"
@@ -13,9 +15,10 @@ android {
         applicationId "app.zhangqiu"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "0.1.0"
+        versionCode 204
+        versionName "1.0.104"
         resValue "string", "start_url", zqStartUrl
+        buildConfigField "String", "WECHAT_APP_ID", "\"${zqWechatAppId.replace("\"", "\\\"")}\""
     }
 
     compileOptions {
@@ -23,9 +26,32 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    buildFeatures {
+        buildConfig true
+    }
+
+    signingConfigs {
+        release {
+            def keystorePropertiesFile = rootProject.file("keystore.properties")
+            def keystoreProperties = new Properties()
+            if (keystorePropertiesFile.exists()) {
+                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                storeFile rootProject.file(keystoreProperties["storeFile"])
+                storePassword keystoreProperties["storePassword"]
+                keyAlias keystoreProperties["keyAlias"]
+                keyPassword keystoreProperties["keyPassword"]
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
         }
     }
+}
+
+dependencies {
+    implementation "com.tencent.mm.opensdk:wechat-sdk-android:6.8.34"
 }
