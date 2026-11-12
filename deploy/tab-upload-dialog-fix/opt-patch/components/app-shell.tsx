@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { destForRole } from "@/lib/coach-home";
 import { SHOW_ANALYSIS_TAB } from "@/lib/feature-flags";
 import { isCoachSubmitLocked, subscribeCoachJob } from "@/lib/coach-active-job";
-import { ensureJobWatch, getJobWatch, subscribeJobWatch } from "@/lib/job-watch";
+import { ensureJobWatch } from "@/lib/job-watch";
 import { Bell, BotMessageSquare, ClipboardList, Film, MessageSquare, User, Video, Users } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { Onboarding } from "@/components/onboarding";
@@ -16,7 +16,7 @@ import { useI18n } from "@/components/i18n-provider";
 import { useSessionRole } from "@/lib/session-role";
 import { cn } from "@/lib/utils";
 
-/** Coach video upload/analyze in flight: warn only when leaving the 教练 tab. */
+/** Warn only when leaving 教练 while coach video is uploading/analyzing. Never gates 通知. */
 const SUBMIT_LOCK_MSG = "视频正在上传中";
 
 const playerNavAll = [
@@ -64,32 +64,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const session = useSessionRole();
   const nav = session.role === "coach" ? coachNav : playerNav;
   const [challengeBadge, setChallengeBadge] = useState(0);
-  /** Coach video upload/analyze busy — dialog only when leaving 教练 tab. */
+  /** True only while coach video bytes uploading or analyze in flight. */
   const [coachBusy, setCoachBusy] = useState(() => isCoachSubmitLocked());
-  /** Analysis-tab submit only (hidden tab still may restore); never gates 约球. */
-  const [analysisSubmitting, setAnalysisSubmitting] = useState(
-    () => getJobWatch().phase === "submitting",
-  );
 
   useEffect(() => {
-    const sync = () => {
-      setCoachBusy(isCoachSubmitLocked());
-      setAnalysisSubmitting(getJobWatch().phase === "submitting");
-    };
+    const sync = () => setCoachBusy(isCoachSubmitLocked());
     sync();
-    const offJob = subscribeJobWatch(sync);
-    const offCoach = subscribeCoachJob(sync);
-    return () => {
-      offJob();
-      offCoach();
-    };
+    return subscribeCoachJob(sync);
   }, []);
 
   const onCoachTab = isActive(pathname, "/coach");
-  const onAnalysisTab = isActive(pathname, "/analysis");
-  /** Soft-nav lock: coach busy only while on 教练; analysis submit only on 分析. */
-  const submitLocked =
-    (coachBusy && onCoachTab) || (SHOW_ANALYSIS_TAB && analysisSubmitting && onAnalysisTab);
+  /** Leave-tab dialog: only on 教练 + real upload/analyze. Never blocks 通知. */
+  const submitLocked = coachBusy && onCoachTab;
 
   const refreshBadge = useCallback(async () => {
     if (session.role === "coach") {
@@ -156,12 +142,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             aria-label={t("notices.title")}
             data-action="open-notices"
             data-notices-badge={challengeBadge > 0 ? String(challengeBadge) : undefined}
-            data-submit-lock={submitLocked ? "1" : undefined}
-            onClick={(event) => {
-              if (!submitLocked) return;
-              event.preventDefault();
-              window.alert(SUBMIT_LOCK_MSG);
-            }}
             className={cn(
               buttonVariants({ variant: "ghost", size: "icon" }),
               "relative size-9 rounded-full text-muted-foreground hover:bg-muted",

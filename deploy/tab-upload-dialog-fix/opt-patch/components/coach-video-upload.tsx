@@ -3,6 +3,10 @@
 /**
  * Coach-tab video upload → tai/sslip analysis API (not iframe).
  * Parent receives finished guidance; analysis tab stays hidden.
+ *
+ * ZQ-87: do not mark the persisted job as error when this component
+ * unmounts mid-poll (tab switch / leave page). Resume re-polls the
+ * server job and re-applies guidance.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -44,6 +48,20 @@ type JobSnap = {
 
 const MIN_PLAYABLE_BYTES = 8_000;
 
+function isTransientNetworkError(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes("failed to fetch") ||
+    m.includes("networkerror") ||
+    m.includes("network error") ||
+    m.includes("uploadaborted") ||
+    m.includes("error.uploadaborted") ||
+    m.includes("load failed") ||
+    m.includes("aborted") ||
+    m.includes("network")
+  );
+}
+
 export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Props) {
   const zh = locale === "zh";
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +86,7 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
     return () => {
       mounted.current = false;
       // Do NOT abort in-flight analyze / poll — server job must survive navigation.
+      // Do NOT mark the persisted job as error here (ZQ-87).
       if (sourceUrl) URL.revokeObjectURL(sourceUrl);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,11 +120,32 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
   }
 
   function fail(message: string, opts?: { keepJob?: boolean }) {
+    // Leaving the page aborts in-flight fetch(); never poison a real server job.
+    if (!mounted.current) {
+      const active = readCoachActiveJob();
+      if (active && !String(active.jobId).startsWith("pending-")) {
+        patchCoachActiveJob({
+          phase: "analyzing",
+          message: zh ? "离开页面后分析仍在继续…" : "Analysis continues after leave…",
+          error: undefined,
+        });
+      }
+      return;
+    }
     setError(message);
     setPhase("error");
     const active = readCoachActiveJob();
     if (!active) return;
-    // Always mark error so soft-nav lock clears (keepJob only preserves jobId for UI resume).
+    const realJob = !String(active.jobId).startsWith("pending-");
+    if (realJob && isTransientNetworkError(message)) {
+      // Keep analyzing so resume can re-poll the server job.
+      patchCoachActiveJob({
+        phase: "analyzing",
+        message: zh ? "网络中断，返回后将继续查询…" : "Network blip — will resume on return…",
+        error: undefined,
+      });
+      return;
+    }
     patchCoachActiveJob({ phase: "error", error: message, message });
     if (!opts?.keepJob && String(active.jobId).startsWith("pending-")) {
       clearCoachActiveJob(active.jobId);
@@ -115,7 +155,16 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
   async function pollUntilDone(id: string, gen: number, nameHint: string): Promise<CoachVideoResult | null> {
     for (let i = 0; i < ANALYZE_POLL_TRIES; i += 1) {
       if (pollGen.current !== gen) return null; // explicit reset only
-      const res = await taiFetch(`/api/jobs/${id}`, { timeoutMs: 30_000 });
+      // Stop client poll on unmount; leave localStorage as analyzing for resume.
+      if (!mounted.current) return null;
+      let res: Response;
+      try {
+        res = await taiFetch(`/api/jobs/${id}`, { timeoutMs: 30_000 });
+      } catch (err) {
+        if (!mounted.current || pollGen.current !== gen) return null;
+        throw err;
+      }
+      if (!mounted.current || pollGen.current !== gen) return null;
       const snap = (await res.json().catch(() => null)) as JobSnap | null;
       if (!res.ok || !snap) {
         throw new Error(zh ? "查询分析进度失败" : "Failed to poll analysis");
@@ -126,10 +175,18 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
         progress: typeof snap.progress === "number" ? snap.progress : undefined,
         step_name: snap.step_name,
         message: snap.message,
+        error: undefined,
       });
       const status = String(snap.status || "").toLowerCase();
       if (status === "done" || status === "finished" || Number(snap.progress) >= 100) {
-        const resultRes = await taiFetch(`/api/jobs/${id}/result`, { timeoutMs: 60_000 });
+        let resultRes: Response;
+        try {
+          resultRes = await taiFetch(`/api/jobs/${id}/result`, { timeoutMs: 60_000 });
+        } catch (err) {
+          if (!mounted.current || pollGen.current !== gen) return null;
+          throw err;
+        }
+        if (!mounted.current || pollGen.current !== gen) return null;
         const result = (await resultRes.json().catch(() => null)) as CoachVideoResult & {
           job_id?: string;
           total?: number;
@@ -158,13 +215,18 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
   async function finishWithResult(
     id: string,
     result: CoachVideoResult,
-    meta: { strokeId: string; fileName: string },
+    meta: { strokeId: string; fileName: string; locale?: "zh" | "en" },
   ) {
+    const bundleLocale = meta.locale || readCoachActiveJob()?.locale || locale;
     const bundle = buildGuidanceBundle(result, {
-      locale,
+      locale: bundleLocale,
       pickerId: meta.strokeId === "auto" ? null : meta.strokeId,
       fileName: meta.fileName,
     });
+    // Always deliver guidance to parent (and persisted history) even if this
+    // instance briefly remounts; clear job only after apply.
+    onGuidanceRef.current(bundle, { jobId: id, strokeId: meta.strokeId, fileName: meta.fileName });
+    clearCoachActiveJob(id);
     if (mounted.current) {
       setPhase("done");
       setJobId(id);
@@ -177,8 +239,6 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
         score: result.total ?? undefined,
       });
     }
-    clearCoachActiveJob(id);
-    onGuidanceRef.current(bundle, { jobId: id, strokeId: meta.strokeId, fileName: meta.fileName });
   }
 
   async function submitClip(file: File) {
@@ -247,6 +307,9 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
         },
       });
       if (pollGen.current !== gen) return;
+      if (!mounted.current) {
+        // Upload response may still arrive after leave; persist job id for resume.
+      }
       const payload = (await response.json().catch(() => null)) as {
         job_id?: string;
         detail?: string;
@@ -288,18 +351,32 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
       if (payload?.cached && payload.report) {
         // rare inline cache — still fetch /result for coach bundle shape
       }
+      if (!mounted.current) {
+        // Leave page mid-upload after job_id: stop here; resume will poll.
+        return;
+      }
       const result = await pollUntilDone(id, gen, file.name);
       if (!result || pollGen.current !== gen) return;
-      await finishWithResult(id, result, { strokeId, fileName: file.name });
+      await finishWithResult(id, result, { strokeId, fileName: file.name, locale });
     } catch (err) {
       if (pollGen.current !== gen) return;
+      if (!mounted.current) {
+        const active = readCoachActiveJob();
+        if (active && !String(active.jobId).startsWith("pending-")) {
+          patchCoachActiveJob({
+            phase: "analyzing",
+            message: zh ? "离开页面后分析仍在继续…" : "Analysis continues after leave…",
+            error: undefined,
+          });
+        }
+        return;
+      }
       const msg =
         err instanceof Error && err.message
           ? err.message
           : zh
             ? "网络中断，请重试"
             : "Network error — retry";
-      // Upload may have created a server job already; keep id if we have a real one.
       const active = readCoachActiveJob();
       if (active && !String(active.jobId).startsWith("pending-")) {
         fail(msg, { keepJob: true });
@@ -313,21 +390,41 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
   useEffect(() => {
     const active = readCoachActiveJob();
     if (!active || String(active.jobId).startsWith("pending-")) return;
-    if (active.phase !== "analyzing" && active.phase !== "done" && active.phase !== "error") return;
+
+    const canResume =
+      active.phase === "analyzing" ||
+      active.phase === "done" ||
+      active.phase === "submitting" ||
+      // Heal ZQ-87: prior leave marked transient "Failed to fetch" as error.
+      (active.phase === "error" &&
+        (!active.error || isTransientNetworkError(String(active.error || active.message || ""))));
+
+    if (!canResume) {
+      if (active.phase === "error") {
+        setError(active.error || active.message || (zh ? "分析失败" : "Analysis failed"));
+        setPhase("error");
+        setJobId(active.jobId);
+        setStrokeId(active.strokeId || "auto");
+        setFileName(active.fileName || "");
+      }
+      return;
+    }
+
     const gen = pollGen.current;
     setStrokeId(active.strokeId || "auto");
     setFileName(active.fileName || "");
     setJobId(active.jobId);
-    if (active.phase === "error") {
-      setError(active.error || active.message || (zh ? "分析失败" : "Analysis failed"));
-      setPhase("error");
-      return;
-    }
+    setError("");
     setPhase("analyzing");
     setJobSnap({
       id: active.jobId,
       progress: active.progress ?? 30,
       step_name: active.step_name || (zh ? "识别动作" : "Detect"),
+      message: active.message || (zh ? "正在恢复分析…" : "Resuming analysis…"),
+    });
+    patchCoachActiveJob({
+      phase: "analyzing",
+      error: undefined,
       message: active.message || (zh ? "正在恢复分析…" : "Resuming analysis…"),
     });
     void (async () => {
@@ -337,9 +434,18 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
         await finishWithResult(active.jobId, result, {
           strokeId: active.strokeId || "auto",
           fileName: active.fileName || "",
+          locale: active.locale || locale,
         });
       } catch (err) {
         if (pollGen.current !== gen) return;
+        if (!mounted.current) {
+          patchCoachActiveJob({
+            phase: "analyzing",
+            message: zh ? "离开页面后分析仍在继续…" : "Analysis continues after leave…",
+            error: undefined,
+          });
+          return;
+        }
         const msg =
           err instanceof Error && err.message
             ? err.message
@@ -366,6 +472,7 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
       className={cn("space-y-3 rounded-lg border border-border bg-card px-3 py-3", className)}
       data-coach-video-guidance="true"
       data-coach-persist="1"
+      data-coach-guidance-fix="zq87"
       data-phase={phase}
       data-job-id={jobId || undefined}
     >
@@ -443,7 +550,7 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
           data-coach-video-done="true"
         >
           <p className="font-semibold text-primary">
-            {zh ? "指导已写入对话" : "Guidance posted to chat"}
+            {zh ? "指导已写入下方" : "Guidance posted below"}
           </p>
           <p className="mt-1 text-muted-foreground">
             {zh ? `任务 ${jobId}${jobSnap?.score != null ? ` · 得分 ${jobSnap.score}` : ""}` : `Job ${jobId}${jobSnap?.score != null ? ` · score ${jobSnap.score}` : ""}`}
@@ -460,6 +567,44 @@ export function CoachVideoUpload({ locale, disabled, onGuidance, className }: Pr
             {clipFile ? (
               <Button type="button" data-action="coach-video-retry" onClick={() => void submitClip(clipFile)}>
                 {zh ? "重试分析" : "Retry analysis"}
+              </Button>
+            ) : jobId ? (
+              <Button
+                type="button"
+                data-action="coach-video-resume"
+                onClick={() => {
+                  writeCoachActiveJob({
+                    jobId,
+                    strokeId,
+                    fileName: fileName || "clip.mp4",
+                    phase: "analyzing",
+                    locale,
+                    progress: 30,
+                    step_name: zh ? "识别动作" : "Detect",
+                    message: zh ? "正在恢复分析…" : "Resuming analysis…",
+                    updatedAt: Date.now(),
+                  });
+                  setError("");
+                  setPhase("analyzing");
+                  const gen = ++pollGen.current;
+                  void (async () => {
+                    try {
+                      const result = await pollUntilDone(jobId, gen, fileName || "");
+                      if (!result || pollGen.current !== gen) return;
+                      await finishWithResult(jobId, result, { strokeId, fileName: fileName || "" });
+                    } catch (err) {
+                      const msg =
+                        err instanceof Error && err.message
+                          ? err.message
+                          : zh
+                            ? "恢复分析失败"
+                            : "Failed to resume analysis";
+                      fail(msg, { keepJob: true });
+                    }
+                  })();
+                }}
+              >
+                {zh ? "继续查询结果" : "Resume result"}
               </Button>
             ) : null}
             <Button type="button" variant="outline" data-action="coach-video-reset" onClick={resetToIdle}>
