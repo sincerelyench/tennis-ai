@@ -1,0 +1,5 @@
+ZQ-95 coach specialty + chip-near-input layout
+
+Web source of truth: yqchen.blog/tennis (WebView shells inherit).
+APK / IPA / mp-weixin shells unchanged; same /tennis origin.
+Shell rebuild not required for this UI-only CSS/React layout patch.
