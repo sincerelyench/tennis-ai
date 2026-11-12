@@ -38,6 +38,18 @@ run_as_tennis "cd '$ROOT' && set -a && . ./.env && set +a && node scripts/user-d
 
 echo "==> Patch banned names (allow 小猪, ban 小朱) + empty ladderPlayers"
 python3 "$PATCH_DIR/scripts/patch-banned-names.py" "$ROOT"
+python3 - "$ROOT" <<'PY'
+from pathlib import Path
+import re, sys
+root = Path(sys.argv[1])
+text = (root / "lib" / "auth-store.ts").read_text(encoding="utf-8")
+m = re.search(r"const BANNED_DISPLAY_NAMES\s*=\s*/\^[\s\S]*?/i;", text)
+assert m, "BANNED_DISPLAY_NAMES missing after patch"
+banned = m.group(0)
+assert "小猪" not in banned, "keeper 小猪 must not be banned"
+assert "小朱" in banned, "wrong label 小朱 must be banned"
+print("banned-list verified: allows 小猪, blocks 小朱")
+PY
 
 echo "==> Install rename script"
 mkdir -p "$ROOT/scripts"
