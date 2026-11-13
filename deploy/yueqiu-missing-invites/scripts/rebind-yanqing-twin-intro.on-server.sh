@@ -96,11 +96,9 @@ COMMIT;
 SQL
 
 "${PSQL[@]}" -c "
-COPY (
-  SELECT id, status, payload->>'toPhone' AS to_phone, payload->>'buddyId' AS buddy_id, payload->>'toName' AS to_name
-  FROM match_intros
-  WHERE id = '${INTRO_ID}'
-) TO STDOUT WITH (FORMAT csv HEADER);
-" | tee "$BACKUP_DIR/intro-${INTRO_ID}.after.csv"
+SELECT id, status, payload->>'toPhone' AS to_phone, payload->>'buddyId' AS buddy_id, payload->>'toName' AS to_name
+FROM match_intros
+WHERE id = '${INTRO_ID}';
+" | tee "$BACKUP_DIR/intro-${INTRO_ID}.after.txt"
 
 echo "REBIND_OK $INTRO_ID backup=$BACKUP_DIR"
