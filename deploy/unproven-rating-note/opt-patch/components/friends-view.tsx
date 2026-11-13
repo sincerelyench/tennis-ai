@@ -384,6 +384,8 @@ export function FriendsView() {
     }[]
   >([]);
   const [ladderDetailBusy, setLadderDetailBusy] = useState(false);
+  const [cityMatches, setCityMatches] = useState<SavedMatch[]>([]);
+  const [cityMatchDetail, setCityMatchDetail] = useState<SavedMatch | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hintTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -545,6 +547,31 @@ export function FriendsView() {
     }
   }
 
+  async function refreshCityMatches() {
+    if (!cityReady || !cityId) {
+      setCityMatches([]);
+      return;
+    }
+    try {
+      const q = new URLSearchParams({
+        scope: "city",
+        cityId,
+        format,
+      });
+      const res = await fetch(`/tennis/api/friends/scores?${q}`, { credentials: "include" });
+      if (!res.ok) {
+        setCityMatches([]);
+        return;
+      }
+      const data = (await res.json()) as {
+        matches?: Parameters<typeof mapApiScore>[0][];
+      };
+      setCityMatches((Array.isArray(data.matches) ? data.matches : []).map(mapApiScore));
+    } catch {
+      setCityMatches([]);
+    }
+  }
+
   function patchScoreInHistory(next: SavedMatch) {
     const apply = (rows: SavedMatch[]) => rows.map((r) => (r.id === next.id ? { ...r, ...next } : r));
     setHistory((prev) => {
@@ -554,6 +581,8 @@ export function FriendsView() {
     });
     setPendingForMe((prev) => apply(prev));
     setMinePending((prev) => apply(prev));
+    setCityMatches((prev) => apply(prev));
+    setCityMatchDetail((prev) => (prev && prev.id === next.id ? { ...prev, ...next } : prev));
     setLadderDetailMatches((prev) =>
       prev.map((m) =>
         m.id === next.id
@@ -828,6 +857,18 @@ export function FriendsView() {
     return () => window.clearInterval(timer);
   }, [activeIntro?.id, activeIntro?.status]);
 
+  // 录入方等待对方确认时轮询：确认后排行榜 / 比赛结果 / UTR 即时刷新（服务端按确认场即时重放）
+  useEffect(() => {
+    if (minePending.length === 0 && pendingForMe.length === 0) return;
+    const timer = window.setInterval(() => {
+      void (async () => {
+        await refreshScores();
+        await Promise.all([refreshLadder(), refreshCityMatches()]);
+      })();
+    }, 4000);
+    return () => window.clearInterval(timer);
+  }, [minePending.length, pendingForMe.length, format, cityId, cityReady]);
+
   function goEnterScoreFromMatch(opponentName?: string) {
     setFriendsMainTab("match");
     setScoreFormOpen(true);
@@ -840,6 +881,7 @@ export function FriendsView() {
   useEffect(() => {
     if (!cityReady) return;
     void refreshLadder();
+    void refreshCityMatches();
   }, [format, cityId, cityReady, directoryCount]);
 
 
@@ -1119,7 +1161,13 @@ export function FriendsView() {
       setScoreNotice(
         action === "confirm" ? t("friends.scoreConfirmedHint") : t("friends.scoreRejectedHint"),
       );
-      await Promise.all([refreshScores(), refreshLadder(), refreshDirectory()]);
+      // Ladder + city「比赛结果」must refetch after confirm (UTR is computed on read).
+      await Promise.all([
+        refreshScores(),
+        refreshLadder(),
+        refreshDirectory(),
+        refreshCityMatches(),
+      ]);
     } catch {
       setFormError(t("friends.scoreNeedNames"));
     } finally {
@@ -2171,7 +2219,7 @@ export function FriendsView() {
       ) : null}
       </div>
       ) : (
-      <div className="space-y-6" data-friends-main-panel="ladder" data-friends-ladder-panel="true" data-ladder-panel-order="ladder-matchmaking">
+      <div className="space-y-6" data-friends-main-panel="ladder" data-friends-ladder-panel="true" data-ladder-panel-order="ladder-results-matchmaking">
       <section className="space-y-3" data-ladder={format} data-ladder-city={cityId}>
         <div>
           <div className="flex items-center gap-1.5">
@@ -2421,11 +2469,212 @@ export function FriendsView() {
           </DialogContent>
         </Dialog>
       </section>
+
+      <section className="space-y-3" data-ladder-city-results="true" data-ladder-city-results-city={cityId}>
+        <h2 className="text-sm font-semibold text-foreground">{t("friends.cityResultsTitle")}</h2>
+        {cityMatches.length === 0 ? (
+          <p className="text-xs text-muted-foreground" data-ladder-city-results-empty="true">
+            {t("friends.cityResultsEmpty")}
+          </p>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-border bg-card" data-ladder-city-results-list="true">
+            {cityMatches.map((m, index) => {
+              const when = formatMatchTime(m.savedAt);
+              const scoreLine = m.sets?.length ? formatSets(m.sets) : "";
+              const winnerName = m.winner === "A" ? m.playerA : m.playerB;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  data-ladder-city-result-row={m.id}
+                  onClick={() => {
+                    setCityMatchDetail(m);
+                    setCommentsOpen((prev) => ({ ...prev, [m.id]: true }));
+                  }}
+                  className={cn(
+                    "flex w-full items-start justify-between gap-3 px-3 py-2.5 text-left transition hover:bg-muted/40",
+                    index === cityMatches.length - 1 ? "" : "border-b border-border",
+                  )}
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {t("friends.cityResultsVs", { a: m.playerA, b: m.playerB })}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {scoreLine}
+                      {scoreLine && when ? " · " : ""}
+                      {when}
+                      {winnerName ? ` · ${t("friends.cityResultsWinner", { name: winnerName })}` : ""}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-[11px] font-medium text-primary">
+                    {t("friends.cityResultsOpen")}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <Dialog
+          open={Boolean(cityMatchDetail)}
+          onOpenChange={(open) => {
+            if (!open) setCityMatchDetail(null);
+          }}
+        >
+          <DialogContent
+            className="max-h-[min(80vh,36rem)] overflow-y-auto sm:max-w-md"
+            data-ladder-city-result-modal={cityMatchDetail?.id || ""}
+            showCloseButton
+          >
+            {cityMatchDetail ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="truncate pr-8">
+                    {t("friends.cityResultsDetailTitle")}
+                  </DialogTitle>
+                  <DialogDescription className="text-[11px] text-muted-foreground">
+                    {t("friends.cityResultsVs", {
+                      a: cityMatchDetail.playerA,
+                      b: cityMatchDetail.playerB,
+                    })}
+                    {cityMatchDetail.sets?.length ? ` · ${formatSets(cityMatchDetail.sets)}` : ""}
+                    {cityMatchDetail.savedAt
+                      ? ` · ${formatMatchTime(cityMatchDetail.savedAt)}`
+                      : ""}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3" data-ladder-city-result-detail={cityMatchDetail.id}>
+                  {cityMatchDetail.description || cityMatchDetail.highlightUrl ? (
+                    <div className="space-y-1.5" data-ladder-city-result-highlight={cityMatchDetail.id}>
+                      {cityMatchDetail.description ? (
+                        <p className="text-xs leading-5 text-foreground">{cityMatchDetail.description}</p>
+                      ) : null}
+                      {cityMatchDetail.highlightUrl ? (
+                        <MatchMedia
+                          url={cityMatchDetail.highlightUrl}
+                          name={cityMatchDetail.highlightName}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <div className="space-y-2" data-ladder-city-result-comments={cityMatchDetail.id}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCommentsOpen((prev) => ({
+                          ...prev,
+                          [cityMatchDetail.id]: !prev[cityMatchDetail.id],
+                        }))
+                      }
+                      className="text-[11px] font-medium text-muted-foreground"
+                      data-ladder-city-result-comments-toggle={cityMatchDetail.id}
+                    >
+                      {t("friends.commentsTitle", {
+                        count: String(
+                          cityMatchDetail.commentCount || cityMatchDetail.comments?.length || 0,
+                        ),
+                      })}
+                    </button>
+                    {commentsOpen[cityMatchDetail.id] ? (
+                      <div
+                        className="space-y-2"
+                        data-ladder-city-result-comments-panel={cityMatchDetail.id}
+                      >
+                        {(cityMatchDetail.comments || []).length === 0 ? (
+                          <p className="text-[11px] text-muted-foreground">
+                            {t("friends.commentsEmpty")}
+                          </p>
+                        ) : (
+                          <ul className="space-y-1.5">
+                            {(cityMatchDetail.comments || []).map((c) => (
+                              <li
+                                key={c.id}
+                                className="rounded-md bg-muted/30 px-2 py-1.5"
+                                data-ladder-city-result-comment={c.id}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="text-[11px] font-semibold text-foreground">
+                                    {c.authorName}
+                                  </p>
+                                  {normName(c.authorName) ===
+                                  normName(selfName || session.displayName || "") ? (
+                                    <button
+                                      type="button"
+                                      disabled={commentBusyId === cityMatchDetail.id}
+                                      onClick={() => void removeComment(cityMatchDetail.id, c.id)}
+                                      className="text-[10px] text-muted-foreground"
+                                      data-ladder-city-result-comment-delete={c.id}
+                                    >
+                                      {t("friends.commentDelete")}
+                                    </button>
+                                  ) : null}
+                                </div>
+                                <p className="mt-0.5 text-xs leading-5 text-foreground">{c.body}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={commentDrafts[cityMatchDetail.id] || ""}
+                            onChange={(e) =>
+                              setCommentDrafts((prev) => ({
+                                ...prev,
+                                [cityMatchDetail.id]: e.target.value,
+                              }))
+                            }
+                            maxLength={1000}
+                            placeholder={t("friends.commentPlaceholder")}
+                            className="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-2 text-xs text-foreground"
+                            data-ladder-city-result-comment-input={cityMatchDetail.id}
+                          />
+                          <button
+                            type="button"
+                            disabled={
+                              commentBusyId === cityMatchDetail.id ||
+                              !String(commentDrafts[cityMatchDetail.id] || "").trim()
+                            }
+                            onClick={() => void submitComment(cityMatchDetail.id)}
+                            className="h-8 shrink-0 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                            data-ladder-city-result-comment-submit={cityMatchDetail.id}
+                          >
+                            {t("friends.commentSubmit")}
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    data-ladder-city-result-close="true"
+                    onClick={() => setCityMatchDetail(null)}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold text-muted-foreground"
+                  >
+                    {t("friends.cityResultsClose")}
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </DialogContent>
+        </Dialog>
+      </section>
+
       {matchmakingBlock}
       </div>
       )}
     </div>
   );
+}
+
+function formatMatchTime(raw?: string) {
+  const s = String(raw || "").trim();
+  if (!s) return "";
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return s.slice(0, 16).replace("T", " ");
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function formatLadderDelta(
