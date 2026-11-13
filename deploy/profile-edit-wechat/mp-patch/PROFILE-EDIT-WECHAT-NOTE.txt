@@ -1,0 +1,10 @@
+涨球 · 个人资料微信号 + 安卓去掉微信登录（ZQ-128 / ZQ-129）
+============================================================
+Web: https://yqchen.blog/tennis
+  - 「我的」资料卡：查看/保存 wechatId（PATCH /api/auth/profile）
+  - ZhangqiuAndroid UA 登录页不再展示「微信登录」
+APK: https://yqchen.blog/tennis-ai.apk
+  - 完整 assembleRelease + ZHANGQIU 重签（无 zip-inject）
+  - WebView 同源；资料微信号与去微信登录随网页生效
+IPA: https://yqchen.blog/tennis-ai.ipa （WebView 同源；IPA 未改壳）
+小程序: https://yqchen.blog/mp-weixin.zip （微信登录保留在小程序）

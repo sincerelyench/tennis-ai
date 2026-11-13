@@ -1,0 +1,4 @@
+android/**/*.jks
+android/keystore.properties
+android/local.properties
+android/**/build/
