@@ -348,6 +348,7 @@ export function FriendsView() {
   const [recentMatchIds, setRecentMatchIds] = useState<string[]>([]);
   const [activeIntro, setActiveIntro] = useState<MatchIntroRow | null>(null);
   const [introInbox, setIntroInbox] = useState<MatchIntroRow[]>([]);
+  const [sentPending, setSentPending] = useState<MatchIntroRow[]>([]);
   const [successRecords, setSuccessRecords] = useState<MatchIntroRow[]>([]);
   const [introBusy, setIntroBusy] = useState(false);
   const [challengeQuery, setChallengeQuery] = useState("");
@@ -394,6 +395,14 @@ export function FriendsView() {
     if (row.status !== "awaiting_accept") return false;
     if (row.awaitingOther || row.iAmFrom === true) return false;
     return Boolean(row.needsAccept) || row.iAmTarget === true;
+  }
+
+  /** 我发出、对方尚未应战；进约球成功后离开此列表 */
+  function isSentPendingInvite(row: MatchIntroRow) {
+    if (row.status !== "awaiting_accept") return false;
+    if (row.awaitingOther === true) return true;
+    if (row.iAmFrom === true && row.iAmTarget !== true) return true;
+    return false;
   }
 
   const selfUtr = useMemo(() => utrSeedFromSelfLevel(selfLevel), [selfLevel]);
@@ -672,6 +681,7 @@ export function FriendsView() {
       if (!res.ok) {
         const local = loadLocalIntros();
         setIntroInbox(local.filter(isOpenInvite));
+        setSentPending(local.filter(isSentPendingInvite));
         const active = local.find((row) => row.status === "pending" || row.status === "awaiting_accept") || null;
         setActiveIntro(active);
         setSuccessRecords(
@@ -690,22 +700,30 @@ export function FriendsView() {
         active?: MatchIntroRow[];
         inbox?: MatchIntroRow[];
         pendingAccept?: MatchIntroRow[];
+        sentPending?: MatchIntroRow[];
         success?: MatchIntroRow[];
       };
       const activeRows = Array.isArray(data.active) ? data.active : [];
       const inbox = Array.isArray(data.inbox) ? data.inbox : [];
       const pendingAccept = Array.isArray(data.pendingAccept) ? data.pendingAccept : [];
+      const sentFromApi = Array.isArray(data.sentPending) ? data.sentPending : [];
       const success = orderSuccessRecords(Array.isArray(data.success) ? data.success : []);
       const openInvites =
         pendingAccept.length > 0 ? pendingAccept.filter(isOpenInvite) : inbox.filter(isOpenInvite);
       setIntroInbox(openInvites);
+      const sentRows =
+        sentFromApi.length > 0
+          ? sentFromApi.filter(isSentPendingInvite)
+          : activeRows.filter(isSentPendingInvite);
+      setSentPending(sentRows);
       const current = activeRows[0] || null;
       setActiveIntro(current);
       setSuccessRecords(success);
-      persistLocalIntros([...activeRows, ...inbox, ...pendingAccept, ...success]);
+      persistLocalIntros([...activeRows, ...inbox, ...pendingAccept, ...sentRows, ...success]);
     } catch {
       const local = loadLocalIntros();
       setIntroInbox(local.filter(isOpenInvite));
+      setSentPending(local.filter(isSentPendingInvite));
       setSuccessRecords(
         orderSuccessRecords(
           local.filter(
@@ -822,6 +840,7 @@ export function FriendsView() {
       setMatchPhase("found");
     }
     setIntroInbox(rows.filter(isOpenInvite));
+    setSentPending(rows.filter(isSentPendingInvite));
     setIntroBusy(false);
   }
 
@@ -856,6 +875,18 @@ export function FriendsView() {
     }, 4000);
     return () => window.clearInterval(timer);
   }, [activeIntro?.id, activeIntro?.status]);
+
+  // 录入方等待对方确认时轮询：确认后排行榜 / 比赛结果 / UTR 即时刷新（服务端按确认场即时重放）
+  useEffect(() => {
+    if (minePending.length === 0 && pendingForMe.length === 0) return;
+    const timer = window.setInterval(() => {
+      void (async () => {
+        await refreshScores();
+        await Promise.all([refreshLadder(), refreshCityMatches()]);
+      })();
+    }, 4000);
+    return () => window.clearInterval(timer);
+  }, [minePending.length, pendingForMe.length, format, cityId, cityReady]);
 
   function goEnterScoreFromMatch(opponentName?: string) {
     setFriendsMainTab("match");
@@ -1142,7 +1173,13 @@ export function FriendsView() {
       setScoreNotice(
         action === "confirm" ? t("friends.scoreConfirmedHint") : t("friends.scoreRejectedHint"),
       );
-      await Promise.all([refreshScores(), refreshLadder(), refreshDirectory()]);
+      // Ladder + city「比赛结果」must refetch after confirm (UTR is computed on read).
+      await Promise.all([
+        refreshScores(),
+        refreshLadder(),
+        refreshDirectory(),
+        refreshCityMatches(),
+      ]);
     } catch {
       setFormError(t("friends.scoreNeedNames"));
     } finally {
@@ -1314,7 +1351,6 @@ export function FriendsView() {
               </span>
               <p className="text-lg font-bold tabular-nums text-primary" data-match-self-utr={selfUtr}>
                 {selfUtr.toFixed(1)}
-                <span className="ml-0.5 text-[10px] font-semibold text-muted-foreground">(P)</span>
               </p>
             </div>
           </div>
@@ -1374,9 +1410,6 @@ export function FriendsView() {
                     </p>
                     <p className="shrink-0 text-base font-bold tabular-nums text-foreground" data-match-buddy-utr={matched.rating}>
                       {matched.rating.toFixed(1)}
-                      {matched.projected ? (
-                        <span className="ml-0.5 text-[10px] font-semibold text-muted-foreground">(P)</span>
-                      ) : null}
                     </p>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground" data-match-buddy-meta="true">
@@ -1648,7 +1681,7 @@ export function FriendsView() {
       </div>
 
       {friendsMainTab === "match" ? (
-      <div className="space-y-6" data-friends-main-panel="match" data-friends-match-panel="true" data-match-panel-order="matchmaking-records-invites">
+      <div className="space-y-6" data-friends-main-panel="match" data-friends-match-panel="true" data-match-panel-order="matchmaking-records-invites-sent">
       {matchmakingBlock}
       <section
         className="space-y-4"
@@ -2108,6 +2141,9 @@ export function FriendsView() {
                   className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs text-foreground"
                   data-score-highlight-desc="true"
                 />
+                <p className="text-[11px] text-muted-foreground" data-score-highlight-hint="true">
+                  {t("friends.highlightWithScoreHint")}
+                </p>
                 <input
                   ref={scoreHighlightFileRef}
                   type="file"
@@ -2116,27 +2152,21 @@ export function FriendsView() {
                   className="sr-only"
                   data-score-highlight-file="true"
                   tabIndex={-1}
+                  aria-hidden="true"
                 />
                 <button
                   type="button"
                   data-score-highlight-pick="true"
                   onClick={() => scoreHighlightFileRef.current?.click()}
-                  className="flex h-11 w-full items-center justify-center rounded-lg border-2 border-primary bg-primary/10 px-3 text-sm font-semibold text-primary"
+                  className="flex h-14 w-full items-center justify-center rounded-xl bg-primary px-4 text-base font-bold tracking-wide text-primary-foreground shadow-md shadow-primary/25 ring-2 ring-primary/30 ring-offset-2 ring-offset-background"
                 >
                   {t("friends.highlightFileLabel")}
                 </button>
                 {scoreHighlightFile ? (
-                  <p className="truncate text-xs text-foreground" data-score-highlight-chosen="true">
+                  <p className="truncate text-center text-xs font-medium text-foreground" data-score-highlight-chosen="true">
                     {scoreHighlightFile.name}
                   </p>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground" data-score-highlight-none="true">
-                    {t("friends.highlightFileHint")}
-                  </p>
-                )}
-                <p className="text-[11px] text-muted-foreground">
-                  {t("friends.highlightWithScoreHint")}
-                </p>
+                ) : null}
               </div>
               {formError ? (
                 <p className="text-xs text-destructive" data-score-error="true">
@@ -2203,6 +2233,49 @@ export function FriendsView() {
           </div>
         </section>
       ) : null}
+
+      <section className="space-y-2" data-match-sent-pending="true" aria-label={t("friends.matchSentPendingTitle")}>
+        <h2 className="text-sm font-semibold text-foreground">{t("friends.matchSentPendingTitle")}</h2>
+        {sentPending.filter(isSentPendingInvite).length === 0 ? (
+          <p className="text-xs text-muted-foreground" data-match-sent-pending-empty="true">
+            {t("friends.matchSentPendingEmpty")}
+          </p>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-border bg-card">
+            {sentPending.filter(isSentPendingInvite).map((row, index, list) => {
+              const opponent =
+                row.opponentName ||
+                row.toName ||
+                row.fromName ||
+                "";
+              return (
+                <div
+                  key={row.id}
+                  data-match-sent-pending-row={row.id}
+                  data-match-sent-pending-opponent={opponent}
+                  className={`space-y-2 px-4 py-3 ${index === list.length - 1 ? "" : "border-b border-border"}`}
+                >
+                  <p className="text-sm font-medium text-foreground">{opponent}</p>
+                  <p className="text-xs text-muted-foreground" data-match-sent-pending-waiting="true">
+                    {t("friends.matchSentPendingWaiting", { name: opponent })}
+                  </p>
+                  {row.canCancel !== false ? (
+                    <button
+                      type="button"
+                      data-match-sent-pending-cancel={row.id}
+                      disabled={introBusy}
+                      onClick={() => void onIntroAction(row.id, "cancel")}
+                      className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm font-semibold text-muted-foreground disabled:opacity-60"
+                    >
+                      {t("friends.matchIntroCancel")}
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
       </div>
       ) : (
       <div className="space-y-6" data-friends-main-panel="ladder" data-friends-ladder-panel="true" data-ladder-panel-order="ladder-results-matchmaking">
@@ -2277,9 +2350,20 @@ export function FriendsView() {
                     {t("friends.playerDetailTitle", { name: ladderDetail.name })}
                   </DialogTitle>
                   <DialogDescription className="text-[11px] text-muted-foreground">
-                    <span data-ladder-detail-rating={ladderDetail.rating} data-ladder-detail-untested="false">
+                    <span
+                      data-ladder-detail-rating={ladderDetail.rating}
+                      data-ladder-detail-untested={!ladderDetail.played ? "true" : "false"}
+                    >
                       #{ladderDetail.rank} · {ladderDetail.rating.toFixed(1)}
                     </span>
+                    {!ladderDetail.played ? (
+                      <span
+                        className="mt-1 block text-[10px] font-normal leading-snug text-muted-foreground"
+                        data-ladder-detail-untested-hint="true"
+                      >
+                        {t("friends.seedOnly")}
+                      </span>
+                    ) : null}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-3" data-ladder-player-recent="true">
@@ -2692,7 +2776,8 @@ function LadderRowView({
   const { t } = useI18n();
   const unplayed = !row.played;
   const form = t("friends.form", { w: row.wins, l: row.losses });
-  // Show plain numeric rating for everyone; no trailing ? / italic / unplayed hint.
+  const unprovenNote = t("friends.seedOnly");
+  // Plain numeric rating (no trailing ?); unplayed → small caption under score.
   const ratingLabel = row.rating.toFixed(1);
   const lastLine =
     !unplayed && row.lastResult && row.lastOpponentName
@@ -2730,22 +2815,29 @@ function LadderRowView({
             >
               {row.name}
             </button>
-            <div className="flex shrink-0 flex-col items-end gap-0.5" data-ladder-rating-block="tested">
+            <div
+              className="flex shrink-0 flex-col items-end gap-0.5"
+              data-ladder-rating-block={unplayed ? "unproven" : "tested"}
+            >
               <p
                 className="text-sm font-bold tabular-nums text-foreground"
                 data-ladder-rating={row.rating}
                 data-ladder-rating-display={ratingLabel}
-                data-ladder-untested="false"
+                data-ladder-untested={unplayed ? "true" : "false"}
                 data-ladder-projected={!unplayed && row.projected ? "true" : "false"}
-                aria-label={ratingLabel}
+                aria-label={unplayed ? `${ratingLabel} · ${unprovenNote}` : ratingLabel}
               >
                 {ratingLabel}
-                {!unplayed && row.projected ? (
-                  <span className="ml-0.5 text-[10px] font-semibold not-italic text-muted-foreground" data-ladder-projected-mark="true">
-                    (P)
-                  </span>
-                ) : null}
               </p>
+              {unplayed ? (
+                <p
+                  className="max-w-[8.5rem] text-right text-[10px] font-normal leading-snug text-muted-foreground"
+                  data-ladder-untested-hint="true"
+                  data-ladder-unproven-note="true"
+                >
+                  {unprovenNote}
+                </p>
+              ) : null}
             </div>
           </div>
           {!unplayed ? (

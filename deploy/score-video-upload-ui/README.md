@@ -1,15 +1,15 @@
 # 录入比分：视频上传入口更明显（上传-only）
 
-Yanqing / ZQ-130：
+Yanqing / ZQ-130 follow-up：
 
-1. 「选择视频上传」做成醒目 CTA（不再埋在原生 file 控件里）
-2. 去掉录入比分区的「视频链接 / 输入链接」路径与文案，仅本地上传
-3. 上传行为不变：选文件后随比分 POST multipart 到 `/api/friends/scores/[id]/highlight`
+1. 「选择视频上传」做成**实心大主 CTA**（h-14、粗体、主色填充 + ring）
+2. 去掉录入比分区全部链接/URL 输入与文案（无「视频链接 / 输入链接」）
+3. 视频控件区只保留该按钮（选中后可显示文件名）；multipart 上传行为不变
 
 ## 改动
 
-- `components/friends-view.tsx`：移除 `type="url"` 链接输入与 `scoreHighlightUrlDraft`；隐藏 file input + 主色描边按钮「选择视频上传」；选中后显示文件名
-- `lib/i18n/messages.ts`：`highlightFileLabel` →「选择视频上传」；新增 `highlightFileHint`；`highlightUrlPlaceholder` 不再写链接文案（UI 已不用）
+- `components/friends-view.tsx`：基于**现网**文件定点改；移除 `scoreHighlightUrlDraft` / URL input；隐藏 file + 实心主按钮
+- `lib/i18n/messages.ts`：`highlightFileLabel` →「选择视频上传」；`highlightUrlPlaceholder` 清空（UI 不用）
 
 ## Apply
 
@@ -21,6 +21,6 @@ Code only. No DB changes.
 
 ## 四端
 
-Web 为 APK / IPA / 微信小程序 WebView 同源。本改动仅 Next UI 文案与控件，**原生壳未改** → 部署 Web 后四端同步；无需重打包 APK / IPA（壳未变）。mp-weixin 若走同一 `/tennis` WebView 亦随 Web 生效。
+Web 为 APK / IPA / 微信小程序 WebView 同源。**原生壳未改** → 部署 Web 后四端同步；无需重打包 APK / IPA。
 
 Preview: `deploy/score-video-upload-ui/preview/index.html`

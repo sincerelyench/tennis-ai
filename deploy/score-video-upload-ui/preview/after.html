@@ -12,7 +12,7 @@
       --muted: #6b7280;
       --fg: #0f172a;
       --primary: #0f766e;
-      --primary-soft: rgba(15, 118, 110, 0.1);
+      --primary-soft: rgba(15, 118, 110, 0.12);
     }
     * { box-sizing: border-box; }
     body {
@@ -63,8 +63,8 @@
       color: var(--muted);
       margin: 8px 0;
     }
-    .hint { font-size: 11px; color: var(--muted); margin: 6px 0 0; }
-    .pick {
+    .hint { font-size: 11px; color: var(--muted); margin: 6px 0 10px; }
+    .pick-outline {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -77,6 +77,24 @@
       font-size: 0.875rem;
       font-weight: 600;
       margin: 8px 0 4px;
+    }
+    .pick-strong {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 56px;
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin: 4px 0 0;
+      box-shadow: 0 8px 18px rgba(15, 118, 110, 0.28);
+      outline: 2px solid rgba(15, 118, 110, 0.28);
+      outline-offset: 2px;
     }
     .save {
       margin-top: 12px;
@@ -94,10 +112,10 @@
 </head>
 <body>
   <h1>录入比分 · 精彩集锦上传</h1>
-  <p class="lead">去掉「视频链接」输入；「选择视频上传」做成醒目按钮。</p>
+  <p class="lead">去掉链接输入；「选择视频上传」做成实心大主按钮。</p>
   <style>.phone[data-preview="before"]{display:none!important}.grid{grid-template-columns:1fr;max-width:360px}</style><div class="grid">
     <section class="phone" data-preview="before">
-      <div class="label">改前</div>
+      <div class="label">改前（线上）</div>
       <div class="names">
         <input class="field" value="陈燕青" readonly />
         <input class="field" value="Ivy" readonly />
@@ -117,9 +135,8 @@
       </div>
       <input class="field" value="6 – 4" readonly />
       <textarea class="field" rows="2" readonly>比赛描述（可选）</textarea>
-      <button class="pick" type="button">选择视频上传</button>
-      <p class="hint">可选。从本机选择一段精彩集锦视频。</p>
       <p class="hint">集锦与描述随比分一起，需对方确认后生效。</p>
+      <button class="pick-strong" type="button">选择视频上传</button>
       <button class="save" type="button">保存比分</button>
     </section>
   </div>
