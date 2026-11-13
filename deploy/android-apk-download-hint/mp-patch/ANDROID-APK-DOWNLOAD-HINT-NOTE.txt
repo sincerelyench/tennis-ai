@@ -1,0 +1,15 @@
+Android APK download hint (web-only)
+====================================
+Ship date: 2026-11-13
+
+Surfaces
+- Web (yqchen.blog/tennis): soft once-dismissible banner + login / 我的 persistent link
+  for Android phone browsers. Hidden on iOS, desktop, and ZhangqiuAndroid WebView shell.
+- Android APK binary: unchanged (WebView loads live /tennis; hint self-hides in shell).
+- iOS IPA: unchanged (hint never shows on iOS UA).
+- WeChat mini program: unchanged (not a browser APK audience).
+
+APK URL (existing release host): https://yqchen.blog/tennis-ai.apk
+  → /var/www/apk/tennis-ai.apk
+
+No DB writes.
