@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>录入比分 · 视频上传 UI 前后对比</title>
+  <style>
+    :root {
+      --bg: #f4f7f6;
+      --card: #fff;
+      --border: #e2e8e6;
+      --muted: #6b7280;
+      --fg: #0f172a;
+      --primary: #0f766e;
+      --primary-soft: rgba(15, 118, 110, 0.1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+      background: linear-gradient(180deg, #e8f3f1 0%, var(--bg) 40%, #eef2f0 100%);
+      color: var(--fg);
+      padding: 24px 16px 48px;
+    }
+    h1 { font-size: 1.25rem; margin: 0 0 8px; }
+    .lead { color: var(--muted); font-size: 0.9rem; margin: 0 0 24px; }
+    .grid {
+      display: grid;
+      gap: 20px;
+      max-width: 880px;
+      margin: 0 auto;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+    .phone {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+    .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .field {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      margin-bottom: 8px;
+      background: #fff;
+      color: var(--fg);
+    }
+    .file-raw {
+      display: block;
+      width: 100%;
+      font-size: 11px;
+      color: var(--muted);
+      margin: 8px 0;
+    }
+    .hint { font-size: 11px; color: var(--muted); margin: 6px 0 0; }
+    .pick {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 44px;
+      width: 100%;
+      border: 2px solid var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin: 8px 0 4px;
+    }
+    .save {
+      margin-top: 12px;
+      height: 36px;
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+    .names { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <h1>录入比分 · 精彩集锦上传</h1>
+  <p class="lead">去掉「视频链接」输入；「选择视频上传」做成醒目按钮。</p>
+  <div class="grid">
+    <section class="phone" data-preview="before">
+      <div class="label">改前</div>
+      <div class="names">
+        <input class="field" value="陈燕青" readonly />
+        <input class="field" value="Ivy" readonly />
+      </div>
+      <input class="field" value="6 – 4" readonly />
+      <textarea class="field" rows="2" readonly>比赛描述（可选）</textarea>
+      <input class="field" placeholder="视频链接（可选）" readonly />
+      <input class="file-raw" type="file" disabled />
+      <p class="hint">集锦与描述随比分一起，需对方确认后生效。</p>
+      <button class="save" type="button">保存比分</button>
+    </section>
+    <section class="phone" data-preview="after">
+      <div class="label">改后</div>
+      <div class="names">
+        <input class="field" value="陈燕青" readonly />
+        <input class="field" value="Ivy" readonly />
+      </div>
+      <input class="field" value="6 – 4" readonly />
+      <textarea class="field" rows="2" readonly>比赛描述（可选）</textarea>
+      <button class="pick" type="button">选择视频上传</button>
+      <p class="hint">可选。从本机选择一段精彩集锦视频。</p>
+      <p class="hint">集锦与描述随比分一起，需对方确认后生效。</p>
+      <button class="save" type="button">保存比分</button>
+    </section>
+  </div>
+</body>
+</html>
