@@ -1,0 +1,11 @@
+ZQ-125 我的约球 missing invites (2026-11-13)
+
+Root cause: challenges to 陈燕青 stored buddyId=18662147197 (Wuxi) but toPhone was
+resolved by displayName to shanghai twin 13900000003. ownsIntroSide then refused
+name-claim because that twin still holds the name → inbox empty for real account.
+
+Fix: createMatchIntro prefers buddyId (+ city) for toPhone; ownsIntroSide honors
+ladder buddyId on the target side; accept repairs mis-bound toPhone. Optional one-row
+rebind for mi-mwebxuf3-7a8cfb (no wipe).
+
+Web source of APK/IPA/mp-weixin WebView: /opt/tennis-ai after apply.
