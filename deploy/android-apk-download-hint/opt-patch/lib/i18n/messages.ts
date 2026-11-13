@@ -1174,7 +1174,7 @@ export const messages = {
       download: "下载安装包",
       dismiss: "暂不",
       link: "下载安卓版",
-      profileLabel: "下载安卓版 App",
+      profileLabel: "下载安卓版",
     },
 
     login: {
