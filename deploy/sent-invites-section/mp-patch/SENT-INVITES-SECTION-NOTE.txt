@@ -1,0 +1,7 @@
+sent-invites-section (ZQ-135)
+
+Web /tennis/friends 「我的约球」底部新增「我发出的邀请」：
+列出当前用户发出、对方尚未应战的邀请；空态「暂无待回应的邀请。」；
+取消走既有 cancel。应战成功后离开此列表。
+
+APK / IPA / mp-weixin load the same WebView → deploy Web covers four surfaces.
