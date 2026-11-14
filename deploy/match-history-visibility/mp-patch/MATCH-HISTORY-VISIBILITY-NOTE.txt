@@ -1,0 +1,10 @@
+ZQ-139 · 设置「战绩可见」
+
+Web / APK / IPA / 小程序均 WebView 同源加载 https://yqchen.blog/tennis 。
+本变更仅服务端 Next 代码；壳层未改，无需重签 APK/IPA。
+小程序 zip 内容不变（同源 UI）。
+
+文案：
+- 战绩可见
+- 全局可见（默认）
+- 不可见
