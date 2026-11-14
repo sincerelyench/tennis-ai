@@ -1,0 +1,13 @@
+ZQ-141 约球成功站内留言（涨球）
+
+Web / APK / IPA / 小程序均走同一套 /tennis WebView 源。
+
+行为：
+- 约球成功后双方始终可「留言」互发站内消息（不依赖微信号）。
+- 对方经通知中心收到「新留言」，点开进入对话（#chat-<introId>）。
+- 微信仍可选：有 wechatId 且应战后可见时展示；无微信号不挡协调。
+
+验证：
+- https://yqchen.blog/tennis/friends 约球成功条目有「留言」
+- https://yqchen.blog/tennis/notices 有留言区块（有未读时）
+- Preview: https://yqchen.blog/yueqiu-inapp-chat.html
