@@ -32,7 +32,7 @@ export type AuthUser = {
    * true / missing = 全局可见 (default): others can see recent matches under the ladder.
    * false = 不可见: hide this user's public recent history (ladder modal + city「比赛结果」).
    * Does not affect UTR / ladder rating; 约战双方 views unchanged.
-   * Separate from per-match 展示/隐藏 (ZQ-138).
+   * Score entry no longer asks to hide one match; this setting is the visibility control.
    */
   matchHistoryPublic?: boolean;
   /** WeChat mini-program openid when account was created via wx.login. */

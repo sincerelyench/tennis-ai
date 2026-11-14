@@ -4,10 +4,11 @@
  * become public when the opponent confirms (same gate as the score). After
  * confirm, any signed-in user may comment. Persisted in match_scores blob.
  *
- * ZQ-138 score privacy: each side may choose 展示/隐藏 (default 展示). If either
- * chooses 隐藏, the confirmed match is omitted from the ladder city「比赛结果」
- * public feed only. UTR / ladder rating / personal & opponent views unchanged.
- * Stored as JSON fields on match_scores_blob — no Postgres column migration.
+ * Stored per-match hide flags still omit those old matches from the city
+ * results feed. Score entry no longer collects a per-match hide choice; new
+ * scores follow 战绩可见 only. UTR / ladder rating / personal & opponent views
+ * unchanged. Stored as JSON fields on match_scores_blob — no Postgres column
+ * migration.
  */
 import { randomBytes } from "crypto";
 import type { LadderFormat, LadderMatch } from "@/lib/local-ladder";

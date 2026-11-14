@@ -185,59 +185,6 @@ function mapApiScore(row: {
   };
 }
 
-/** 展示/隐藏 segmented control for score privacy (default 展示). */
-function ScorePrivacyToggle({
-  valueHide,
-  onChange,
-  label,
-  hint,
-  testId,
-}: {
-  valueHide: boolean;
-  onChange: (hide: boolean) => void;
-  label: string;
-  hint: string;
-  testId: string;
-}) {
-  const { t } = useI18n();
-  return (
-    <div className="space-y-1.5" data-score-privacy={testId}>
-      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
-      <div className="grid grid-cols-2 gap-2" role="group" aria-label={label}>
-        <button
-          type="button"
-          data-score-privacy-show={testId}
-          aria-pressed={!valueHide}
-          onClick={() => onChange(false)}
-          className={cn(
-            "h-9 rounded-lg border px-3 text-sm font-semibold transition-colors",
-            !valueHide
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border bg-background text-muted-foreground",
-          )}
-        >
-          {t("friends.scorePrivacyShow")}
-        </button>
-        <button
-          type="button"
-          data-score-privacy-hide={testId}
-          aria-pressed={valueHide}
-          onClick={() => onChange(true)}
-          className={cn(
-            "h-9 rounded-lg border px-3 text-sm font-semibold transition-colors",
-            valueHide
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border bg-background text-muted-foreground",
-          )}
-        >
-          {t("friends.scorePrivacyHide")}
-        </button>
-      </div>
-      <p className="text-[11px] leading-4 text-muted-foreground">{hint}</p>
-    </div>
-  );
-}
-
 function isHighlightVideoUrl(url: string) {
   return (
     /\.(mp4|webm|mov)(\?|$)/i.test(url) ||
@@ -420,10 +367,6 @@ export function FriendsView() {
   const [friendsMainTab, setFriendsMainTab] = useState<"match" | "ladder">("match");
   /** 录入比分表单默认收起，点「录入比分 / 去录入比分」后再展开 */
   const [scoreFormOpen, setScoreFormOpen] = useState(false);
-  /** false = 展示 (default); true = 隐藏 from ladder city feed */
-  const [scoreHideFromPublic, setScoreHideFromPublic] = useState(false);
-  /** Per pending-inbox row: opponent hide choice at confirm (default 展示) */
-  const [confirmHideById, setConfirmHideById] = useState<Record<string, boolean>>({});
   const [scoreDescDraft, setScoreDescDraft] = useState("");
   const [scoreHighlightFile, setScoreHighlightFile] = useState<File | null>(null);
   const scoreHighlightFileRef = useRef<HTMLInputElement | null>(null);
@@ -1165,7 +1108,6 @@ export function FriendsView() {
           sets,
           format,
           description: scoreDescDraft,
-          hideFromPublic: scoreHideFromPublic === true,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -1196,7 +1138,6 @@ export function FriendsView() {
         { a: "", b: "" },
       ]);
       setScoreDescDraft("");
-      setScoreHideFromPublic(false);
       setScoreHighlightFile(null);
       if (scoreHighlightFileRef.current) scoreHighlightFileRef.current.value = "";
       setScoreFormOpen(false);
@@ -1214,8 +1155,6 @@ export function FriendsView() {
         status: "pending",
         source: "local",
         description: scoreDescDraft,
-        submitterHideFromPublic: scoreHideFromPublic === true,
-        hideFromPublicFeed: scoreHideFromPublic === true,
       };
       const next = [row, ...history].slice(0, 40);
       setHistory(next);
@@ -1224,7 +1163,6 @@ export function FriendsView() {
       setScoreNotice(t("friends.scorePendingHint"));
       setFormError(t("friends.scoreOfflinePending"));
       setScoreDescDraft("");
-      setScoreHideFromPublic(false);
       setScoreHighlightFile(null);
       if (scoreHighlightFileRef.current) scoreHighlightFileRef.current.value = "";
       setScoreFormOpen(false);
@@ -1237,16 +1175,11 @@ export function FriendsView() {
     setScoreBusy(true);
     setFormError("");
     try {
-      const hideFromPublic = action === "confirm" && confirmHideById[id] === true;
       const res = await fetch("/tennis/api/friends/scores/action", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id,
-          action,
-          ...(action === "confirm" ? { hideFromPublic } : {}),
-        }),
+        body: JSON.stringify({ id, action }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -1256,11 +1189,6 @@ export function FriendsView() {
       setScoreNotice(
         action === "confirm" ? t("friends.scoreConfirmedHint") : t("friends.scoreRejectedHint"),
       );
-      setConfirmHideById((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
       // Ladder + city「比赛结果」must refetch after confirm (UTR is computed on read).
       await Promise.all([
         refreshScores(),
@@ -2071,14 +1999,6 @@ export function FriendsView() {
                     <p className="text-[11px] text-muted-foreground">
                       {t("friends.winnerLine", { name: winnerName })} · {t("friends.scoreStatusPending")}
                     </p>
-                    <p
-                      className="text-[11px] text-muted-foreground"
-                      data-score-mine-pending-privacy={row.id}
-                    >
-                      {row.submitterHideFromPublic
-                        ? t("friends.scorePrivacyPendingHide")
-                        : t("friends.scorePrivacyPendingShow")}
-                    </p>
                     {row.description || row.highlightUrl ? (
                       <div className="space-y-2" data-score-mine-pending-highlight={row.id}>
                         {row.description ? (
@@ -2105,7 +2025,6 @@ export function FriendsView() {
             <div className="overflow-hidden rounded-lg border border-amber-500/30 bg-amber-500/5">
               {pendingForMe.map((row, index) => {
                 const winnerName = row.winner === "A" ? row.playerA : row.playerB;
-                const confirmHide = confirmHideById[row.id] === true;
                 return (
                   <div
                     key={row.id}
@@ -2136,19 +2055,6 @@ export function FriendsView() {
                         ) : null}
                       </div>
                     ) : null}
-                    <ScorePrivacyToggle
-                      valueHide={confirmHide}
-                      onChange={(hide) =>
-                        setConfirmHideById((prev) => ({ ...prev, [row.id]: hide }))
-                      }
-                      label={t("friends.scorePrivacyConfirmLabel")}
-                      hint={
-                        row.submitterHideFromPublic
-                          ? t("friends.scorePrivacySubmitterHid")
-                          : t("friends.scorePrivacyHint")
-                      }
-                      testId={`confirm-${row.id}`}
-                    />
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
@@ -2249,13 +2155,6 @@ export function FriendsView() {
                   </div>
                 ))}
               </div>
-              <ScorePrivacyToggle
-                valueHide={scoreHideFromPublic}
-                onChange={setScoreHideFromPublic}
-                label={t("friends.scorePrivacyLabel")}
-                hint={t("friends.scorePrivacyHint")}
-                testId="entry"
-              />
               <div className="space-y-2" data-score-highlight-fields="true">
                 <textarea
                   value={scoreDescDraft}
