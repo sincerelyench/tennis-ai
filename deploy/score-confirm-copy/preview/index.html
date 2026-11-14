@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>比分确认文案 · 比赛结果和综述等对方确认</title>
+  <style>
+    :root {
+      --bg: #0f1a14;
+      --card: #16241c;
+      --line: #2a3d32;
+      --fg: #e8f0ea;
+      --muted: #8fa396;
+      --accent: #3d8f5f;
+      --amber: #c4a35a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, #1c3328, var(--bg));
+      color: var(--fg);
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+    h1 { font-size: 1.25rem; margin: 0 0 8px; }
+    .lead { color: var(--muted); font-size: 0.9rem; margin: 0 0 24px; max-width: 36rem; }
+    .grid { display: grid; gap: 16px; max-width: 720px; margin: 0 auto; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .card h2 { font-size: 0.95rem; margin: 0 0 12px; }
+    .row { display: grid; gap: 8px; }
+    .before, .after {
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+    .before { background: #2a1a1a; color: #f0c4c4; text-decoration: line-through; }
+    .after { background: #1a2a20; color: #b8e0c4; font-weight: 600; }
+    .label { font-size: 0.7rem; letter-spacing: 0.04em; color: var(--muted); text-transform: uppercase; }
+    .keep {
+      border: 1px dashed var(--accent);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+    }
+    .mock-toast {
+      margin-top: 8px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .mock-list {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .mock-list h3 {
+      margin: 0;
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--line);
+      background: #1a2b22;
+    }
+    .mock-row { padding: 12px; font-size: 0.85rem; }
+    .mock-row .meta { color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
+    .mock-row .note { color: var(--amber); font-size: 0.75rem; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="grid">
+    <div>
+      <h1>录入比分确认文案</h1>
+      <p class="lead">提交后不再说「集锦等对方确认」；改为「比赛结果和综述等对方确认」。视频区标题仍用「集锦」。</p>
+    </div>
+
+    <section class="card" data-preview="toast">
+      <h2>提交后提示 / 待确认列表标题</h2>
+      <div class="row">
+        <span class="label">Before</span>
+        <div class="before">已提交，等待对方确认。</div>
+        <span class="label">After</span>
+        <div class="after">比赛结果和综述等对方确认。</div>
+      </div>
+      <div class="mock-toast">比赛结果和综述等对方确认。</div>
+      <div class="mock-list">
+        <h3>比赛结果和综述等对方确认。</h3>
+        <div class="mock-row">
+          <div>陈燕青 vs Ivy</div>
+          <div class="meta">6-4 · 6-3 · 胜者 陈燕青 · 待确认</div>
+          <div class="note">比赛结果和综述等对方确认</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" data-preview="entry-hint">
+      <h2>录入表单提示</h2>
+      <div class="row">
+        <span class="label">Before</span>
+        <div class="before">集锦与描述随比分一起，需对方确认后生效。</div>
+        <span class="label">After</span>
+        <div class="after">比赛结果和综述随比分一起，需对方确认后生效。</div>
+      </div>
+    </section>
+
+    <section class="card" data-preview="buttons">
+      <h2>按钮 / 保存提示（确认语境）</h2>
+      <div class="row">
+        <span class="label">Before</span>
+        <div class="before">添加精彩集锦 · 编辑集锦 · 已保存集锦 · 集锦保存失败</div>
+        <span class="label">After</span>
+        <div class="after">添加比赛综述 · 编辑比赛综述 · 已保存比赛综述 · 比赛综述保存失败</div>
+      </div>
+    </section>
+
+    <section class="card" data-preview="keep-jijin">
+      <h2>保留「集锦」（仅视频区）</h2>
+      <div class="keep">比赛综述详情内 · 视频区块标题：<strong>集锦</strong><br />外链标签：<strong>打开集锦</strong></div>
+    </section>
+  </div>
+</body>
+</html>
