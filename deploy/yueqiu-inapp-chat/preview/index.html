@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>涨球 · 约球成功站内留言</title>
+  <style>
+    :root { color-scheme: light; --bg:#f6f7f4; --card:#fff; --fg:#14201a; --muted:#5b6b62; --line:#d7ddd8; --pri:#1f7a4c; }
+    body { margin:0; font-family:"Noto Sans SC", "PingFang SC", sans-serif; background:linear-gradient(180deg,#e8f2ec,#f6f7f4 40%); color:var(--fg); }
+    main { max-width:420px; margin:0 auto; padding:24px 16px 48px; }
+    h1 { font-size:1.35rem; margin:0 0 6px; }
+    .lead { color:var(--muted); font-size:.9rem; margin:0 0 18px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin:0 0 12px; }
+    .row { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+    .name { font-weight:700; font-size:.95rem; }
+    .meta { color:var(--muted); font-size:.75rem; margin-top:4px; }
+    .btns { display:flex; flex-direction:column; gap:8px; }
+    button, .btn { appearance:none; border:1px solid var(--line); background:#fff; color:var(--fg); border-radius:10px; height:36px; padding:0 12px; font-weight:600; font-size:.85rem; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+    .pri { background:var(--pri); border-color:var(--pri); color:#fff; }
+    .bubble { max-width:80%; border-radius:12px; padding:8px 10px; font-size:.85rem; margin:6px 0; }
+    .me { margin-left:auto; background:var(--pri); color:#fff; }
+    .them { margin-right:auto; background:#edf2ef; }
+    .notice { border-left:3px solid var(--pri); padding-left:10px; }
+    a.live { color:var(--pri); font-weight:600; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>约球成功 · 站内留言</h1>
+    <p class="lead">应战后双方始终可留言；微信可选。通知送达「新留言」。</p>
+
+    <div class="card" data-preview="success-row">
+      <div class="row">
+        <div>
+          <div class="name">与 Ivy 约球成功</div>
+          <div class="meta">对方暂无微信号，可用站内留言。</div>
+          <div class="meta">已应战</div>
+        </div>
+        <div class="btns">
+          <button type="button" style="position:relative;">留言<span style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:999px;background:#ef4444;" data-match-chat-unread-dot="true"></span></button>
+          <button type="button" class="pri">录入比分</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-preview="chat">
+      <div class="name">与 Ivy 的对话</div>
+      <div class="bubble them">周六下午奥体可以吗？</div>
+      <div class="bubble me">可以，三点见。</div>
+      <div class="row" style="margin-top:10px; gap:8px;">
+        <input style="flex:1;height:36px;border:1px solid var(--line);border-radius:10px;padding:0 10px;" placeholder="写一条留言…" />
+        <button type="button" class="pri">发送</button>
+      </div>
+    </div>
+
+    <div class="card notice" data-preview="notice">
+      <div class="name">Ivy 的新留言</div>
+      <div class="meta">周六下午奥体可以吗？</div>
+      <p style="margin:10px 0 0;"><a class="btn pri" href="/tennis/friends">查看对话</a></p>
+    </div>
+
+    <p class="lead">线上：<a class="live" href="https://yqchen.blog/tennis/friends">约球</a> · <a class="live" href="https://yqchen.blog/tennis/notices">通知</a></p>
+  </main>
+</body>
+</html>
