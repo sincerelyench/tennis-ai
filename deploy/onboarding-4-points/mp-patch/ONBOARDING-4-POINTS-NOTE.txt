@@ -1,0 +1,11 @@
+ZQ-137 onboarding-4-points
+
+Web: /opt/tennis-ai lib/i18n/messages.ts onboard.* → 4 selling points (涨球).
+APK / IPA / mp-weixin shells: WebView → https://yqchen.blog/tennis (no native rebuild for this copy-only change).
+mp-weixin shooting-guide pages are separate and unchanged.
+
+zh 1–4:
+1. 一起涨球 — 多打球、多比赛，在实战中打磨技术，大家一起涨球。
+2. 约到水平相当的球友 — 轻松找到本地水平相当（或上下）的球友来挑战。
+3. 赛后看排名变化 — 排名不随意，按与对手水平相近程度计算，打完就能看到升降。
+4. AI 教练与真实网络教练 — 日常训练有疑问或拍下动作，可获 AI 教练与真实网络教练指导。
