@@ -2939,12 +2939,17 @@ function LadderRowView({
 }) {
   const { t } = useI18n();
   const unplayed = !row.played;
+  // ZQ-139: under-name W-L / 胜于负于 only when there is a *public* record.
+  // API sends public-only wins/losses; 不可见 users arrive as 0-0 → hide the line.
+  const publicRecord =
+    (row as { publicRecord?: boolean }).publicRecord === true ||
+    (typeof row.wins === "number" && typeof row.losses === "number" && row.wins + row.losses > 0);
   const form = t("friends.form", { w: row.wins, l: row.losses });
   const unprovenNote = t("friends.seedOnly");
   // Plain numeric rating (no trailing ?); unplayed → small caption under score.
   const ratingLabel = row.rating.toFixed(1);
   const lastLine =
-    !unplayed && row.lastResult && row.lastOpponentName
+    publicRecord && row.lastResult && row.lastOpponentName
       ? t(row.lastResult === "win" ? "friends.beat" : "friends.lost", { name: row.lastOpponentName })
       : "";
   const deltaLabel = unplayed ? "" : formatLadderDelta(t, row.rankDelta, row.ratingDelta);
@@ -3004,8 +3009,12 @@ function LadderRowView({
               ) : null}
             </div>
           </div>
-          {!unplayed ? (
-            <p className="mt-0.5 text-xs text-muted-foreground" data-ladder-record={`${row.wins}-${row.losses}`}>
+          {publicRecord ? (
+            <p
+              className="mt-0.5 text-xs text-muted-foreground"
+              data-ladder-record={`${row.wins}-${row.losses}`}
+              data-ladder-public-record="true"
+            >
               {form}
               {lastLine ? ` · ${lastLine}` : ""}
             </p>

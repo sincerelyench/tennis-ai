@@ -55,9 +55,9 @@ fi
 echo "==> Sanity"
 grep -n "AUTH_CACHE_KEY\|isMatchHistoryPublicForPlayer\|matchHistoryPublic" \
   "$ROOT/lib/auth-store.ts" | head -16
-grep -n "listPublicLastOpponentForPlayers\|isScorePublicOnLadder\|invalidateAuthCache" \
+grep -n "listPublicLadderDisplayForPlayers|isScorePublicOnLadder|invalidateAuthCache\|isScorePublicOnLadder\|invalidateAuthCache" \
   "$ROOT/lib/match-scores.ts" | head -16
-grep -n "listPublicLastOpponentForPlayers\|lastOpponentName" \
+grep -n "listPublicLadderDisplayForPlayers|isScorePublicOnLadder|invalidateAuthCache\|listPublicLadderDisplayForPlayers|publicRecord|lastOpponentName" \
   "$ROOT/app/api/friends/ladder/route.ts" | head -12
 grep -n "historyHidden\|isMatchHistoryPublicForPlayer" \
   "$ROOT/app/api/friends/player-matches/route.ts" | head -12

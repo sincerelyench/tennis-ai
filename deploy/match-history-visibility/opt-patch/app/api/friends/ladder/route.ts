@@ -9,7 +9,7 @@ import {
 } from "@/lib/local-ladder";
 import {
   listConfirmedLadderMatches,
-  listPublicLastOpponentForPlayers,
+  listPublicLadderDisplayForPlayers,
 } from "@/lib/match-scores";
 
 export async function OPTIONS(request: Request) {
@@ -20,8 +20,8 @@ export async function OPTIONS(request: Request) {
  * GET /api/friends/ladder?cityId=&format=singles|doubles
  * Ladder from real logged-in users + confirmed match scores only.
  * Includes rankDelta / ratingDelta vs previous city snapshot.
- * ZQ-139: lastOpponent / lastResult only from public matches (profile 战绩可见
- * + per-match 展示). Ratings still use full listConfirmedLadderMatches.
+ * ZQ-139: under-name W-L (`{w}–{l}`) + 胜于/负于 only from public matches
+ * (profile 战绩可见 + per-match 展示). Ratings still use full UTR feed.
  */
 export async function GET(request: Request) {
   const jar = await cookies();
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
 
   const matches = listConfirmedLadderMatches(fmt);
   const rows = rateLadderWithDeltas(fmt, new Date(), players, matches, cityId);
-  const publicLast = listPublicLastOpponentForPlayers(rows.map((r) => r.id));
+  const publicDisplay = listPublicLadderDisplayForPlayers(rows.map((r) => r.id));
 
   return json(request, {
     ok: true,
@@ -93,7 +93,13 @@ export async function GET(request: Request) {
     empty: rows.length === 0,
     confirmedMatches: matches.length,
     rows: rows.map((r) => {
-      const pub = publicLast.get(r.id);
+      const pub = publicDisplay.get(r.id) || {
+        wins: 0,
+        losses: 0,
+        opponentName: "",
+        result: null as "win" | "loss" | null,
+      };
+      const publicPlayed = pub.wins + pub.losses > 0;
       return {
         id: r.id,
         name: r.name,
@@ -101,15 +107,17 @@ export async function GET(request: Request) {
         rank: r.rank,
         rating: r.rating,
         seed: r.seed,
-        wins: r.wins,
-        losses: r.losses,
+        // Public W-L only — 不可见 / 隐藏场不计入名字下 0-1 摘要（UTR wins 仍在 r.wins）
+        wins: pub.wins,
+        losses: pub.losses,
+        // Keep UTR-based played for rating「未经比赛证明」caption; UI hides W-L when 0-0 public.
         played: r.played,
+        publicRecord: publicPlayed,
         qualifiedMatches: r.qualifiedMatches,
         projected: r.projected,
         ntrp: r.ntrp,
-        // Public blurb only — hide 胜于/负于 when profile/match privacy blocks it.
-        lastOpponentName: pub?.opponentName || "",
-        lastResult: pub?.result || null,
+        lastOpponentName: pub.opponentName || "",
+        lastResult: pub.result || null,
         rankDelta: r.rankDelta ?? null,
         ratingDelta: r.ratingDelta ?? null,
       };

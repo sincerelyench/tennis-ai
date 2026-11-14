@@ -448,16 +448,27 @@ export function isScorePublicOnLadder(
   return true;
 }
 
+export type PublicLadderDisplay = {
+  wins: number;
+  losses: number;
+  opponentName: string;
+  result: "win" | "loss" | null;
+};
+
 /**
- * Latest public opponent blurb for a ladder player (for 胜于/负于 under rank).
- * Skips per-match hide + profile 不可见. UTR last-match may still differ.
+ * Public-only W-L + latest opponent blurb for ladder rows under the name
+ * (`{w}–{l}` / 胜于/负于). Skips per-match hide + either-player 战绩可见=不可见.
+ * UTR wins/losses/rating still come from listConfirmedLadderMatches.
  */
-export function listPublicLastOpponentForPlayers(
+export function listPublicLadderDisplayForPlayers(
   playerIds: string[],
-): Map<string, { opponentName: string; result: "win" | "loss" }> {
+): Map<string, PublicLadderDisplay> {
   invalidateAuthCache();
   const want = new Set(playerIds.filter(Boolean));
-  const out = new Map<string, { opponentName: string; result: "win" | "loss" }>();
+  const out = new Map<string, PublicLadderDisplay>();
+  for (const id of want) {
+    out.set(id, { wins: 0, losses: 0, opponentName: "", result: null });
+  }
   if (want.size === 0) return out;
   const db = load();
   const confirmed = db.scores
@@ -468,23 +479,45 @@ export function listPublicLastOpponentForPlayers(
         String(a.confirmedAt || a.createdAt || ""),
       ),
     );
+  const sawLast = new Set<string>();
   for (const s of confirmed) {
     if (!isScorePublicOnLadder(s, { freshAuth: false })) continue;
     const aId = s.playerAId || resolveUserIdByName(s.playerA);
     const bId = s.playerBId || resolveUserIdByName(s.playerB);
-    if (aId && want.has(aId) && !out.has(aId)) {
-      out.set(aId, {
-        opponentName: s.playerB,
-        result: s.winner === "A" ? "win" : "loss",
-      });
+    if (aId && want.has(aId)) {
+      const row = out.get(aId)!;
+      if (s.winner === "A") row.wins += 1;
+      else row.losses += 1;
+      if (!sawLast.has(aId)) {
+        row.opponentName = s.playerB;
+        row.result = s.winner === "A" ? "win" : "loss";
+        sawLast.add(aId);
+      }
     }
-    if (bId && want.has(bId) && !out.has(bId)) {
-      out.set(bId, {
-        opponentName: s.playerA,
-        result: s.winner === "B" ? "win" : "loss",
-      });
+    if (bId && want.has(bId)) {
+      const row = out.get(bId)!;
+      if (s.winner === "B") row.wins += 1;
+      else row.losses += 1;
+      if (!sawLast.has(bId)) {
+        row.opponentName = s.playerA;
+        row.result = s.winner === "B" ? "win" : "loss";
+        sawLast.add(bId);
+      }
     }
-    if (out.size >= want.size) break;
+  }
+  return out;
+}
+
+/** @deprecated use listPublicLadderDisplayForPlayers */
+export function listPublicLastOpponentForPlayers(
+  playerIds: string[],
+): Map<string, { opponentName: string; result: "win" | "loss" }> {
+  const full = listPublicLadderDisplayForPlayers(playerIds);
+  const out = new Map<string, { opponentName: string; result: "win" | "loss" }>();
+  for (const [id, row] of full) {
+    if (row.result && row.opponentName) {
+      out.set(id, { opponentName: row.opponentName, result: row.result });
+    }
   }
   return out;
 }
