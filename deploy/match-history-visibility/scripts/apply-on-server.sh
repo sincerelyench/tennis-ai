@@ -55,10 +55,12 @@ fi
 echo "==> Sanity"
 grep -n "AUTH_CACHE_KEY\|isMatchHistoryPublicForPlayer\|matchHistoryPublic" \
   "$ROOT/lib/auth-store.ts" | head -16
-grep -n "listPublicLadderDisplayForPlayers|isScorePublicOnLadder|invalidateAuthCache\|isScorePublicOnLadder\|invalidateAuthCache" \
+grep -n "listPublicLadderDisplayForPlayers\|isScorePublicOnLadder\|invalidateAuthCache" \
   "$ROOT/lib/match-scores.ts" | head -16
-grep -n "listPublicLadderDisplayForPlayers|isScorePublicOnLadder|invalidateAuthCache\|listPublicLadderDisplayForPlayers|publicRecord|lastOpponentName" \
+grep -n "listPublicLadderDisplayForPlayers\|publicRecord\|lastOpponentName" \
   "$ROOT/app/api/friends/ladder/route.ts" | head -12
+grep -n "publicRecord\|data-ladder-public-record" \
+  "$ROOT/components/friends-view.tsx" | head -12
 grep -n "historyHidden\|isMatchHistoryPublicForPlayer" \
   "$ROOT/app/api/friends/player-matches/route.ts" | head -12
 grep -n "matchHistoryVisibility\|data-settings-match-history-visibility" \
