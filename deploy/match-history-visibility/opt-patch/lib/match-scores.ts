@@ -12,7 +12,8 @@
 import { randomBytes } from "crypto";
 import type { LadderFormat, LadderMatch } from "@/lib/local-ladder";
 import {
-  isMatchHistoryPublicForPhone,
+  invalidateAuthCache,
+  isMatchHistoryPublicForPlayer,
   listDirectoryUsers,
   sanitizeDisplayName,
 } from "@/lib/auth-store";
@@ -454,6 +455,8 @@ export function listConfirmedScoresForCity(opts: {
 }): MatchScore[] {
   const city = String(opts.cityId || "").trim();
   const format = opts.format || null;
+  // Privacy prefs must be fresh across Next server chunks (shared via globalThis + reload).
+  invalidateAuthCache();
   const db = load();
   const directory = listDirectoryUsers({
     role: "any",
@@ -480,9 +483,14 @@ export function listConfirmedScoresForCity(opts: {
     if (format && s.format !== format) continue;
     const aId = s.playerAId || resolveUserIdByName(s.playerA);
     const bId = s.playerBId || resolveUserIdByName(s.playerB);
-    // ZQ-139: profile 战绩可见 off → omit that user's matches from global city feed.
-    // Missing preference = 全局可见. Does not affect listConfirmedLadderMatches (UTR).
-    if (!isMatchHistoryPublicForPhone(aId) || !isMatchHistoryPublicForPhone(bId)) continue;
+    // ZQ-139: if EITHER player has 战绩可见=不可见, omit from global city「比赛结果」.
+    // Fresh=false: one invalidate above; avoid N Postgres reloads per match.
+    if (
+      !isMatchHistoryPublicForPlayer({ phone: aId, displayName: s.playerA, fresh: false }) ||
+      !isMatchHistoryPublicForPlayer({ phone: bId, displayName: s.playerB, fresh: false })
+    ) {
+      continue;
+    }
     if (!playerInCity(s.playerA, aId) && !playerInCity(s.playerB, bId)) continue;
     out.push(s);
   }

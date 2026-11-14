@@ -1,8 +1,7 @@
 import { cookies } from "next/headers";
 import {
   getSession,
-  getUser,
-  isMatchHistoryPublic,
+  isMatchHistoryPublicForPlayer,
   listDirectoryUsers,
   sessionCookie,
 } from "@/lib/auth-store";
@@ -103,8 +102,15 @@ export async function GET(request: Request) {
 
   const viewingSelf = session.phone === resolvedId;
   // ZQ-139: profile 战绩可见 off → others do not see recent section under ladder.
-  // Self can still open own modal. UTR / 约战双方 views are separate.
-  if (!viewingSelf && !isMatchHistoryPublic(getUser(resolvedId))) {
+  // Fresh auth reload (Next chunk cache). Self can still open own modal.
+  if (
+    !viewingSelf &&
+    !isMatchHistoryPublicForPlayer({
+      phone: resolvedId,
+      displayName: resolvedName,
+      fresh: true,
+    })
+  ) {
     return json(request, {
       ok: true,
       playerId: resolvedId,
@@ -117,7 +123,6 @@ export async function GET(request: Request) {
       selfPhone: session.phone,
     });
   }
-
   const singles = listConfirmedLadderMatches("singles");
   const doubles = listConfirmedLadderMatches("doubles");
   const matches = format

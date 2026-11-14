@@ -47,13 +47,6 @@ export function isMatchHistoryPublic(
   return user?.matchHistoryPublic !== false;
 }
 
-/** Resolve profile 战绩可见 by phone; unknown phone → treat as visible. */
-export function isMatchHistoryPublicForPhone(phone: string | null | undefined): boolean {
-  const id = String(phone || "").trim();
-  if (!id) return true;
-  return isMatchHistoryPublic(getUser(id));
-}
-
 type Code = { codeHash: string; expiresAt: number };
 type Session = { phone: string; createdAt: string; role: UserRole };
 type Db = {
@@ -64,7 +57,25 @@ type Db = {
 
 const empty = (): Db => ({ users: {}, codes: {}, sessions: {} });
 
-let cache: Db | null = null;
+/**
+ * Next bundles auth-store into many server chunks; a module-local `let cache`
+ * is NOT shared across them. Profile PATCH can update one chunk while
+ * /api/friends/scores still reads a stale copy → 战绩可见=不可见 fails to
+ * hide city「比赛结果」. Use globalThis so every chunk shares one cache.
+ */
+const AUTH_CACHE_KEY = "__tennis_ai_auth_db_cache_v1";
+
+type AuthCacheGlobal = typeof globalThis & {
+  [AUTH_CACHE_KEY]?: Db | null;
+};
+
+function readAuthCache(): Db | null {
+  return (globalThis as AuthCacheGlobal)[AUTH_CACHE_KEY] ?? null;
+}
+
+function writeAuthCache(db: Db | null) {
+  (globalThis as AuthCacheGlobal)[AUTH_CACHE_KEY] = db;
+}
 
 function normalize(raw: unknown): Db {
   const parsed = (raw && typeof raw === "object" ? raw : {}) as Partial<Db>;
@@ -76,21 +87,24 @@ function normalize(raw: unknown): Db {
 }
 
 export function invalidateAuthCache() {
-  cache = null;
+  writeAuthCache(null);
 }
 
 function load(): Db {
-  if (cache) return cache;
+  const hit = readAuthCache();
+  if (hit) return hit;
+  let next: Db;
   try {
-    cache = normalize(userDbLoad("auth"));
+    next = normalize(userDbLoad("auth"));
   } catch {
-    cache = empty();
+    next = empty();
   }
-  return cache;
+  writeAuthCache(next);
+  return next;
 }
 
 function save(db: Db) {
-  cache = db;
+  writeAuthCache(db);
   userDbSave("auth", db);
 }
 
@@ -380,6 +394,40 @@ export function getUser(phone: string): AuthUser | null {
   return user || null;
 }
 
+/** Resolve profile 战绩可见 by phone; unknown phone → treat as visible. */
+export function isMatchHistoryPublicForPhone(phone: string | null | undefined): boolean {
+  const id = String(phone || "").trim();
+  if (!id) return true;
+  return isMatchHistoryPublic(getUser(id));
+}
+
+/**
+ * Fresh Postgres reload, then decide whether this player hides public history.
+ * Use on public ladder feeds so chunk-local stale caches cannot leak 战绩.
+ * Phone id preferred; display name fallback for twin/legacy rows.
+ */
+export function isMatchHistoryPublicForPlayer(opts: {
+  phone?: string | null;
+  displayName?: string | null;
+  /** When true (default), invalidate + reload auth from DB first. */
+  fresh?: boolean;
+}): boolean {
+  if (opts.fresh !== false) invalidateAuthCache();
+  const id = String(opts.phone || "").trim();
+  if (id) {
+    const byPhone = getUser(id);
+    if (byPhone) return isMatchHistoryPublic(byPhone);
+  }
+  const name = sanitizeDisplayName(opts.displayName).toLowerCase();
+  if (!name) return true;
+  const hits = Object.values(load().users).filter(
+    (user) => sanitizeDisplayName(user.displayName).toLowerCase() === name,
+  );
+  if (hits.length === 0) return true;
+  // If any same-name account hides history, treat as hidden (safe for public feed).
+  return hits.every((u) => isMatchHistoryPublic(u));
+}
+
 export function getSession(token: string | undefined | null) {
   if (!token) return null;
   // Route handlers and RSC can hold separate module caches; a login may update
@@ -448,6 +496,7 @@ export function updateProfile(phone: string, patch: ProfilePatch) {
     user.matchHistoryPublic = patch.matchHistoryPublic !== false;
   }
   db.users[phone] = user;
+  // Write through globalThis cache so every Next server chunk sees the new preference.
   save(db);
   const displayName = sanitizeDisplayName(user.displayName);
   const cityId = user.cityId || "";
