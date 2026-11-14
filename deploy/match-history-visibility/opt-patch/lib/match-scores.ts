@@ -416,6 +416,79 @@ export function listScoresForUser(session: { phone: string; displayName: string 
   };
 }
 
+/**
+ * Whether a confirmed score may appear on public ladder surfaces
+ * (city「比赛结果」, row「胜于/负于」, player modal for others).
+ * Per-match 隐藏 OR either player 战绩可见=不可见 → false.
+ * Does not affect UTR (listConfirmedLadderMatches).
+ */
+export function isScorePublicOnLadder(
+  score: MatchScore | null | undefined,
+  opts?: { freshAuth?: boolean },
+): boolean {
+  if (!score || score.status !== "confirmed") return false;
+  if (isHiddenFromPublicFeed(score)) return false;
+  if (opts?.freshAuth) invalidateAuthCache();
+  const aId = score.playerAId || resolveUserIdByName(score.playerA);
+  const bId = score.playerBId || resolveUserIdByName(score.playerB);
+  if (
+    !isMatchHistoryPublicForPlayer({
+      phone: aId,
+      displayName: score.playerA,
+      fresh: false,
+    }) ||
+    !isMatchHistoryPublicForPlayer({
+      phone: bId,
+      displayName: score.playerB,
+      fresh: false,
+    })
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Latest public opponent blurb for a ladder player (for 胜于/负于 under rank).
+ * Skips per-match hide + profile 不可见. UTR last-match may still differ.
+ */
+export function listPublicLastOpponentForPlayers(
+  playerIds: string[],
+): Map<string, { opponentName: string; result: "win" | "loss" }> {
+  invalidateAuthCache();
+  const want = new Set(playerIds.filter(Boolean));
+  const out = new Map<string, { opponentName: string; result: "win" | "loss" }>();
+  if (want.size === 0) return out;
+  const db = load();
+  const confirmed = db.scores
+    .filter((s) => s.status === "confirmed")
+    .slice()
+    .sort((a, b) =>
+      String(b.confirmedAt || b.createdAt || "").localeCompare(
+        String(a.confirmedAt || a.createdAt || ""),
+      ),
+    );
+  for (const s of confirmed) {
+    if (!isScorePublicOnLadder(s, { freshAuth: false })) continue;
+    const aId = s.playerAId || resolveUserIdByName(s.playerA);
+    const bId = s.playerBId || resolveUserIdByName(s.playerB);
+    if (aId && want.has(aId) && !out.has(aId)) {
+      out.set(aId, {
+        opponentName: s.playerB,
+        result: s.winner === "A" ? "win" : "loss",
+      });
+    }
+    if (bId && want.has(bId) && !out.has(bId)) {
+      out.set(bId, {
+        opponentName: s.playerA,
+        result: s.winner === "B" ? "win" : "loss",
+      });
+    }
+    if (out.size >= want.size) break;
+  }
+  return out;
+}
+
 /** All confirmed scores as ladder matches (UTR feed). */
 export function listConfirmedLadderMatches(format?: LadderFormat | null): LadderMatch[] {
   const db = load();

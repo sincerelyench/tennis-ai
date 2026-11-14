@@ -11,7 +11,7 @@ BACKUP="$ROOT/.match-history-visibility-backup-$STAMP"
 echo "==> Backup -> $BACKUP"
 mkdir -p "$BACKUP/lib/i18n" "$BACKUP/components" \
   "$BACKUP/app/api/auth/profile" "$BACKUP/app/api/auth/session" \
-  "$BACKUP/app/api/friends/player-matches"
+  "$BACKUP/app/api/friends/player-matches" "$BACKUP/app/api/friends/ladder"
 cp -a "$ROOT/lib/auth-store.ts" "$BACKUP/lib/" 2>/dev/null || true
 cp -a "$ROOT/lib/session-role.ts" "$BACKUP/lib/" 2>/dev/null || true
 cp -a "$ROOT/lib/match-scores.ts" "$BACKUP/lib/" 2>/dev/null || true
@@ -22,11 +22,13 @@ cp -a "$ROOT/app/api/auth/profile/route.ts" "$BACKUP/app/api/auth/profile/" 2>/d
 cp -a "$ROOT/app/api/auth/session/route.ts" "$BACKUP/app/api/auth/session/" 2>/dev/null || true
 cp -a "$ROOT/app/api/friends/player-matches/route.ts" \
   "$BACKUP/app/api/friends/player-matches/" 2>/dev/null || true
+cp -a "$ROOT/app/api/friends/ladder/route.ts" \
+  "$BACKUP/app/api/friends/ladder/" 2>/dev/null || true
 
 echo "==> Install opt-patch (code only)"
 mkdir -p "$ROOT/lib/i18n" "$ROOT/components" \
   "$ROOT/app/api/auth/profile" "$ROOT/app/api/auth/session" \
-  "$ROOT/app/api/friends/player-matches"
+  "$ROOT/app/api/friends/player-matches" "$ROOT/app/api/friends/ladder"
 cp -a "$PATCH_DIR/opt-patch/lib/auth-store.ts" "$ROOT/lib/auth-store.ts"
 cp -a "$PATCH_DIR/opt-patch/lib/session-role.ts" "$ROOT/lib/session-role.ts"
 cp -a "$PATCH_DIR/opt-patch/lib/match-scores.ts" "$ROOT/lib/match-scores.ts"
@@ -37,6 +39,8 @@ cp -a "$PATCH_DIR/opt-patch/app/api/auth/profile/route.ts" "$ROOT/app/api/auth/p
 cp -a "$PATCH_DIR/opt-patch/app/api/auth/session/route.ts" "$ROOT/app/api/auth/session/route.ts"
 cp -a "$PATCH_DIR/opt-patch/app/api/friends/player-matches/route.ts" \
   "$ROOT/app/api/friends/player-matches/route.ts"
+cp -a "$PATCH_DIR/opt-patch/app/api/friends/ladder/route.ts" \
+  "$ROOT/app/api/friends/ladder/route.ts"
 
 echo "==> Four-surface note + preview"
 mkdir -p /var/www/apk
@@ -49,16 +53,18 @@ if [[ -f "$PATCH_DIR/preview/index.html" ]]; then
 fi
 
 echo "==> Sanity"
-grep -n "matchHistoryPublic\|isMatchHistoryPublic" "$ROOT/lib/auth-store.ts" | head -12
-grep -n "matchHistoryPublic" "$ROOT/app/api/auth/profile/route.ts" | head -8
-grep -n "historyHidden\|isMatchHistoryPublic" \
+grep -n "AUTH_CACHE_KEY\|isMatchHistoryPublicForPlayer\|matchHistoryPublic" \
+  "$ROOT/lib/auth-store.ts" | head -16
+grep -n "listPublicLastOpponentForPlayers\|isScorePublicOnLadder\|invalidateAuthCache" \
+  "$ROOT/lib/match-scores.ts" | head -16
+grep -n "listPublicLastOpponentForPlayers\|lastOpponentName" \
+  "$ROOT/app/api/friends/ladder/route.ts" | head -12
+grep -n "historyHidden\|isMatchHistoryPublicForPlayer" \
   "$ROOT/app/api/friends/player-matches/route.ts" | head -12
-grep -n "isMatchHistoryPublicForPhone" "$ROOT/lib/match-scores.ts" | head -6
 grep -n "matchHistoryVisibility\|data-settings-match-history-visibility" \
   "$ROOT/components/profile-view.tsx" | head -12
 grep -n "ladderDetailHistoryHidden\|historyHidden" \
   "$ROOT/components/friends-view.tsx" | head -12
-grep -n "matchHistoryVisibility" "$ROOT/lib/i18n/messages.ts" | head -16
 
 echo "==> Build Next app (before restart)"
 cd "$ROOT"
