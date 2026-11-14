@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>录入比分 · 展示/隐藏</title>
+  <style>
+    :root {
+      --bg: #f3f6f2;
+      --card: #ffffff;
+      --ink: #14231a;
+      --muted: #5f6f64;
+      --line: #d7e0d8;
+      --primary: #1f7a4c;
+      --primary-ink: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+      background:
+        radial-gradient(900px 420px at 10% -10%, #d9eadf 0%, transparent 55%),
+        linear-gradient(180deg, #eef4ef 0%, var(--bg) 40%, #e8efe9 100%);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    main { max-width: 420px; margin: 0 auto; padding: 28px 16px 48px; }
+    h1 { font-size: 1.15rem; margin: 0 0 6px; }
+    .lead { margin: 0 0 18px; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(20, 35, 26, 0.06);
+    }
+    .label { font-size: 0.7rem; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+    .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .seg button {
+      height: 40px; border-radius: 10px; border: 1px solid var(--line);
+      background: #fff; color: var(--muted); font-weight: 700; font-size: 0.9rem;
+    }
+    .seg button.on {
+      background: var(--primary); color: var(--primary-ink); border-color: var(--primary);
+    }
+    .hint { margin: 10px 0 0; font-size: 0.72rem; color: var(--muted); line-height: 1.45; }
+    .rules { margin-top: 18px; padding: 14px; border-left: 3px solid var(--primary); background: rgba(31,122,76,.06); border-radius: 0 10px 10px 0; }
+    .rules h2 { margin: 0 0 8px; font-size: 0.85rem; }
+    .rules ul { margin: 0; padding-left: 1.1rem; font-size: 0.78rem; color: var(--muted); line-height: 1.55; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>录入比分 · 是否在排行榜下展示</h1>
+    <p class="lead">默认「展示」。确认后任一方曾选「隐藏」，该场不进排行榜下面的公开比赛结果。</p>
+    <section class="card" data-preview-privacy="entry">
+      <p class="label">是否在排行榜下展示</p>
+      <div class="seg" role="group" aria-label="是否在排行榜下展示">
+        <button type="button" class="on" data-choice="show" aria-pressed="true">展示</button>
+        <button type="button" data-choice="hide" aria-pressed="false">隐藏</button>
+      </div>
+      <p class="hint" id="hint">选「隐藏」后，该场不出现在排行榜下面的比赛结果；等级分仍照常计入；约战双方仍可查看。</p>
+    </section>
+    <section class="rules">
+      <h2>生效规则</h2>
+      <ul>
+        <li>录入方与确认方各自选择；确认时锁定。</li>
+        <li>任一方隐藏 → 公开「比赛结果」列表不展示该场。</li>
+        <li>UTR / 排行评分照常计入；双方约球成功视图仍可见。</li>
+      </ul>
+    </section>
+  </main>
+  <script>
+    const buttons = [...document.querySelectorAll("[data-choice]")];
+    const hint = document.getElementById("hint");
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        buttons.forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle("on", on);
+          b.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        hint.textContent =
+          btn.dataset.choice === "hide"
+            ? "将隐藏：确认后不出现在排行榜下公开比赛结果；评分仍计入；双方仍可见。"
+            : "选「隐藏」后，该场不出现在排行榜下面的比赛结果；等级分仍照常计入；约战双方仍可查看。";
+      });
+    });
+  </script>
+</body>
+</html>

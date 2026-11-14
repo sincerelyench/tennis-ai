@@ -1,0 +1,6 @@
+ZQ-138 · 录入比分「展示/隐藏」
+
+- 默认「展示」。任一方选「隐藏」→ 确认后该场不出现在排行榜下公开「比赛结果」。
+- 不影响等级分 / UTR；约战双方在约球成功 / 待确认 / 己方记录中仍可见。
+- Web `/tennis` 为 APK / IPA / mp-weixin WebView 源；本改动无需重签二进制。
+- 存储：match_scores_blob JSON 字段（submitterHideFromPublic / opponentHideFromPublic / hideFromPublicFeed）；无 Postgres 列迁移；旧场缺字段 = 展示。
