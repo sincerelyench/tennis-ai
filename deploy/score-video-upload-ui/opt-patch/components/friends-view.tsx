@@ -43,6 +43,42 @@ const FORMATS: LadderFormat[] = ["singles", "doubles"];
 const SCORE_KEY = "zq-match-scores-v1";
 const INTRO_KEY = "zq-match-intros-v1";
 
+/** ZQ-140: match length for score entry. Default bo3 = current common case. */
+type MatchLength = "bo3" | "bo5" | "single";
+/** Short single-set casual formats. */
+type ShortFormat = "race7" | "race10" | "free";
+
+const MATCH_LENGTHS: MatchLength[] = ["bo3", "bo5", "single"];
+const SHORT_FORMATS: ShortFormat[] = ["race7", "race10", "free"];
+
+function emptySetLines(count: number): { a: string; b: string }[] {
+  return Array.from({ length: count }, () => ({ a: "", b: "" }));
+}
+
+function setCountForLength(length: MatchLength): number {
+  if (length === "bo5") return 5;
+  if (length === "single") return 1;
+  return 3;
+}
+
+function raceTarget(short: ShortFormat): number | null {
+  if (short === "race7") return 7;
+  if (short === "race10") return 10;
+  return null;
+}
+
+function setPlaceholders(
+  length: MatchLength,
+  short: ShortFormat,
+): { a: string; b: string } {
+  if (length === "single") {
+    if (short === "race7") return { a: "7", b: "5" };
+    if (short === "race10") return { a: "10", b: "8" };
+    return { a: "8", b: "4" };
+  }
+  return { a: "6", b: "4" };
+}
+
 type IntroStatus = "awaiting_accept" | "pending" | "replied" | "cancelled";
 
 type MatchCommentPublic = {
@@ -88,6 +124,9 @@ type MatchIntroRow = {
     highlightName?: string;
     comments?: MatchCommentPublic[];
     commentCount?: number;
+    submitterHideFromPublic?: boolean;
+    opponentHideFromPublic?: boolean;
+    hideFromPublicFeed?: boolean;
   } | null;
   createdAt?: string;
   updatedAt?: string;
@@ -112,6 +151,9 @@ type SavedMatch = {
   highlightName?: string;
   comments?: MatchCommentPublic[];
   commentCount?: number;
+  submitterHideFromPublic?: boolean;
+  opponentHideFromPublic?: boolean;
+  hideFromPublicFeed?: boolean;
 };
 
 type LadderApiRow = LadderRow;
@@ -152,6 +194,9 @@ function mapApiScore(row: {
   highlightName?: string;
   comments?: MatchCommentPublic[];
   commentCount?: number;
+  submitterHideFromPublic?: boolean;
+  opponentHideFromPublic?: boolean;
+  hideFromPublicFeed?: boolean;
 }): SavedMatch {
   const comments = Array.isArray(row.comments) ? row.comments : [];
   return {
@@ -170,7 +215,63 @@ function mapApiScore(row: {
     highlightName: String(row.highlightName || ""),
     comments,
     commentCount: typeof row.commentCount === "number" ? row.commentCount : comments.length,
+    submitterHideFromPublic: row.submitterHideFromPublic === true,
+    opponentHideFromPublic: row.opponentHideFromPublic === true,
+    hideFromPublicFeed: row.hideFromPublicFeed === true,
   };
+}
+
+/** 展示/隐藏 segmented control for score privacy (default 展示). */
+function ScorePrivacyToggle({
+  valueHide,
+  onChange,
+  label,
+  hint,
+  testId,
+}: {
+  valueHide: boolean;
+  onChange: (hide: boolean) => void;
+  label: string;
+  hint: string;
+  testId: string;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="space-y-1.5" data-score-privacy={testId}>
+      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+      <div className="grid grid-cols-2 gap-2" role="group" aria-label={label}>
+        <button
+          type="button"
+          data-score-privacy-show={testId}
+          aria-pressed={!valueHide}
+          onClick={() => onChange(false)}
+          className={cn(
+            "h-9 rounded-lg border px-3 text-sm font-semibold transition-colors",
+            !valueHide
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-background text-muted-foreground",
+          )}
+        >
+          {t("friends.scorePrivacyShow")}
+        </button>
+        <button
+          type="button"
+          data-score-privacy-hide={testId}
+          aria-pressed={valueHide}
+          onClick={() => onChange(true)}
+          className={cn(
+            "h-9 rounded-lg border px-3 text-sm font-semibold transition-colors",
+            valueHide
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-background text-muted-foreground",
+          )}
+        >
+          {t("friends.scorePrivacyHide")}
+        </button>
+      </div>
+      <p className="text-[11px] leading-4 text-muted-foreground">{hint}</p>
+    </div>
+  );
 }
 
 function isHighlightVideoUrl(url: string) {
@@ -332,11 +433,11 @@ export function FriendsView() {
 
   const [playerA, setPlayerA] = useState("");
   const [playerB, setPlayerB] = useState("");
-  const [setLines, setSetLines] = useState([
-    { a: "", b: "" },
-    { a: "", b: "" },
-    { a: "", b: "" },
-  ]);
+  /** Default 三盘两胜 — matches prior fixed 3-row layout. */
+  const [matchLength, setMatchLength] = useState<MatchLength>("bo3");
+  /** Default 抢7 when user switches to 一盘制. */
+  const [shortFormat, setShortFormat] = useState<ShortFormat>("race7");
+  const [setLines, setSetLines] = useState(() => emptySetLines(3));
   const [history, setHistory] = useState<SavedMatch[]>([]);
   const [formError, setFormError] = useState("");
 
@@ -355,6 +456,10 @@ export function FriendsView() {
   const [friendsMainTab, setFriendsMainTab] = useState<"match" | "ladder">("match");
   /** 录入比分表单默认收起，点「录入比分 / 去录入比分」后再展开 */
   const [scoreFormOpen, setScoreFormOpen] = useState(false);
+  /** false = 展示 (default); true = 隐藏 from ladder city feed */
+  const [scoreHideFromPublic, setScoreHideFromPublic] = useState(false);
+  /** Per pending-inbox row: opponent hide choice at confirm (default 展示) */
+  const [confirmHideById, setConfirmHideById] = useState<Record<string, boolean>>({});
   const [scoreDescDraft, setScoreDescDraft] = useState("");
   const [scoreHighlightFile, setScoreHighlightFile] = useState<File | null>(null);
   const scoreHighlightFileRef = useRef<HTMLInputElement | null>(null);
@@ -377,6 +482,8 @@ export function FriendsView() {
       result: "win" | "loss";
       sets: [number, number][];
       ratingDelta?: number;
+      excluded?: boolean;
+      softExcluded?: boolean;
       description?: string;
       highlightUrl?: string;
       highlightName?: string;
@@ -385,6 +492,8 @@ export function FriendsView() {
     }[]
   >([]);
   const [ladderDetailBusy, setLadderDetailBusy] = useState(false);
+  /** ZQ-139: target profile 战绩可见=不可见 → hide recent section for others. */
+  const [ladderDetailHistoryHidden, setLadderDetailHistoryHidden] = useState(false);
   const [cityMatches, setCityMatches] = useState<SavedMatch[]>([]);
   const [cityMatchDetail, setCityMatchDetail] = useState<SavedMatch | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1047,6 +1156,17 @@ export function FriendsView() {
     setSetLines((prev) => prev.map((row, i) => (i === index ? { ...row, [side]: cleaned } : row)));
   }
 
+  function applyMatchLength(next: MatchLength) {
+    setMatchLength(next);
+    setSetLines(emptySetLines(setCountForLength(next)));
+    setFormError("");
+  }
+
+  function applyShortFormat(next: ShortFormat) {
+    setShortFormat(next);
+    setFormError("");
+  }
+
   async function onSaveScore() {
     const aName = playerA.trim();
     const bName = playerB.trim();
@@ -1069,13 +1189,37 @@ export function FriendsView() {
       sets.push(pair);
     }
     if (!sets.length) {
-      setFormError(t("friends.scoreNeedSets"));
+      setFormError(
+        matchLength === "single" ? t("friends.scoreNeedSingle") : t("friends.scoreNeedSets"),
+      );
+      return;
+    }
+    if (matchLength === "single" && sets.length !== 1) {
+      setFormError(t("friends.scoreNeedSingle"));
+      return;
+    }
+    const maxSets = setCountForLength(matchLength);
+    if (sets.length > maxSets) {
+      setFormError(t("friends.scoreTooManySets"));
       return;
     }
     const winner = winnerFromSets(sets);
     if (!winner) {
-      setFormError(t("friends.scoreNeedWinner"));
+      setFormError(
+        matchLength === "single" ? t("friends.scoreNeedGameWinner") : t("friends.scoreNeedWinner"),
+      );
       return;
+    }
+    if (matchLength === "single") {
+      const target = raceTarget(shortFormat);
+      if (target != null) {
+        const [ga, gb] = sets[0];
+        const winGames = winner === "A" ? ga : gb;
+        if (winGames < target) {
+          setFormError(t("friends.scoreRaceNeed", { n: target }));
+          return;
+        }
+      }
     }
     setFormError("");
     setScoreNotice("");
@@ -1091,7 +1235,10 @@ export function FriendsView() {
           playerB: bName,
           sets,
           format,
+          matchLength,
+          shortFormat: matchLength === "single" ? shortFormat : undefined,
           description: scoreDescDraft,
+          hideFromPublic: scoreHideFromPublic === true,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -1116,12 +1263,11 @@ export function FriendsView() {
       setScoreNotice(t("friends.scorePendingHint"));
       setPlayerA(selfName.trim() || aName);
       setPlayerB("");
-      setSetLines([
-        { a: "", b: "" },
-        { a: "", b: "" },
-        { a: "", b: "" },
-      ]);
+      setMatchLength("bo3");
+      setShortFormat("race7");
+      setSetLines(emptySetLines(3));
       setScoreDescDraft("");
+      setScoreHideFromPublic(false);
       setScoreHighlightFile(null);
       if (scoreHighlightFileRef.current) scoreHighlightFileRef.current.value = "";
       setScoreFormOpen(false);
@@ -1139,6 +1285,8 @@ export function FriendsView() {
         status: "pending",
         source: "local",
         description: scoreDescDraft,
+        submitterHideFromPublic: scoreHideFromPublic === true,
+        hideFromPublicFeed: scoreHideFromPublic === true,
       };
       const next = [row, ...history].slice(0, 40);
       setHistory(next);
@@ -1147,6 +1295,7 @@ export function FriendsView() {
       setScoreNotice(t("friends.scorePendingHint"));
       setFormError(t("friends.scoreOfflinePending"));
       setScoreDescDraft("");
+      setScoreHideFromPublic(false);
       setScoreHighlightFile(null);
       if (scoreHighlightFileRef.current) scoreHighlightFileRef.current.value = "";
       setScoreFormOpen(false);
@@ -1159,11 +1308,16 @@ export function FriendsView() {
     setScoreBusy(true);
     setFormError("");
     try {
+      const hideFromPublic = action === "confirm" && confirmHideById[id] === true;
       const res = await fetch("/tennis/api/friends/scores/action", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, action }),
+        body: JSON.stringify({
+          id,
+          action,
+          ...(action === "confirm" ? { hideFromPublic } : {}),
+        }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -1173,6 +1327,11 @@ export function FriendsView() {
       setScoreNotice(
         action === "confirm" ? t("friends.scoreConfirmedHint") : t("friends.scoreRejectedHint"),
       );
+      setConfirmHideById((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
       // Ladder + city「比赛结果」must refetch after confirm (UTR is computed on read).
       await Promise.all([
         refreshScores(),
@@ -1204,6 +1363,7 @@ export function FriendsView() {
       played: Boolean(row.played),
     });
     setLadderDetailMatches([]);
+    setLadderDetailHistoryHidden(false);
     setLadderDetailBusy(true);
     try {
       const q = new URLSearchParams({
@@ -1216,6 +1376,7 @@ export function FriendsView() {
       });
       if (res.ok) {
         const data = (await res.json()) as {
+          historyHidden?: boolean;
           matches?: {
             id: string;
             date: string;
@@ -1223,6 +1384,8 @@ export function FriendsView() {
             result: "win" | "loss";
             sets: [number, number][];
             ratingDelta?: number;
+            excluded?: boolean;
+            softExcluded?: boolean;
             description?: string;
             highlightUrl?: string;
             highlightName?: string;
@@ -1230,26 +1393,30 @@ export function FriendsView() {
             commentCount?: number;
           }[];
         };
+        setLadderDetailHistoryHidden(data.historyHidden === true);
         setLadderDetailMatches(
-          Array.isArray(data.matches)
-            ? data.matches.map((m) => ({
-                ...m,
-                description: String(m.description || ""),
-                highlightUrl: String(m.highlightUrl || ""),
-                highlightName: String(m.highlightName || ""),
-                comments: Array.isArray(m.comments) ? m.comments : [],
-                commentCount:
-                  typeof m.commentCount === "number"
-                    ? m.commentCount
-                    : Array.isArray(m.comments)
-                      ? m.comments.length
-                      : 0,
-              }))
-            : [],
+          data.historyHidden === true
+            ? []
+            : Array.isArray(data.matches)
+              ? data.matches.map((m) => ({
+                  ...m,
+                  description: String(m.description || ""),
+                  highlightUrl: String(m.highlightUrl || ""),
+                  highlightName: String(m.highlightName || ""),
+                  comments: Array.isArray(m.comments) ? m.comments : [],
+                  commentCount:
+                    typeof m.commentCount === "number"
+                      ? m.commentCount
+                      : Array.isArray(m.comments)
+                        ? m.comments.length
+                        : 0,
+                }))
+              : [],
         );
       }
     } catch {
       setLadderDetailMatches([]);
+      setLadderDetailHistoryHidden(false);
     } finally {
       setLadderDetailBusy(false);
     }
@@ -1975,6 +2142,14 @@ export function FriendsView() {
                     <p className="text-[11px] text-muted-foreground">
                       {t("friends.winnerLine", { name: winnerName })} · {t("friends.scoreStatusPending")}
                     </p>
+                    <p
+                      className="text-[11px] text-muted-foreground"
+                      data-score-mine-pending-privacy={row.id}
+                    >
+                      {row.submitterHideFromPublic
+                        ? t("friends.scorePrivacyPendingHide")
+                        : t("friends.scorePrivacyPendingShow")}
+                    </p>
                     {row.description || row.highlightUrl ? (
                       <div className="space-y-2" data-score-mine-pending-highlight={row.id}>
                         {row.description ? (
@@ -2001,6 +2176,7 @@ export function FriendsView() {
             <div className="overflow-hidden rounded-lg border border-amber-500/30 bg-amber-500/5">
               {pendingForMe.map((row, index) => {
                 const winnerName = row.winner === "A" ? row.playerA : row.playerB;
+                const confirmHide = confirmHideById[row.id] === true;
                 return (
                   <div
                     key={row.id}
@@ -2031,6 +2207,19 @@ export function FriendsView() {
                         ) : null}
                       </div>
                     ) : null}
+                    <ScorePrivacyToggle
+                      valueHide={confirmHide}
+                      onChange={(hide) =>
+                        setConfirmHideById((prev) => ({ ...prev, [row.id]: hide }))
+                      }
+                      label={t("friends.scorePrivacyConfirmLabel")}
+                      hint={
+                        row.submitterHideFromPublic
+                          ? t("friends.scorePrivacySubmitterHid")
+                          : t("friends.scorePrivacyHint")
+                      }
+                      testId={`confirm-${row.id}`}
+                    />
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
@@ -2104,33 +2293,132 @@ export function FriendsView() {
                   />
                 </label>
               </div>
-              <div className="space-y-2">
-                <p className="text-[11px] font-medium text-muted-foreground">{t("friends.setScores")}</p>
-                {setLines.map((line, index) => (
-                  <div key={index} className="flex items-center gap-2" data-score-set={index + 1}>
-                    <span className="w-10 shrink-0 text-[11px] text-muted-foreground">
-                      {t("friends.setN", { n: index + 1 })}
-                    </span>
-                    <input
-                      inputMode="numeric"
-                      value={line.a}
-                      onChange={(e) => updateSetLine(index, "a", e.target.value)}
-                      aria-label={t("friends.setGamesA", { n: index + 1 })}
-                      className="h-9 w-full rounded-lg border border-input bg-background px-2.5 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                      placeholder="6"
-                    />
-                    <span className="text-sm text-muted-foreground">–</span>
-                    <input
-                      inputMode="numeric"
-                      value={line.b}
-                      onChange={(e) => updateSetLine(index, "b", e.target.value)}
-                      aria-label={t("friends.setGamesB", { n: index + 1 })}
-                      className="h-9 w-full rounded-lg border border-input bg-background px-2.5 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                      placeholder="4"
-                    />
-                  </div>
-                ))}
+              <div className="space-y-2" data-score-match-length="true">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  {t("friends.matchLengthLabel")}
+                </p>
+                <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label={t("friends.matchLengthLabel")}>
+                  {MATCH_LENGTHS.map((opt) => {
+                    const selected = matchLength === opt;
+                    const label =
+                      opt === "bo3"
+                        ? t("friends.matchLengthBo3")
+                        : opt === "bo5"
+                          ? t("friends.matchLengthBo5")
+                          : t("friends.matchLengthSingle");
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        data-score-match-length-opt={opt}
+                        onClick={() => applyMatchLength(opt)}
+                        className={cn(
+                          "h-9 rounded-lg border px-1.5 text-[12px] font-semibold transition-colors",
+                          selected
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-background text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+              {matchLength === "single" ? (
+                <div className="space-y-2" data-score-short-format="true">
+                  <p className="text-[11px] font-medium text-muted-foreground">
+                    {t("friends.shortFormatLabel")}
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label={t("friends.shortFormatLabel")}>
+                    {SHORT_FORMATS.map((opt) => {
+                      const selected = shortFormat === opt;
+                      const label =
+                        opt === "race7"
+                          ? t("friends.shortFormatRace7")
+                          : opt === "race10"
+                            ? t("friends.shortFormatRace10")
+                            : t("friends.shortFormatFree");
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          data-score-short-format-opt={opt}
+                          onClick={() => applyShortFormat(opt)}
+                          className={cn(
+                            "h-9 rounded-lg border px-1.5 text-[12px] font-semibold transition-colors",
+                            selected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border bg-background text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] leading-5 text-muted-foreground" data-score-short-format-hint="true">
+                    {shortFormat === "race7"
+                      ? t("friends.shortFormatHintRace7")
+                      : shortFormat === "race10"
+                        ? t("friends.shortFormatHintRace10")
+                        : t("friends.shortFormatHintFree")}
+                  </p>
+                </div>
+              ) : null}
+              <div className="space-y-2">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  {matchLength === "single" ? t("friends.singleScore") : t("friends.setScores")}
+                </p>
+                {setLines.map((line, index) => {
+                  const ph = setPlaceholders(matchLength, shortFormat);
+                  const rowLabel =
+                    matchLength === "single"
+                      ? t("friends.singleScoreRow")
+                      : t("friends.setN", { n: index + 1 });
+                  return (
+                    <div key={index} className="flex items-center gap-2" data-score-set={index + 1}>
+                      <span className="w-14 shrink-0 text-[11px] text-muted-foreground">{rowLabel}</span>
+                      <input
+                        inputMode="numeric"
+                        value={line.a}
+                        onChange={(e) => updateSetLine(index, "a", e.target.value)}
+                        aria-label={
+                          matchLength === "single"
+                            ? t("friends.singleGamesA")
+                            : t("friends.setGamesA", { n: index + 1 })
+                        }
+                        className="h-9 w-full rounded-lg border border-input bg-background px-2.5 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                        placeholder={ph.a}
+                      />
+                      <span className="text-sm text-muted-foreground">–</span>
+                      <input
+                        inputMode="numeric"
+                        value={line.b}
+                        onChange={(e) => updateSetLine(index, "b", e.target.value)}
+                        aria-label={
+                          matchLength === "single"
+                            ? t("friends.singleGamesB")
+                            : t("friends.setGamesB", { n: index + 1 })
+                        }
+                        className="h-9 w-full rounded-lg border border-input bg-background px-2.5 text-center text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                        placeholder={ph.b}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              <ScorePrivacyToggle
+                valueHide={scoreHideFromPublic}
+                onChange={setScoreHideFromPublic}
+                label={t("friends.scorePrivacyLabel")}
+                hint={t("friends.scorePrivacyHint")}
+                testId="entry"
+              />
               <div className="space-y-2" data-score-highlight-fields="true">
                 <textarea
                   value={scoreDescDraft}
@@ -2158,7 +2446,7 @@ export function FriendsView() {
                   type="button"
                   data-score-highlight-pick="true"
                   onClick={() => scoreHighlightFileRef.current?.click()}
-                  className="flex h-14 w-full items-center justify-center rounded-xl bg-primary px-4 text-base font-bold tracking-wide text-primary-foreground shadow-md shadow-primary/25 ring-2 ring-primary/30 ring-offset-2 ring-offset-background"
+                  className="flex h-10 w-full items-center justify-center rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground"
                 >
                   {t("friends.highlightFileLabel")}
                 </button>
@@ -2366,6 +2654,7 @@ export function FriendsView() {
                     ) : null}
                   </DialogDescription>
                 </DialogHeader>
+                {!ladderDetailHistoryHidden ? (
                 <div className="space-y-3" data-ladder-player-recent="true">
                   <h4 className="text-xs font-semibold text-foreground">{t("friends.playerRecentTitle")}</h4>
                   {ladderDetailBusy ? (
@@ -2401,19 +2690,56 @@ export function FriendsView() {
                                 {m.date}
                               </p>
                             </div>
-                            {typeof m.ratingDelta === "number" && m.ratingDelta !== 0 ? (
-                              <p
-                                className={cn(
-                                  "shrink-0 text-xs font-semibold tabular-nums",
-                                  m.ratingDelta > 0 ? "text-emerald-600" : "text-rose-600",
-                                )}
-                                data-ladder-player-recent-delta={m.ratingDelta}
-                              >
-                                {m.ratingDelta > 0
-                                  ? t("friends.deltaRatingUp", { n: m.ratingDelta.toFixed(1) })
-                                  : t("friends.deltaRatingDown", { n: m.ratingDelta.toFixed(1) })}
-                              </p>
-                            ) : null}
+                            <div className="shrink-0 text-right">
+                              {typeof m.ratingDelta === "number" && m.ratingDelta !== 0 ? (
+                                <p
+                                  className={cn(
+                                    "text-xs font-semibold tabular-nums",
+                                    m.ratingDelta > 0 ? "text-emerald-600" : "text-rose-600",
+                                  )}
+                                  data-ladder-player-recent-delta={m.ratingDelta}
+                                >
+                                  {m.ratingDelta > 0
+                                    ? t("friends.deltaRatingUp", { n: m.ratingDelta.toFixed(1) })
+                                    : t("friends.deltaRatingDown", { n: m.ratingDelta.toFixed(1) })}
+                                </p>
+                              ) : typeof m.ratingDelta === "number" ? (
+                                <p
+                                  className="text-xs font-semibold tabular-nums text-muted-foreground"
+                                  data-ladder-player-recent-delta={m.ratingDelta}
+                                >
+                                  0.0
+                                </p>
+                              ) : null}
+                              {m.softExcluded ? (
+                                <p
+                                  className="mt-0.5 max-w-[9.5rem] text-[10px] leading-4 text-muted-foreground"
+                                  data-ladder-player-soft-exclude="true"
+                                >
+                                  {t("journey.softExcludeHint")}
+                                </p>
+                              ) : null}
+                              {!m.softExcluded && m.excluded ? (
+                                <p
+                                  className="mt-0.5 max-w-[9.5rem] text-[10px] leading-4 text-muted-foreground"
+                                  data-ladder-player-excluded="true"
+                                >
+                                  {t("journey.excludedHint")}
+                                </p>
+                              ) : null}
+                              {!m.softExcluded &&
+                              !m.excluded &&
+                              m.result === "win" &&
+                              typeof m.ratingDelta === "number" &&
+                              m.ratingDelta === 0 ? (
+                                <p
+                                  className="mt-0.5 max-w-[9.5rem] text-[10px] leading-4 text-muted-foreground"
+                                  data-ladder-player-barely="true"
+                                >
+                                  {t("journey.barelyCountHint")}
+                                </p>
+                              ) : null}
+                            </div>
                           </div>
                           {m.description || m.highlightUrl ? (
                             <div className="space-y-1.5" data-ladder-player-highlight={m.id}>
@@ -2514,15 +2840,16 @@ export function FriendsView() {
                       ))}
                     </div>
                   )}
-                  <button
-                    type="button"
-                    data-ladder-player-detail-close="true"
-                    onClick={() => setLadderDetail(null)}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold text-muted-foreground"
-                  >
-                    {t("friends.playerDetailClose")}
-                  </button>
                 </div>
+                ) : null}
+                <button
+                  type="button"
+                  data-ladder-player-detail-close="true"
+                  onClick={() => setLadderDetail(null)}
+                  className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold text-muted-foreground"
+                >
+                  {t("friends.playerDetailClose")}
+                </button>
               </>
             ) : null}
           </DialogContent>
@@ -2775,12 +3102,17 @@ function LadderRowView({
 }) {
   const { t } = useI18n();
   const unplayed = !row.played;
+  // ZQ-139: under-name W-L / 胜于负于 only when there is a *public* record.
+  // API sends public-only wins/losses; 不可见 users arrive as 0-0 → hide the line.
+  const publicRecord =
+    (row as { publicRecord?: boolean }).publicRecord === true ||
+    (typeof row.wins === "number" && typeof row.losses === "number" && row.wins + row.losses > 0);
   const form = t("friends.form", { w: row.wins, l: row.losses });
   const unprovenNote = t("friends.seedOnly");
   // Plain numeric rating (no trailing ?); unplayed → small caption under score.
   const ratingLabel = row.rating.toFixed(1);
   const lastLine =
-    !unplayed && row.lastResult && row.lastOpponentName
+    publicRecord && row.lastResult && row.lastOpponentName
       ? t(row.lastResult === "win" ? "friends.beat" : "friends.lost", { name: row.lastOpponentName })
       : "";
   const deltaLabel = unplayed ? "" : formatLadderDelta(t, row.rankDelta, row.ratingDelta);
@@ -2840,8 +3172,12 @@ function LadderRowView({
               ) : null}
             </div>
           </div>
-          {!unplayed ? (
-            <p className="mt-0.5 text-xs text-muted-foreground" data-ladder-record={`${row.wins}-${row.losses}`}>
+          {publicRecord ? (
+            <p
+              className="mt-0.5 text-xs text-muted-foreground"
+              data-ladder-record={`${row.wins}-${row.losses}`}
+              data-ladder-public-record="true"
+            >
               {form}
               {lastLine ? ` · ${lastLine}` : ""}
             </p>
