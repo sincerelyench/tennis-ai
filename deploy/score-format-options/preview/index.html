@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>录入比分 · 赛制选项预览</title>
+  <style>
+    :root {
+      --bg: #f3f6f2;
+      --card: #fff;
+      --border: #d7ddd4;
+      --muted: #6b7568;
+      --fg: #1c241c;
+      --primary: #2f6b3a;
+      --primary-fg: #f5fff6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+      background: linear-gradient(180deg, #e8f0e6 0%, var(--bg) 40%, #eef2ea 100%);
+      color: var(--fg);
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+    .wrap { max-width: 420px; margin: 0 auto; }
+    h1 { font-size: 1.15rem; margin: 0 0 6px; }
+    .lead { font-size: 0.8rem; color: var(--muted); margin: 0 0 16px; line-height: 1.5; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+    .label { font-size: 11px; font-weight: 600; color: var(--muted); margin: 0 0 6px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .chip {
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .chip[aria-checked="true"] {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--primary-fg);
+    }
+    .hint { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 0; }
+    .score-line {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .score-line span { width: 56px; font-size: 11px; color: var(--muted); }
+    .score-line input {
+      flex: 1; height: 36px; text-align: center;
+      border: 1px solid var(--border); border-radius: 8px; font-size: 14px;
+    }
+    .meta { margin-top: 18px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+    code { font-size: 11px; background: #e8eee6; padding: 1px 4px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>录入比分 · 赛制</h1>
+    <p class="lead">默认三盘两胜；可选五盘三胜或一盘制（抢7 / 抢10 / 自由一盘）。局数照常计入等级分。</p>
+    <div class="card" data-preview-score-format="true">
+      <div>
+        <p class="label">赛制</p>
+        <div class="row" id="lengthRow" role="radiogroup">
+          <button type="button" class="chip" data-len="bo3" aria-checked="true">三盘两胜</button>
+          <button type="button" class="chip" data-len="bo5" aria-checked="false">五盘三胜</button>
+          <button type="button" class="chip" data-len="single" aria-checked="false">一盘制</button>
+        </div>
+      </div>
+      <div id="shortBlock" hidden>
+        <p class="label">单局赛制</p>
+        <div class="row" id="shortRow" role="radiogroup">
+          <button type="button" class="chip" data-short="race7" aria-checked="true">抢7</button>
+          <button type="button" class="chip" data-short="race10" aria-checked="false">抢10</button>
+          <button type="button" class="chip" data-short="free" aria-checked="false">自由一盘</button>
+        </div>
+        <p class="hint" id="shortHint">填写局数，胜方须先到 7（如 7–5）。</p>
+      </div>
+      <div>
+        <p class="label" id="scoreLabel">盘分</p>
+        <div id="setLines"></div>
+      </div>
+    </div>
+    <p class="meta">
+      ZQ-140 · UTR 仍按局数合计；一盘/短盘权重 0.8；≥3 盘 1.15；≥5 盘 1.2。<br />
+      确认与软排除不变。字段：<code>matchLength</code> / <code>shortFormat</code>（JSON blob）。
+    </p>
+  </div>
+  <script>
+    const lengthRow = document.getElementById("lengthRow");
+    const shortRow = document.getElementById("shortRow");
+    const shortBlock = document.getElementById("shortBlock");
+    const setLines = document.getElementById("setLines");
+    const scoreLabel = document.getElementById("scoreLabel");
+    const shortHint = document.getElementById("shortHint");
+    let length = "bo3";
+    let short = "race7";
+    const hints = {
+      race7: "填写局数，胜方须先到 7（如 7–5）。",
+      race10: "填写局数，胜方须先到 10（如 10–8）。",
+      free: "任意一盘比分（如 8–4 短盘）；局数照常计入等级分。",
+    };
+    const ph = {
+      bo3: ["6", "4"],
+      bo5: ["6", "4"],
+      race7: ["7", "5"],
+      race10: ["10", "8"],
+      free: ["8", "4"],
+    };
+    function renderSets() {
+      const n = length === "bo5" ? 5 : length === "single" ? 1 : 3;
+      const p = length === "single" ? ph[short] : ph.bo3;
+      scoreLabel.textContent = length === "single" ? "局分" : "盘分";
+      setLines.innerHTML = "";
+      for (let i = 0; i < n; i++) {
+        const row = document.createElement("div");
+        row.className = "score-line";
+        row.innerHTML =
+          `<span>${length === "single" ? "比分" : "第 " + (i + 1) + " 盘"}</span>` +
+          `<input value="" placeholder="${p[0]}" />` +
+          `<span style="width:auto">–</span>` +
+          `<input value="" placeholder="${p[1]}" />`;
+        setLines.appendChild(row);
+      }
+      shortBlock.hidden = length !== "single";
+      shortHint.textContent = hints[short];
+    }
+    lengthRow.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-len]");
+      if (!btn) return;
+      length = btn.dataset.len;
+      lengthRow.querySelectorAll("button").forEach((b) => b.setAttribute("aria-checked", String(b === btn)));
+      renderSets();
+    });
+    shortRow.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-short]");
+      if (!btn) return;
+      short = btn.dataset.short;
+      shortRow.querySelectorAll("button").forEach((b) => b.setAttribute("aria-checked", String(b === btn)));
+      renderSets();
+    });
+    renderSets();
+  </script>
+</body>
+</html>
