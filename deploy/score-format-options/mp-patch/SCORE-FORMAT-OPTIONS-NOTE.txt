@@ -1,0 +1,13 @@
+ZQ-140 录入比分赛制选项（四端同步说明）
+
+Web / APK / IPA / 微信小程序均走同一套 /tennis WebView（或同源注入），
+本次只改 Next 站内录入比分 UI + scores API + UTR formatWeight。
+
+壳层（原生 APK / IPA / 小程序包）无需重签或重新上传，刷新 WebView 即可。
+
+选项（中文）：
+- 赛制：三盘两胜（默认） / 五盘三胜 / 一盘制
+- 一盘制子项：抢7 / 抢10 / 自由一盘
+
+等级分仍按局数合计；确认与软排除逻辑不变。
+Preview: https://yqchen.blog/score-format-options.html
