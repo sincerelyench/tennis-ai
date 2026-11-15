@@ -1,0 +1,15 @@
+ZQ-145 · 约球成功排序：未录分在前
+
+规则
+- 「约球成功」列表：尚未录入比分 / 未完赛的条目排在前面，组内按应战时间新→旧。
+- 已经录入比分（含待确认）的条目排在后面，组内同样按时间新→旧。
+- 严格跟库，不折叠、不删库。
+
+四端
+- Web / Android / iOS / 微信小程序：均经同源 /tennis WebView，无需重签壳包。
+
+验证钩子
+- data-match-success-sort="unscored-first"
+- data-match-success-scored="true|false"（未录分行应出现在已录分行之前）
+
+Preview: /yueqiu-sort-unscored.html

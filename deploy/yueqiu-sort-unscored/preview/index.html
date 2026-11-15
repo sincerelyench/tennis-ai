@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>约球成功 · 未录分优先</title>
+  <style>
+    :root {
+      --bg: #0f1a14;
+      --card: #16241c;
+      --ink: #e8f2ea;
+      --muted: #9bb3a3;
+      --accent: #3d9b6a;
+      --warn: #c4a35a;
+      --line: #2a3d31;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, #1d3a2a, var(--bg));
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 28px 18px 48px;
+    }
+    main { max-width: 420px; margin: 0 auto; }
+    h1 { font-size: 1.35rem; margin: 0 0 8px; letter-spacing: 0.02em; }
+    .sub { color: var(--muted); font-size: 0.9rem; margin: 0 0 22px; line-height: 1.5; }
+    .list {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--card);
+    }
+    .row {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .row:last-child { border-bottom: 0; }
+    .name { font-weight: 600; margin: 0 0 4px; }
+    .meta { font-size: 0.78rem; color: var(--muted); margin: 0; }
+    .tag {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(61, 155, 106, 0.18);
+      color: var(--accent);
+    }
+    .tag.scored {
+      background: rgba(196, 163, 90, 0.16);
+      color: var(--warn);
+    }
+    .rule {
+      margin-top: 22px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main data-match-success-sort="unscored-first">
+    <h1>约球成功 · 未录分在前</h1>
+    <p class="sub">未录入比分的约球排在上面；已打完 / 已录分的排在下面。组内都按时间排列。</p>
+    <div class="list" data-match-success-list="true">
+      <div class="row" data-match-success-scored="false">
+        <p class="name">与 小猪</p>
+        <p class="meta">应战 · 今天 14:20</p>
+        <span class="tag">未录分 · 录入比分</span>
+      </div>
+      <div class="row" data-match-success-scored="false">
+        <p class="name">与 元孝</p>
+        <p class="meta">应战 · 昨天 19:05</p>
+        <span class="tag">未录分 · 录入比分</span>
+      </div>
+      <div class="row" data-match-success-scored="true">
+        <p class="name">与 Ivy</p>
+        <p class="meta">4-6 · 2-6 · 胜者 Ivy · 11/12 16:40</p>
+        <span class="tag scored">已录分</span>
+      </div>
+      <div class="row" data-match-success-scored="true">
+        <p class="name">与 袁啸</p>
+        <p class="meta">6-3 · 6-4 · 胜者 陈燕青 · 11/10 10:12</p>
+        <span class="tag scored">已录分</span>
+      </div>
+    </div>
+    <p class="rule">
+      线上入口：<a href="/tennis/friends">/tennis/friends</a>「约球成功」。
+      四端 WebView 同源，无需重签。说明：
+      <a href="/YUEQIU-SORT-UNSCORED-NOTE.txt">YUEQIU-SORT-UNSCORED-NOTE.txt</a>
+    </p>
+  </main>
+</body>
+</html>
