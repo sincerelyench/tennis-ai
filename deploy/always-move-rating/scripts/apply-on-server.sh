@@ -13,14 +13,13 @@ mkdir -p "$BACKUP/lib/i18n" "$BACKUP/components"
 cp -a "$ROOT/lib/local-ladder.ts" "$BACKUP/lib/" 2>/dev/null || true
 cp -a "$ROOT/lib/i18n/messages.ts" "$BACKUP/lib/i18n/" 2>/dev/null || true
 cp -a "$ROOT/components/journey-view.tsx" "$BACKUP/components/" 2>/dev/null || true
-cp -a "$ROOT/components/friends-view.tsx" "$BACKUP/components/" 2>/dev/null || true
+# Do NOT overwrite friends-view.tsx — ZQ-143 ladder bottom tab owns that file.
 
-echo "==> Install opt-patch"
+echo "==> Install opt-patch (rating logic only; skip friends-view)"
 mkdir -p "$ROOT/lib/i18n" "$ROOT/components"
 cp -a "$PATCH_DIR/opt-patch/lib/local-ladder.ts" "$ROOT/lib/local-ladder.ts"
 cp -a "$PATCH_DIR/opt-patch/lib/i18n/messages.ts" "$ROOT/lib/i18n/messages.ts"
 cp -a "$PATCH_DIR/opt-patch/components/journey-view.tsx" "$ROOT/components/journey-view.tsx"
-cp -a "$PATCH_DIR/opt-patch/components/friends-view.tsx" "$ROOT/components/friends-view.tsx"
 
 mkdir -p /var/www/apk
 cat > /var/www/apk/ALWAYS-MOVE-RATING-NOTE.txt <<EOF

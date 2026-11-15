@@ -18,6 +18,8 @@ bash deploy/always-move-rating/scripts/apply-on-server.sh /opt/tennis-ai
 ```
 Code-only. No DB writes.
 
+**Note:** Does **not** overwrite `components/friends-view.tsx` (ZQ-143 ladder bottom tab). Rating UI hints already live there from A+B+C; this kit patches `local-ladder.ts`, `messages.ts`, `journey-view.tsx` only.
+
 ## Tests
 ```bash
 python3 -m unittest tests.test_always_move_rating -v
