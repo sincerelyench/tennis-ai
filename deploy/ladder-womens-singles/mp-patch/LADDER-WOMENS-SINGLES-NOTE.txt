@@ -1,0 +1,6 @@
+ZQ-147 · 排行榜女单
+- UI tabs: 单打 + 女单 (双打 removed for now)
+- 女单 = singles UTR ratings, women only, re-ranked
+- Gender: optional self-report on 我的; fallback allowlist 陈燕青/Ivy/Shirley (code-only, no bulk DB invent)
+- WebView shells unchanged — load live /tennis
+- Preview: https://yqchen.blog/ladder-womens-singles.html
