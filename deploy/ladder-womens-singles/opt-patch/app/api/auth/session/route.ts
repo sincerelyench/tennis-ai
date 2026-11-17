@@ -9,7 +9,7 @@ export async function OPTIONS(request: Request) {
 export async function GET(request: Request) {
   const jar = await cookies();
   const token = bearerToken(request) || jar.get(sessionCookie)?.value || "";
-  const session = getSession(token);
+  const session = getSession(token, { fresh: true });
   if (!session) return json(request, { error: "Please sign in" }, 401);
   return json(request, {
     phone: session.phone,

@@ -562,8 +562,18 @@ export function FriendsView({ surface = "match" }: { surface?: "match" | "ladder
       name,
       level: selfLevel,
       cityId,
+      // ZQ-148: client fallback 女单 must see self-report gender, not seed name only.
+      gender: session.gender || undefined,
     });
-  }, [directoryPlayers, selfName, selfLevel, cityId, session.phone, session.displayName]);
+  }, [
+    directoryPlayers,
+    selfName,
+    selfLevel,
+    cityId,
+    session.phone,
+    session.displayName,
+    session.gender,
+  ]);
 
   const clientLadder = useMemo(
     () => rateLadder(format, new Date(), ladderPlayers, [], cityId),
@@ -628,9 +638,20 @@ export function FriendsView({ surface = "match" }: { surface?: "match" | "ladder
         return;
       }
       const data = (await res.json()) as {
-        users?: { id: string; displayName: string; cityId?: string; level?: number }[];
+        users?: {
+          id: string;
+          displayName: string;
+          cityId?: string;
+          level?: number;
+          gender?: string | null;
+        }[];
         count?: number;
-        self?: { displayName?: string; cityId?: string; level?: number | null };
+        self?: {
+          displayName?: string;
+          cityId?: string;
+          level?: number | null;
+          gender?: string | null;
+        };
       };
       const users = Array.isArray(data.users) ? data.users : [];
       const players = playersFromDirectory(users);

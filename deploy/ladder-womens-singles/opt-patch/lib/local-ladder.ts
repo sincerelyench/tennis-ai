@@ -350,6 +350,7 @@ export function playersFromDirectory(
     cityId?: string;
     level?: number;
     ntrp?: number;
+    gender?: PlayerGender | string | null;
   }[],
 ): LadderPlayer[] {
   const out: LadderPlayer[] = [];
@@ -357,6 +358,9 @@ export function playersFromDirectory(
     const name = String(u.displayName || u.name || "").trim();
     if (!name) continue;
     const level = Number(u.level ?? u.ntrp ?? 3);
+    const genderRaw = String(u.gender || "").trim().toLowerCase();
+    const gender: PlayerGender | undefined =
+      genderRaw === "female" || genderRaw === "male" ? genderRaw : undefined;
     out.push({
       id: String(u.id),
       name,
@@ -364,6 +368,7 @@ export function playersFromDirectory(
       cityId: String(u.cityId || "").trim() || "unknown",
       placeKey: "",
       strokes: [],
+      ...(gender ? { gender } : {}),
     });
   }
   return out;
@@ -388,6 +393,8 @@ export function dedupePlayersByName(players: LadderPlayer[]): LadderPlayer[] {
     if (/^\d{6,}$/.test(id)) s += 4;
     if (!id.startsWith("u_")) s += 2;
     if (Number.isFinite(p.ntrp) && p.ntrp > 0) s += 1;
+    // Prefer the twin that carries explicit gender so 女单 filter sees it.
+    if (p.gender === "female" || p.gender === "male") s += 3;
     return s;
   };
   for (const p of players) {
@@ -411,6 +418,7 @@ export function ensureSelfInPlayers(
     level?: number | null;
     ntrp?: number | null;
     cityId?: string | null;
+    gender?: PlayerGender | string | null;
   } | null | undefined,
 ): LadderPlayer[] {
   const name = String(self?.displayName || self?.name || "").trim();
@@ -420,6 +428,9 @@ export function ensureSelfInPlayers(
   const id = String(self?.id || self?.phone || "").trim() || `self:${name}`;
   const levelRaw = Number(self?.level ?? self?.ntrp ?? 3);
   const ntrp = Number.isFinite(levelRaw) ? levelRaw : 3;
+  const genderRaw = String(self?.gender || "").trim().toLowerCase();
+  const gender: PlayerGender | undefined =
+    genderRaw === "female" || genderRaw === "male" ? genderRaw : undefined;
   const rest = players.filter((p) => p.id !== id && p.name !== name);
   return [
     ...rest,
@@ -430,6 +441,7 @@ export function ensureSelfInPlayers(
       cityId,
       placeKey: "",
       strokes: [],
+      ...(gender ? { gender } : {}),
     },
   ];
 }

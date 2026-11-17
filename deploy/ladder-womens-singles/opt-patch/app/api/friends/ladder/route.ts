@@ -33,7 +33,8 @@ function parseLadderFormat(raw: string | null): LadderFormat {
 export async function GET(request: Request) {
   const jar = await cookies();
   const token = bearerToken(request) || jar.get(sessionCookie)?.value || "";
-  const session = getSession(token);
+  // ZQ-148: fresh auth so profile gender (male/female) is not stale vs seed allowlist.
+  const session = getSession(token, { fresh: true });
   if (!session) return json(request, { error: "Please sign in" }, 401);
 
   const url = new URL(request.url);
@@ -45,6 +46,8 @@ export async function GET(request: Request) {
     role: "player",
     cityId: null,
     excludePhone: null,
+    // Already refreshed via getSession({ fresh: true }); keep consistent.
+    fresh: false,
   });
 
   let players: LadderPlayer[] = directory.map((u) => ({

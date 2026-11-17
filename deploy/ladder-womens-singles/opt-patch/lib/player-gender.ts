@@ -36,14 +36,22 @@ export function isFemaleDisplayName(displayName: string | null | undefined): boo
 
 /**
  * True when the player should appear on 女单.
- * Self-report female wins; self-report male excludes; else allowlist fallback.
+ *
+ * ZQ-148: profile self-report is authoritative.
+ * - explicit female → include
+ * - explicit male → exclude (even if displayName is on the seed allowlist)
+ * - unset / unknown → seed-name allowlist fallback only
+ *
+ * Never OR allowlist with an explicit gender — that kept 陈燕青 on 女单 after
+ * setting gender=male.
  */
 export function isFemalePlayer(opts: {
   gender?: string | null;
   displayName?: string | null;
 }): boolean {
   const g = sanitizeGender(opts.gender);
-  if (g === "female") return true;
+  // Explicit choice always wins; allowlist must not override.
   if (g === "male") return false;
+  if (g === "female") return true;
   return isFemaleDisplayName(opts.displayName);
 }

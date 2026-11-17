@@ -1,0 +1,3 @@
+ZQ-148: 女单 membership — profile gender authoritative; seed names only when unset.
+Web / WebView same; APK IPA miniprogram no native string change.
+Apply: bash deploy/ladder-gender-wins/scripts/apply-on-server.sh /opt/tennis-ai

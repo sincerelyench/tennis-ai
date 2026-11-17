@@ -434,11 +434,16 @@ export function isMatchHistoryPublicForPlayer(opts: {
   return hits.every((u) => isMatchHistoryPublic(u));
 }
 
-export function getSession(token: string | undefined | null) {
+export function getSession(
+  token: string | undefined | null,
+  opts?: { fresh?: boolean },
+) {
   if (!token) return null;
-  // Route handlers and RSC can hold separate module caches; a login may update
-  // Postgres + one cache while the other still has a stale snapshot. On miss,
-  // reload once from Postgres (cache miss retry).
+  // Route handlers and RSC can hold separate module caches; a login / profile
+  // PATCH may update Postgres + one worker cache while another still has a
+  // stale snapshot (missing gender → 女单 allowlist wrongly keeps seed names).
+  // ZQ-148: callers that need authoritative gender pass fresh:true.
+  if (opts?.fresh) invalidateAuthCache();
   let db = load();
   let session = db.sessions[token];
   if (!session) {
@@ -579,7 +584,10 @@ export function listDirectoryUsers(opts?: {
   role?: UserRole | "any";
   cityId?: string | null;
   excludePhone?: string | null;
+  /** Reload auth DB from Postgres (cross-worker gender / profile freshness). */
+  fresh?: boolean;
 }): DirectoryUser[] {
+  if (opts?.fresh) invalidateAuthCache();
   const db = load();
   const roleFilter = opts?.role || "any";
   const cityFilter = (opts?.cityId || "").trim();

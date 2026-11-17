@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZQ-147: 排行榜「双打」→「女单」；女单 = 单打等级分中的女球员重排
+# ZQ-147 / ZQ-148: 排行榜「双打」→「女单」；资料性别权威，种子名仅未填时兜底
 # Code + optional self-report gender field. No invented prod gender rows.
 set -euo pipefail
 
@@ -11,6 +11,7 @@ BACKUP="$ROOT/.ladder-womens-singles-backup-$STAMP"
 echo "==> Backup -> $BACKUP"
 mkdir -p "$BACKUP/lib/i18n" "$BACKUP/components" \
   "$BACKUP/app/api/friends/ladder" \
+  "$BACKUP/app/api/friends/directory" \
   "$BACKUP/app/api/auth/profile" \
   "$BACKUP/app/api/auth/session"
 cp -a "$ROOT/lib/i18n/messages.ts" "$BACKUP/lib/i18n/" 2>/dev/null || true
@@ -21,12 +22,14 @@ cp -a "$ROOT/lib/player-gender.ts" "$BACKUP/lib/" 2>/dev/null || true
 cp -a "$ROOT/components/friends-view.tsx" "$BACKUP/components/" 2>/dev/null || true
 cp -a "$ROOT/components/profile-view.tsx" "$BACKUP/components/" 2>/dev/null || true
 cp -a "$ROOT/app/api/friends/ladder/route.ts" "$BACKUP/app/api/friends/ladder/" 2>/dev/null || true
+cp -a "$ROOT/app/api/friends/directory/route.ts" "$BACKUP/app/api/friends/directory/" 2>/dev/null || true
 cp -a "$ROOT/app/api/auth/profile/route.ts" "$BACKUP/app/api/auth/profile/" 2>/dev/null || true
 cp -a "$ROOT/app/api/auth/session/route.ts" "$BACKUP/app/api/auth/session/" 2>/dev/null || true
 
 echo "==> Install opt-patch"
 mkdir -p "$ROOT/lib/i18n" "$ROOT/components" \
   "$ROOT/app/api/friends/ladder" \
+  "$ROOT/app/api/friends/directory" \
   "$ROOT/app/api/auth/profile" \
   "$ROOT/app/api/auth/session"
 cp -a "$PATCH_DIR/opt-patch/lib/player-gender.ts" "$ROOT/lib/player-gender.ts"
@@ -37,6 +40,7 @@ cp -a "$PATCH_DIR/opt-patch/lib/i18n/messages.ts" "$ROOT/lib/i18n/messages.ts"
 cp -a "$PATCH_DIR/opt-patch/components/friends-view.tsx" "$ROOT/components/friends-view.tsx"
 cp -a "$PATCH_DIR/opt-patch/components/profile-view.tsx" "$ROOT/components/profile-view.tsx"
 cp -a "$PATCH_DIR/opt-patch/app/api/friends/ladder/route.ts" "$ROOT/app/api/friends/ladder/route.ts"
+cp -a "$PATCH_DIR/opt-patch/app/api/friends/directory/route.ts" "$ROOT/app/api/friends/directory/route.ts"
 cp -a "$PATCH_DIR/opt-patch/app/api/auth/profile/route.ts" "$ROOT/app/api/auth/profile/route.ts"
 cp -a "$PATCH_DIR/opt-patch/app/api/auth/session/route.ts" "$ROOT/app/api/auth/session/route.ts"
 
@@ -72,8 +76,10 @@ fi
 echo "==> Sanity"
 grep -n "womens_singles\|女单\|womensSingles" "$ROOT/components/friends-view.tsx" | head -20
 grep -n "womens_singles\|isFemalePlayer\|ratingFormatOf" "$ROOT/lib/local-ladder.ts" | head -20
-grep -n "gender\|PlayerGender" "$ROOT/lib/auth-store.ts" | head -20
+grep -n "gender\|PlayerGender\|fresh" "$ROOT/lib/auth-store.ts" | head -30
 grep -n "womensSingles\|女单" "$ROOT/lib/i18n/messages.ts" | head -20
+grep -n "gender\|fresh" "$ROOT/app/api/friends/directory/route.ts" | head -20
+grep -n "if (g === \"male\")" "$ROOT/lib/player-gender.ts"
 ! grep -q 'FORMATS: LadderFormat\[] = \["singles", "doubles"\]' "$ROOT/components/friends-view.tsx"
 test -f "$ROOT/lib/player-gender.ts"
 
