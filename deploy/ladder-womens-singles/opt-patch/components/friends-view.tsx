@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/empty-state";
 import { pageClass } from "@/lib/data";
 import { rateLadder, utrSeedFromSelfLevel, playersFromDirectory, ensureSelfInPlayers, type LadderFormat, type LadderPlayer, type LadderRow } from "@/lib/local-ladder";
+import { isFemalePlayer } from "@/lib/player-gender";
 import { useSessionRole } from "@/lib/session-role";
 import {
   CITY_STORAGE_KEY,
@@ -586,6 +587,13 @@ export function FriendsView({ surface = "match" }: { surface?: "match" | "ladder
     if (!name || !cityId) return ladderRows;
     const selfId = session.phone || `self:${name}`;
     if (ladderRows.some((r) => r.id === selfId || r.name === name)) return ladderRows;
+    // ZQ-148: do not force-merge male (or non-female) self onto 女单 when API correctly omitted them.
+    if (
+      format === "womens_singles" &&
+      !isFemalePlayer({ gender: session.gender, displayName: name })
+    ) {
+      return ladderRows;
+    }
     // API city filter lagged behind selected city — still show self locally.
     const seed = utrSeedFromSelfLevel(selfLevel);
     const merged: LadderApiRow[] = [
@@ -621,8 +629,10 @@ export function FriendsView({ surface = "match" }: { surface?: "match" | "ladder
     selfName,
     session.displayName,
     session.phone,
+    session.gender,
     cityId,
     selfLevel,
+    format,
   ]);
   const city = getCity(cityId);
   const cityName = city ? cityLabel(city, locale) : cityId;
