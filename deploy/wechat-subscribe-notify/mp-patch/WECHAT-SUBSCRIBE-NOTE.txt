@@ -1,5 +1,18 @@
-ZQ-150 微信订阅消息
-- 登录成功后进入 pages/subscribe
-- 用户点击「开启订阅」才调 wx.requestSubscribeMessage（满足手势）
-- 模板 ID：config.subscribeTemplates 或服务端 WECHAT_MP_TMPL_*
-- 详见 deploy/wechat-subscribe-notify/WECHAT-CONSOLE-TEMPLATES.md
+涨球乐 · 微信订阅消息（ZQ-150）
+================================
+日期：2026-11-18
+
+站内通知仍保留。小程序用户（微信登录、有 openid）可额外收到订阅消息：
+
+1. 排行榜分数/名次变动
+2. 收到约战/挑战邀请（模板已提供：用户邀约通知）
+3. 发出的邀请被接受
+4. 比分结果与综述确认邀请
+5. 站内留言（约球互留 + 网络教练↔学员；服务端 /api/coach/messages）
+
+客户端：登录后「订阅」页 / 通知中心「开启微信通知」→ wx.requestSubscribeMessage
+服务端：WECHAT_MP_* + WECHAT_MP_TMPL_* → subscribeMessage.send
+
+模板字段清单：deploy/wechat-subscribe-notify/WECHAT-CONSOLE-TEMPLATES.md
+约球邀请已接线；其余 4 个待燕青。未配置则该类推送跳过。
+与「赛后交换微信号」不是同一功能。Mac apply 另安排。

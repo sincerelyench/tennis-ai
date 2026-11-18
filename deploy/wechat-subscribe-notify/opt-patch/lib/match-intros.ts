@@ -272,6 +272,7 @@ export function createMatchIntro(input: {
   save(db);
   // ZQ-150: 收到约战/挑战邀请 → 对方微信订阅消息（有 openid 才发）
   if (intro.status === "awaiting_accept") {
+    const inviteTitle = intro.kind === "challenge" ? "挑战邀请" : "约球邀请";
     notifySubscribe({
       event: "invite",
       phone: intro.toPhone,
@@ -280,7 +281,16 @@ export function createMatchIntro(input: {
       data: {
         name: intro.fromName,
         peerName: intro.fromName,
-        title: intro.kind === "challenge" ? "挑战邀请" : "约战邀请",
+        title: inviteTitle,
+        kind: intro.kind,
+        detail:
+          intro.kind === "challenge"
+            ? `${intro.fromName}向你发起挑战，请打开涨球应战`
+            : `${intro.fromName}邀你约球，请打开涨球查看`,
+        body:
+          intro.kind === "challenge"
+            ? `${intro.fromName}向你发起挑战，请打开涨球应战`
+            : `${intro.fromName}邀你约球，请打开涨球查看`,
       },
     });
   }

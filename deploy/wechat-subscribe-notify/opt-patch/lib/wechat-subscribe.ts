@@ -146,10 +146,17 @@ export function buildTemplateData(
         time3: timeNow(),
       };
     case "invite":
+      // Yanqing template「用户邀约通知」y3dQG1ss-… : thing1 邀约标题 / thing2 邀约内容 / thing13 邀请人
       return {
-        name1: { value: clip(name, 10) || "球友" },
-        thing2: thing(String(payload.title || "约战邀请")),
-        time3: timeNow(),
+        thing1: thing(String(payload.title || "约球邀请")),
+        thing2: thing(
+          String(
+            payload.detail ||
+              payload.body ||
+              (payload.kind === "challenge" ? "有人向你发起挑战，请打开涨球应战" : "有人邀你约球，请打开涨球查看"),
+          ),
+        ),
+        thing13: thing(String(payload.name || payload.peerName || name || "球友")),
       };
     case "invite_accepted":
       return {

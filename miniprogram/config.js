@@ -9,7 +9,8 @@ module.exports = {
    */
   subscribeTemplates: {
     ladder: "REPLACE_TMPL_LADDER",
-    invite: "REPLACE_TMPL_INVITE",
+    // Yanqing「用户邀约通知」— 详见 deploy/wechat-subscribe-notify/WECHAT-CONSOLE-TEMPLATES.md
+    invite: "y3dQG1ss-l3h_Ebe2fhWymaigXuuDYgvL_rvgeT7lg",
     invite_accepted: "REPLACE_TMPL_INVITE_ACCEPTED",
     score_confirm: "REPLACE_TMPL_SCORE_CONFIRM",
     message: "REPLACE_TMPL_MESSAGE",

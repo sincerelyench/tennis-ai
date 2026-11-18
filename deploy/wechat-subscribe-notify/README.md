@@ -9,13 +9,17 @@
 | `opt-patch/lib/wechat-subscribe.ts` | access_token + subscribeMessage.send |
 | `opt-patch/lib/wechat-subscribe-store.ts` | 记录 accept / 剩余发送次数 |
 | `opt-patch/lib/mp-subscribe-client.ts` | H5 → 原生订阅页 bridge |
-| `opt-patch/lib/match-intros.ts` | 邀请 / 应战 / 留言 hooks |
+| `opt-patch/lib/match-intros.ts` | 邀请 / 应战 / 约球留言 hooks |
 | `opt-patch/lib/match-scores.ts` | 待确认比分 / 确认后排行 hooks |
+| `opt-patch/lib/network-coach-messages.ts` | 教练↔学员留言服务端持久化 + message 推送 |
+| `opt-patch/lib/network-coach-board.ts` | 客户端板：local mirror + POST 服务端 |
+| `opt-patch/app/api/coach/messages/` | GET/POST 教练留言 API |
 | `opt-patch/components/notices-view.tsx` | 「开启微信通知」CTA |
 | `opt-patch/app/api/auth/wechat-subscribe/` | GET 模板 / POST 上报 accept |
-| `scripts/inject-friends-subscribe.py` | 不覆盖整份 friends-view，只注入订阅调用 |
-| `scripts/apply-on-server.sh` | 生产 apply |
-| `WECHAT-CONSOLE-TEMPLATES.md` | 燕青创建模板说明 |
+| `scripts/inject-friends-subscribe.py` | friends-view 订阅调用注入 |
+| `scripts/inject-coach-board-hydrate.py` | coach-view 从服务端 hydrate |
+| `scripts/apply-on-server.sh` | 生产 apply（Mac 另安排） |
+| **`WECHAT-CONSOLE-TEMPLATES.md`** | **燕青模板字段清单（约球邀请已接线）** |
 | `miniprogram/`（仓库根） | login → subscribe 页 + `requestSubscribeMessage` |
 
 ## 生产 apply（Mac Keychain）
@@ -34,10 +38,14 @@ sshpass -e ssh -o StrictHostKeyChecking=accept-new root@8.216.53.29 \
 
 小程序 zip 上传：`bash deploy/wechat-subscribe-notify/scripts/upload-mp-zip.sh`
 
-## Blocker
+## 模板
 
-在公众平台创建 5 个订阅消息模板，并把 ID 写入 systemd drop-in（见 `wechat-subscribe-tmpl.env.example`）。  
-未配置时：代码已上线但微信推送 skip；站内通知不受影响。
+燕青面向说明：**[`WECHAT-CONSOLE-TEMPLATES.md`](./WECHAT-CONSOLE-TEMPLATES.md)**
+
+- ✅ `WECHAT_MP_TMPL_INVITE` = `y3dQG1ss-l3h_Ebe2fhWymaigXuuDYgvL_rvgeT7lg`（thing1/thing2/thing13）
+- ⏳ 其余 4 个模板 ID 待燕青
+
+未配置的事件：发送 skip；站内通知不受影响。Mac 生产 apply 另有安排。
 
 ## 与 ZQ-149
 
