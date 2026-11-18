@@ -17,6 +17,8 @@ function saveAuth(payload) {
     phone: payload.phone || "",
     openid: payload.openid || "",
     displayName: payload.displayName || "",
+    // Server autofills wechatId from openid on WeChat login when empty (ZQ-149).
+    wechatId: payload.wechatId || "",
     role: payload.role || "player",
     cityId: payload.cityId || "",
     loginMode: payload.loginMode || "wechat",
