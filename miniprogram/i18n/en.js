@@ -7,14 +7,22 @@ module.exports = {
   "home": {
     "lead": "Film a swing, follow the shooting guide, then view the four-part result and practice cues.",
     "sub": "Use it to review your own practice. This does not promise a higher rating.",
-    "devNote": "This is a development login. WeChat sign-in will be added later.",
-    "login": "Development login",
+    "devNote": "Same phone sign-in as the web app. The code is shown on this page (no SMS). AppID is touristappid.",
+    "login": "Sign in",
     "loggingIn": "Signing in…",
     "continue": "View shooting guide",
-    "codeLabel": "Login code (optional)",
-    "codePlaceholder": "Leave blank to use a development code",
+    "phoneLabel": "Phone",
+    "phonePlaceholder": "11-digit mainland number",
+    "codeLabel": "Code",
+    "codePlaceholder": "4-digit code",
+    "sendCode": "Get code",
+    "sending": "Sending…",
+    "codeIs": "Code ",
+    "codeShown": "The code is shown on the button — enter it to sign in.",
+    "codeSent": "Code issued.",
     "loggedIn": "Signed in",
-    "localCode": "WeChat did not return a code, so a local development code was used."
+    "localCode": "WeChat did not return a code, so a local development code was used.",
+    "coachLibrary": "Stroke library / My demos"
   },
   "guide": {
     "title": "Shooting guide",
@@ -78,6 +86,8 @@ module.exports = {
   "errors": {
     "auth_required": "Sign in before uploading",
     "auth_invalid": "Your login expired. Sign in again",
+    "phone_invalid": "Enter an 11-digit mainland phone number",
+    "code_required": "Get and enter the verification code first",
     "login_code_invalid": "That login code is not valid. Try again",
     "login_body_invalid": "The login request could not be read",
     "guide_invalid": "The shooting guide could not be read",
