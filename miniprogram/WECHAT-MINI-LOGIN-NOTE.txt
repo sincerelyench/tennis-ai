@@ -4,6 +4,8 @@
 - 登录后 web-view → https://yqchen.blog/tennis（约球·排行榜·教练·我的）
 - wx.login → POST /api/auth/wechat → GET /api/auth/mp-enter?token=…
 - 网页 / APK 登录页不要微信登录入口
+- 微信登录成功后服务端自动写入微信号（wechatId=openid 派生；非 nickName）；完善资料不再因缺微信号强制再填
+  详见 deploy/wechat-autofill-wechatid/
 
 AppID 对齐（登录后「演示/错误」文案的根因）
 - 本工程 project.config.json appid = wx09896b686bc2f565（涨球）
