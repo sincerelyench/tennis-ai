@@ -1,0 +1,5 @@
+涨球乐 mp-weixin-sync ZQ-149（2026-11-18）
+- 原生仅登录壳；登录后 web-view 打开 https://yqchen.blog/tennis
+- 与 APK/IPA 同源，底栏由网页提供：约球 · 排行榜 · 教练 · 我的（分析 tab 隐藏）
+- wx.login → POST /api/auth/wechat → GET /api/auth/mp-enter?token=… → tennis_session
+- 网页 / APK 登录页不要微信登录入口；微信登录仅小程序

@@ -24,19 +24,18 @@ cp .env.example .env
 
 网页入口是 `http://127.0.0.1:27116/e1`。小程序、Android 和 iOS 都调用现有的 `POST /api/analyze` 与 `GET /api/jobs/{id}`。分析仍由原来的 pipeline 完成。任务完成后，同一页面打开四维结果：`GET /api/jobs/{id}/result`。iOS 壳的 User-Agent 带 `ZhangqiuIOS`，上传时 `client` 为 `ios`。
 
-登录是开发态模拟：客户端把一段 code 交给 `POST /api/auth/mock`，换回 token。正式微信登录还没接。可选环境变量 `DEV_AUTH_SECRET` 用来签发这个开发 token。
+产品小程序（涨球乐）走 **web-view 对齐现网**：`miniprogram/` 仅保留微信登录壳，登录后打开 `https://yqchen.blog/tennis`（与 APK/IPA 同源）。正式登录：`wx.login` → `POST /api/auth/wechat` → `GET /api/auth/mp-enter?token=…`。网页与安卓 APK **不要**微信登录入口。本仓库 Python `/e1` 仍可用 `POST /api/auth/mock` 做分析联调（`DEV_AUTH_SECRET`）。
 
-文案在 `i18n/zh-CN.json` 和 `i18n/en.json`。默认中文。网页和小程序右上角可以切到 EN。小程序里的 `miniprogram/i18n/*.js` 与这两份 JSON 内容相同。Android 和 iOS 打开的就是这个网页，地址加 `?lang=en` 会直接用英文。
+文案在 `i18n/zh-CN.json` 和 `i18n/en.json`。默认中文。Android 和 iOS WebView 打开线上 `/tennis`；地址加 `?lang=en` 会直接用英文。
 
-### 微信开发者工具
+### 微信开发者工具（涨球乐 · 对齐网页）
 
-1. 按上面的方式启动后端，确认 `http://127.0.0.1:27116/api/health` 能打开。
-2. 开发者工具选择「导入项目」，目录选仓库里的 `miniprogram/`。
-3. AppID 使用测试号，或保持工程里的占位 `touristappid`。正式 AppID 以后再换，改 `miniprogram/project.config.json` 的 `appid`。
-4. 详情 → 本地设置 → 勾选「不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书」。工程里 `urlCheck` 已是 `false`，仍建议在工具里再勾一次。
-5. 后端不在本机 `127.0.0.1:27116` 时，改 `miniprogram/config.js` 的 `apiBase`。
-6. 建议路径：首页看到「涨球」→ 开发态登录 → 拍摄引导里勾选侧面机位、全身入镜、球拍可见（可以不勾完）→ 选择或拍摄视频 → 上传 → 排队页出现任务编号。右上角可切换中文 / EN。
-7. 失败时应看到中文或英文说明，例如未登录、登录失效、视频超过 400MB、网络不通。不要把没有 `job_id` 的响应当成上传成功。
+1. 开发者工具 → 导入项目 → 选仓库 `miniprogram/`（或解压后的 `mp-weixin.zip` 根目录）。
+2. AppID：测试号或 `touristappid`；正式 AppID 须与生产 `WECHAT_MP_APPID` 一致（改 `miniprogram/project.config.json`）。
+3. 详情 → 本地设置 → 勾选「不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书」。
+4. `miniprogram/config.js` 的 `apiBase` 默认为 `https://yqchen.blog/tennis`。
+5. 正式发布前：公众平台业务域名添加 `https://yqchen.blog`。
+6. 路径：微信登录 → web-view 进入约球 · 排行榜 · 教练 · 我的。说明见 `deploy/mp-weixin-sync/mp-weixin-README.txt`。
 
 ### Android
 

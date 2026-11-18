@@ -1,17 +1,14 @@
 {
   "pages": [
-    "pages/home/home",
-    "pages/guide/guide",
-    "pages/upload/upload",
-    "pages/queue/queue",
-    "pages/result/result"
+    "pages/login/login",
+    "pages/web/web"
   ],
   "window": {
     "navigationBarTitleText": "涨球",
-    "navigationBarBackgroundColor": "#07140e",
-    "navigationBarTextStyle": "white",
-    "backgroundColor": "#07140e",
-    "backgroundTextStyle": "light"
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#ffffff",
+    "backgroundTextStyle": "dark"
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json"
