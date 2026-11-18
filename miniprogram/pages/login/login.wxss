@@ -1,0 +1,46 @@
+/* inherits app.wxss light theme */
+.page {
+  padding-top: 48rpx;
+}
+
+.mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.mode-chip {
+  padding: 14rpx 22rpx;
+  border-radius: 999rpx;
+  border: 1rpx solid #cbd5e1;
+  background: #ffffff;
+  font-size: 24rpx;
+  color: #0f172a;
+}
+
+.mode-chip-on {
+  background: #0d9488;
+  border-color: #0d9488;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.code-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+}
+
+.code-field {
+  flex: 1;
+}
+
+.code-btn {
+  margin-top: 0 !important;
+  flex-shrink: 0;
+  height: 80rpx;
+  line-height: 80rpx;
+  padding: 0 22rpx !important;
+  font-size: 24rpx !important;
+}
