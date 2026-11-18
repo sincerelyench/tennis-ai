@@ -6,17 +6,20 @@ function base() {
 
 function fail(body, status) {
   let code = body && (body.code || body.error)
-  if (!code) {
+  if (typeof code !== "string") {
     if (status === 401) code = "auth_invalid"
     else if (status >= 500) code = "server"
     else code = "generic"
   }
   const err = new Error(typeof code === "string" ? code : "generic")
   err.code = typeof code === "string" ? code : "generic"
-  err.detail =
-    (body && (body.detail || body.error) && String(body.detail || body.error)) ||
-    (typeof body.error === "string" ? body.error : "") ||
+  const detailRaw =
+    (body && typeof body.detail === "string" && body.detail) ||
+    (body && typeof body.error === "string" && body.error) ||
+    (body && typeof body.errmsg === "string" && body.errmsg) ||
     ""
+  err.detail = detailRaw
+  if (body && body.errcode != null) err.errcode = body.errcode
   return err
 }
 

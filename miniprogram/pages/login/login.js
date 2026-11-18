@@ -23,9 +23,19 @@ Page({
   },
   onShow() {
     const auth = session.auth()
-    if (auth && auth.token) {
-      enterApp(auth.token)
-    }
+    if (!auth || !auth.token) return
+    // Validate before skipping native login; stale/mock tokens otherwise land in
+    // web-view /login (no 微信登录) and look like WeChat login is missing.
+    api
+      .session(auth.token)
+      .then(() => enterApp(auth.token))
+      .catch(() => {
+        session.clearAuth()
+        this.setData({
+          mode: "wechat",
+          notice: "登录已过期，请用微信登录或账号重新登录",
+        })
+      })
   },
   onMode(e) {
     const mode = (e.currentTarget.dataset && e.currentTarget.dataset.mode) || "wechat"
@@ -52,7 +62,12 @@ Page({
       return
     }
     session.saveAuth(body)
-    this.setData({ loading: false, notice: notice || "" })
+    // Do not leave a sticky "error-looking" banner on the login page after success.
+    // Mock / AppID-mismatch sessions still get a short toast, then enter the app.
+    this.setData({ loading: false, error: "", notice: "" })
+    if (notice) {
+      wx.showToast({ title: notice, icon: "none", duration: 2500 })
+    }
     enterApp(body.token)
   },
   onWechatLogin() {
@@ -82,10 +97,14 @@ Page({
         })
         .then((body) => {
           if (!body) return
+          // Prod WECHAT_MP_APPID must match project.config.json appid, otherwise
+          // jscode2session falls back to wechat-mock (looks like a post-login error).
           const notice =
             body.loginMode === "wechat-mock"
-              ? "当前为开发/模拟微信会话（未配置正式小程序密钥或测试码无效时）。"
+              ? "已进入演示会话（服务端 AppID 未与本小程序对齐时）"
               : ""
+          // Enter web-view immediately. Subscribe (ZQ-150) stays optional via
+          // pages/subscribe — do not block login success with template errors.
           this.finishLogin(body, notice)
         })
         .catch((err) => {
