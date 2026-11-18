@@ -14,7 +14,9 @@ function fail(body, status) {
   const err = new Error(typeof code === "string" ? code : "generic")
   err.code = typeof code === "string" ? code : "generic"
   err.detail =
-    (body && (body.detail || body.error) && String(body.detail || body.error)) || ""
+    (body && (body.detail || body.error) && String(body.detail || body.error)) ||
+    (typeof body.error === "string" ? body.error : "") ||
+    ""
   return err
 }
 
@@ -52,6 +54,22 @@ function wechatLogin({ code, nickName }) {
   })
 }
 
+function accountLogin(payload) {
+  return request({
+    path: "/api/auth/login",
+    method: "POST",
+    data: payload || {},
+  })
+}
+
+function sendPhoneCode({ phone }) {
+  return request({
+    path: "/api/auth/code",
+    method: "POST",
+    data: { phone: phone || "" },
+  })
+}
+
 function session(token) {
   return request({ path: "/api/auth/session", token })
 }
@@ -67,6 +85,8 @@ function updateProfile(token, patch) {
 
 module.exports = {
   wechatLogin,
+  accountLogin,
+  sendPhoneCode,
   session,
   updateProfile,
 }

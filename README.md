@@ -28,14 +28,15 @@ cp .env.example .env
 
 文案在 `i18n/zh-CN.json` 和 `i18n/en.json`。默认中文。Android 和 iOS WebView 打开线上 `/tennis`；地址加 `?lang=en` 会直接用英文。
 
-### 微信开发者工具（涨球乐 · 对齐网页）
+### 微信开发者工具（涨球乐 · 本地工程）
 
-1. 开发者工具 → 导入项目 → 选仓库 `miniprogram/`（或解压后的 `mp-weixin.zip` 根目录）。
-2. AppID：测试号或 `touristappid`；正式 AppID 须与生产 `WECHAT_MP_APPID` 一致（改 `miniprogram/project.config.json`）。
+**主交付是仓库里的 `miniprogram/`**（微信开发者工具直接导入此目录）。公网 zip 仅可选镜像。
+
+1. 开发者工具 → 导入项目 → 选仓库 **`miniprogram/`**（含 `app.json`）。详见 `miniprogram/DEVTOOLS.md`。
+2. AppID：测试号或 `touristappid`；正式 AppID 须与生产 `WECHAT_MP_APPID` 一致。
 3. 详情 → 本地设置 → 勾选「不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书」。
-4. `miniprogram/config.js` 的 `apiBase` 默认为 `https://yqchen.blog/tennis`。
-5. 正式发布前：公众平台业务域名添加 `https://yqchen.blog`。
-6. 路径：微信登录 → web-view 进入约球 · 排行榜 · 教练 · 我的。说明见 `deploy/mp-weixin-sync/mp-weixin-README.txt`。
+4. 登录页提供：**微信登录**（默认）| 账号密码 | 手机验证码；成功后 web-view 打开现网 `/tennis`。
+5. 若燕青本机开发者工具指向 `/Users/yanqing/Downloads/tennis-ai/miniprogram/`，请将该副本同步到本分支后再编译。
 
 ### Android
 
