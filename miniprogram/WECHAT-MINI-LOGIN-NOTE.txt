@@ -1,15 +1,15 @@
-涨球乐 miniprogram（微信开发者工具工程 · ZQ-149）
-- 主交付：仓库 miniprogram/；zip 仅为可选镜像
+涨球乐 miniprogram（微信开发者工具工程 · ZQ-149 / ZQ-158）
+- 主交付：本机目录 `/Users/yanqing/Downloads/mp-weixin (2)`；zip 仅为可选镜像
 - 登录选项：微信登录（默认）| 账号密码 | 手机验证码
+- 微信登录 Tab：一键「微信登录」——无显示名输入；显示名/微信名可选在登录后「我的 / 完善资料」
+- 登录页介绍弹窗：涨球乐 + 网页版四卖点（约球/多打球），非动作分析卖点（ZQ-159）
 - 登录后 web-view → https://yqchen.blog/tennis（约球·排行榜·教练·我的）
 - wx.login → POST /api/auth/wechat → GET /api/auth/mp-enter?token=…
 - 网页 / APK 登录页不要微信登录入口
-- 微信登录成功后服务端自动写入微信号（wechatId=openid 派生；非 nickName）；完善资料不再因缺微信号强制再填
-  详见 deploy/wechat-autofill-wechatid/
+- 微信号：勿写入 openid；登录后留空由用户在「我的」填写真实微信号（ZQ-157）
 
 AppID 对齐（登录后「演示/错误」文案的根因）
-- 本工程 project.config.json appid = wx09896b686bc2f565（涨球）
-- 现网 systemd WECHAT_MP_APPID 曾为 wx45ce1339ec73aa2b（合拍实验室 / voice-diary）
+- 本工程 project.config.json appid = wx09896b686bc2f565（涨球乐）
+- 现网 systemd WECHAT_MP_APPID 须与本 AppID 一致
 - 不一致时 jscode2session 失败 → loginMode=wechat-mock → 客户端提示演示会话
-- 正式微信会话：把生产 WECHAT_MP_APPID/SECRET 换成 wx09896… 的 AppSecret（公众平台）
-- 切勿把合拍/voice-diary 的 SECRET 配到涨球 AppID 上
+- 切勿把合拍/voice-diary 的 SECRET 配到涨球乐 AppID 上

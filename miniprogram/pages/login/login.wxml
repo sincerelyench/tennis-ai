@@ -1,11 +1,10 @@
 <view class="page">
   <view class="brand-row">
     <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
-    <text class="brand-name">涨球</text>
+    <text class="brand-name">涨球乐</text>
   </view>
 
   <text class="h1">登录</text>
-  <text class="lead">登录后进入与网页同源的涨球乐（约球 · 排行榜 · 教练 · 我的）。小程序可用微信登录。</text>
 
   <view class="mode-row">
     <view
@@ -25,28 +24,11 @@
     >手机验证码</view>
   </view>
 
+  <!-- ZQ-158: WeChat tab = one tap only; 显示名 / 微信名挑选取在登录后「我的 / 完善资料」 -->
   <view class="card" wx:if="{{mode === 'wechat'}}">
-    <text class="label">显示名（默认用微信名）</text>
-    <!--
-      type="nickname"：点选「可选入微信名」写入本框。
-      注意：bindnicknamereview 只有 {pass,timeout}，没有 value；
-      若绑到 onNick 会把刚写入的显示名清掉（ZQ-154）。
-    -->
-    <input
-      class="field"
-      type="nickname"
-      maxlength="40"
-      placeholder="点选可带入微信名；也可自己改"
-      value="{{nickName}}"
-      bindinput="onNickInput"
-      bindblur="onNickBlur"
-      bindchange="onNickInput"
-      bindnicknamereview="onNickReview"
-    />
     <button class="primary" loading="{{loading}}" disabled="{{loading}}" bindtap="onWechatLogin">
       {{loading ? "正在登录…" : "微信登录"}}
     </button>
-    <text class="hint">登录后微信号自动写入「我的」；显示名默认用微信名（已有自定义不覆盖）。网页 / APK 无此入口。</text>
   </view>
 
   <view class="card" wx:if="{{mode === 'password'}}">
@@ -104,4 +86,29 @@
 
   <text class="hint" wx:if="{{notice}}">{{notice}}</text>
   <text class="error" wx:if="{{error}}">{{error}}</text>
+
+  <!-- ZQ-159 addon: 涨球乐 intro — webpage 四卖点（约球/多打球），非动作分析 -->
+  <view class="intro-mask" wx:if="{{showIntro}}" catchtouchmove="noop">
+    <view class="intro-card">
+      <view class="intro-brand">
+        <image class="intro-logo" src="/images/logo.png" mode="aspectFit" />
+        <text class="intro-brand-name">涨球乐</text>
+      </view>
+      <text class="intro-title">欢迎来到涨球乐</text>
+      <text class="intro-lead">多打球、约对手、看排名、找教练——让我们大家一起涨球。</text>
+      <view class="intro-list">
+        <view class="intro-item" wx:for="{{introPoints}}" wx:key="title">
+          <view class="intro-num">{{index + 1}}</view>
+          <view class="intro-body">
+            <text class="intro-item-title">{{item.title}}</text>
+            <text class="intro-item-desc">{{item.desc}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="intro-actions">
+        <button class="btn-ghost intro-btn" bindtap="onIntroDismiss">跳过</button>
+        <button class="primary intro-btn" bindtap="onIntroDismiss">开始</button>
+      </view>
+    </view>
+  </view>
 </view>

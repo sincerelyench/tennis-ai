@@ -1,5 +1,27 @@
 const api = require("../../utils/api")
 const session = require("../../utils/session")
+const errors = require("../../utils/errors")
+
+const INTRO_STORAGE_KEY = "zq_mp_onboarded_v1"
+
+const INTRO_POINTS = [
+  {
+    title: "一起涨球",
+    desc: "多打球、多比赛，在实战中打磨技术，大家一起涨球。",
+  },
+  {
+    title: "约到水平相当的球友",
+    desc: "轻松找到本地水平相当（或上下）的球友来挑战。",
+  },
+  {
+    title: "赛后看排名变化",
+    desc: "排名不随意，按与对手水平相近程度计算，打完就能看到升降。",
+  },
+  {
+    title: "AI 教练与真实网络教练",
+    desc: "日常训练有疑问，可获 AI 教练与真实网络教练指导。",
+  },
+]
 
 function enterApp(token) {
   wx.redirectTo({
@@ -7,10 +29,36 @@ function enterApp(token) {
   })
 }
 
+/** User-facing login error — never show opaque codes like "server". */
+function loginErrorText(err, fallback) {
+  const localized = errors.message("zh-CN", err)
+  if (localized) return localized
+  const detail = err && typeof err.detail === "string" ? err.detail.trim() : ""
+  if (detail && !/^(server|network|generic|auth_invalid)$/i.test(detail)) {
+    return detail
+  }
+  return fallback || "登录失败，请重试"
+}
+
+function readIntroSeen() {
+  try {
+    return !!wx.getStorageSync(INTRO_STORAGE_KEY)
+  } catch (e) {
+    return false
+  }
+}
+
+function writeIntroSeen() {
+  try {
+    wx.setStorageSync(INTRO_STORAGE_KEY, 1)
+  } catch (e) {
+    /* ignore */
+  }
+}
+
 Page({
   data: {
     mode: "wechat",
-    nickName: "",
     username: "",
     password: "",
     phone: "",
@@ -20,8 +68,15 @@ Page({
     codeLoading: false,
     error: "",
     notice: "",
+    showIntro: false,
+    introPoints: INTRO_POINTS,
+  },
+  onLoad() {
+    this.setData({ showIntro: !readIntroSeen() })
   },
   onShow() {
+    // Drop sticky errors from a previous failed attempt (e.g. raw "server" from 5xx).
+    this.setData({ error: "" })
     const auth = session.auth()
     if (!auth || !auth.token) return
     // Validate before skipping native login; stale/mock tokens otherwise land in
@@ -37,39 +92,14 @@ Page({
         })
       })
   },
+  noop() {},
+  onIntroDismiss() {
+    writeIntroSeen()
+    this.setData({ showIntro: false })
+  },
   onMode(e) {
     const mode = (e.currentTarget.dataset && e.currentTarget.dataset.mode) || "wechat"
     this.setData({ mode, error: "", notice: "" })
-  },
-  /**
-   * Write selected / typed WeChat nick into the display-name field (page data nickName).
-   * Only update when detail.value is a string — nicknamereview has no value.
-   */
-  applyNickValue(raw) {
-    if (typeof raw !== "string") return
-    const nickName = raw.trim().slice(0, 40)
-    if (nickName === this.data.nickName) return
-    this.setData({ nickName })
-  },
-  onNickInput(e) {
-    const detail = (e && e.detail) || {}
-    this.applyNickValue(detail.value)
-  },
-  onNickBlur(e) {
-    const detail = (e && e.detail) || {}
-    // Native nickname picker often commits on blur; keep displayName in sync.
-    this.applyNickValue(detail.value)
-  },
-  onNickReview(e) {
-    // WeChat fires { pass, timeout } only — never clear nickName here (ZQ-154).
-    const detail = (e && e.detail) || {}
-    if (detail.pass === false) {
-      this.setData({
-        notice: "微信名未通过内容审核，请改一个显示名或手动填写",
-      })
-      return
-    }
-    // pass/timeout: value already applied via input/blur; keep existing nickName.
   },
   onUsername(e) {
     this.setData({ username: e.detail.value || "" })
@@ -100,30 +130,15 @@ Page({
   onWechatLogin() {
     if (this.data.loading) return
     this.setData({ loading: true, error: "", notice: "" })
-    const nickName = String(this.data.nickName || "").trim()
+    // ZQ-158: one-tap — no nickName / displayName on login; pick later in 我的 / 完善资料.
     const finish = (code) => {
       api
-        .wechatLogin({ code, nickName })
+        .wechatLogin({ code })
         .then((body) => {
           if (!body || !body.token) {
             this.setData({ loading: false, error: "登录失败，请重试" })
-            return null
+            return
           }
-          session.saveAuth(body)
-          if (body.displayName) return body
-          if (!nickName) return body
-          return api
-            .updateProfile(body.token, { displayName: nickName })
-            .then((profile) => {
-              session.patchAuth({
-                displayName: (profile && profile.displayName) || nickName,
-              })
-              return body
-            })
-            .catch(() => body)
-        })
-        .then((body) => {
-          if (!body) return
           // Prod WECHAT_MP_APPID must match project.config.json appid, otherwise
           // jscode2session falls back to wechat-mock (looks like a post-login error).
           const notice =
@@ -137,7 +152,7 @@ Page({
         .catch((err) => {
           this.setData({
             loading: false,
-            error: (err && (err.detail || err.message)) || "登录失败",
+            error: loginErrorText(err, "登录失败，请重试"),
           })
         })
     }
@@ -164,7 +179,7 @@ Page({
       .catch((err) => {
         this.setData({
           loading: false,
-          error: (err && (err.detail || err.message)) || "登录失败",
+          error: loginErrorText(err, "登录失败，请重试"),
         })
       })
   },
@@ -189,7 +204,7 @@ Page({
       .catch((err) => {
         this.setData({
           codeLoading: false,
-          error: (err && (err.detail || err.message)) || "发送失败",
+          error: loginErrorText(err, "发送失败，请重试"),
         })
       })
   },
@@ -208,7 +223,7 @@ Page({
       .catch((err) => {
         this.setData({
           loading: false,
-          error: (err && (err.detail || err.message)) || "登录失败",
+          error: loginErrorText(err, "登录失败，请重试"),
         })
       })
   },
