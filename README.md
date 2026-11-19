@@ -40,7 +40,7 @@ cp .env.example .env
 
 ### Android
 
-Android 工程是一层 WebView，打开 `/e1`，不另写分析或打分界面。应用名是「涨球」。
+Android 工程是一层 WebView，打开 `/e1`，不另写分析或打分界面。应用名是「涨球乐」。
 
 默认打包地址是线上 `https://tennis.47.93.203.28.sslip.io/e1`。要改地址，打包时传入 `ZQ_START_URL`：
 
@@ -63,7 +63,7 @@ adb shell am start -n app.zhangqiu/.MainActivity --es start_url "http://192.168.
 
 ### iOS
 
-iOS 工程是一层 WKWebView，打开 `/e1`，不另写分析或打分界面。应用名是「涨球」，Bundle ID 是 `app.zhangqiu`。需要 Mac 上的 Xcode 15 或更新版本，部署目标是 iOS 15。
+iOS 工程是一层 WKWebView，打开 `/e1`，不另写分析或打分界面。应用名是「涨球乐」，Bundle ID 是 `app.zhangqiu`。需要 Mac 上的 Xcode 15 或更新版本，部署目标是 iOS 15。
 
 用 Xcode 打开并在模拟器里运行：
 

@@ -1,0 +1,8 @@
+ZQ-159 — repo mirror of Mac prod hotpatch (bc-b415e8ef)
+
+Product brand: 涨球乐
+Web onboard.* = webpage 四卖点 (not 动作). Prod already live.
+
+Local MP /Users/yanqing/Downloads/mp-weixin (2)/:
+- Intro polish already done under ZQ-158 lock — do NOT overwrite from this kit.
+- WeChat one-tap owned by ZQ-158 / PR #153.
