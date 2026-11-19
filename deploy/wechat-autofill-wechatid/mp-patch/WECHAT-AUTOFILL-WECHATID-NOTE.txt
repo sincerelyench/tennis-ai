@@ -21,6 +21,13 @@ Also
 - needsProfileSetup treats placeholder display names / missing wechatId as incomplete
 - MP shell caches wechatId + displayName (miniprogram/utils/session.js)
 
+ZQ-158 (MP client, separate from this server kit)
+------------------------------------------------
+WeChat login page: one tap 「微信登录」 only — no 显示名 field.
+Nick picker / 「可选入微信名」 moves to pages/profile-setup after login.
+wechatId still empty until user fills real 微信号 (this kit).
+Product intro modal on login page = ZQ-159 (do not fight that PR).
+
 Surfaces
 --------
 Web /opt/tennis-ai (WebView-same for APK/IPA/MP). Rebuild Next after apply.
