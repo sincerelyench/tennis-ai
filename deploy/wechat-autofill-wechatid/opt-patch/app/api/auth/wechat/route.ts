@@ -88,8 +88,9 @@ async function exchangeMpCode(code: string): Promise<
  * POST /api/auth/wechat
  * Body: { code, nickName?, client?: "mp"|"android"|"ios"|"web" }
  *
- * ZQ-153 on success:
- * - profile.wechatId filled from openid when empty (keep user-set)
+ * ZQ-157 / ZQ-153 on success:
+ * - profile.wechatId left empty (MP API has no real 微信号). Do NOT write openid.
+ *   Keep a real user-set wechatId; clear openid-derived pollution from ZQ-149/151.
  * - profile.displayName defaults to nickName when empty/placeholder (keep custom)
  *
  * - Mini-program / default: jscode2session when WECHAT_MP_* set.
@@ -151,7 +152,7 @@ export async function POST(request: Request) {
     phone: result.phone,
     role: result.role,
     displayName: result.displayName || "",
-    // ZQ-149: autofilled from openid when empty — shown in 「我的」微信号栏.
+    // ZQ-157: real wechatId only (empty until user fills 「我的」); never openid.
     wechatId: result.wechatId || "",
     needsProfileSetup: !!result.needsProfileSetup,
     openid: result.openid,

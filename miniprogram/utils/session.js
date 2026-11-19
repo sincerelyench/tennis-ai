@@ -18,7 +18,7 @@ function saveAuth(payload) {
     openid: payload.openid || "",
     // Server defaults displayName from WeChat nickName when empty/placeholder (ZQ-153).
     displayName: payload.displayName || "",
-    // Server autofills wechatId from openid on WeChat login when empty (ZQ-149/153).
+    // Real wechatId only (ZQ-157). Server leaves empty after WeChat login — never openid.
     wechatId: payload.wechatId || "",
     role: payload.role || "player",
     cityId: payload.cityId || "",
