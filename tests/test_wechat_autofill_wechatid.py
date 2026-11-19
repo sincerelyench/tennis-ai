@@ -91,6 +91,22 @@ class WechatAutofillWechatIdTests(unittest.TestCase):
         self.assertIn("显示名（默认用微信名）", text)
         self.assertIn('type="nickname"', text)
 
+    def test_mp_login_nickname_picker_does_not_clear_displayname(self):
+        """ZQ-154: nicknamereview must not bind to the value writer (no detail.value)."""
+        wxml = LOGIN_WXML.read_text(encoding="utf-8")
+        login_js = (ROOT / "miniprogram/pages/login/login.js").read_text(encoding="utf-8")
+        self.assertIn('bindinput="onNickInput"', wxml)
+        self.assertIn('bindblur="onNickBlur"', wxml)
+        self.assertIn('bindnicknamereview="onNickReview"', wxml)
+        self.assertNotIn('bindnicknamereview="onNick"', wxml)
+        self.assertIn("onNickReview(e)", login_js)
+        self.assertIn("applyNickValue", login_js)
+        # Regression: old onNick(e.detail.value || "") wiped nick on review.
+        self.assertNotRegex(
+            login_js,
+            r"onNickReview\([\s\S]*?setData\(\{\s*nickName:\s*e\.detail\.value\s*\|\|\s*\"\"",
+        )
+
     def test_typical_openid_written_verbatim(self):
         openid = "oUpF8uMuAJO_M2pxb1Q9zNjWeS6o"  # 28 chars, WeChat-shaped
         self.assertEqual(wechat_id_from_openid(openid), openid)

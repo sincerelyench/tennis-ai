@@ -41,8 +41,35 @@ Page({
     const mode = (e.currentTarget.dataset && e.currentTarget.dataset.mode) || "wechat"
     this.setData({ mode, error: "", notice: "" })
   },
-  onNick(e) {
-    this.setData({ nickName: e.detail.value || "" })
+  /**
+   * Write selected / typed WeChat nick into the display-name field (page data nickName).
+   * Only update when detail.value is a string — nicknamereview has no value.
+   */
+  applyNickValue(raw) {
+    if (typeof raw !== "string") return
+    const nickName = raw.trim().slice(0, 40)
+    if (nickName === this.data.nickName) return
+    this.setData({ nickName })
+  },
+  onNickInput(e) {
+    const detail = (e && e.detail) || {}
+    this.applyNickValue(detail.value)
+  },
+  onNickBlur(e) {
+    const detail = (e && e.detail) || {}
+    // Native nickname picker often commits on blur; keep displayName in sync.
+    this.applyNickValue(detail.value)
+  },
+  onNickReview(e) {
+    // WeChat fires { pass, timeout } only — never clear nickName here (ZQ-154).
+    const detail = (e && e.detail) || {}
+    if (detail.pass === false) {
+      this.setData({
+        notice: "微信名未通过内容审核，请改一个显示名或手动填写",
+      })
+      return
+    }
+    // pass/timeout: value already applied via input/blur; keep existing nickName.
   },
   onUsername(e) {
     this.setData({ username: e.detail.value || "" })
