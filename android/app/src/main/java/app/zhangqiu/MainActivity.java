@@ -116,7 +116,7 @@ public class MainActivity extends Activity {
                 + "<style>body{margin:0;padding:32px 24px;background:#07140e;color:#eef6ee;"
                 + "font-family:sans-serif;font-size:18px;line-height:1.5}"
                 + "h1{font-size:28px}a{color:#d6e35a}</style></head><body>"
-                + "<h1>涨球</h1>"
+                + "<h1>涨球乐</h1>"
                 + "<p>页面暂时打不开。请检查网络后重试。</p>"
                 + "<p>The page could not be opened. Check the network and try again.</p>"
                 + "<p><a href=\"" + retry + "\">重试 / Retry</a></p>"

@@ -1,7 +1,7 @@
 <view class="page">
   <view class="brand-row">
     <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
-    <text class="brand-name">涨球</text>
+    <text class="brand-name">涨球乐</text>
   </view>
 
   <text class="h1">登录</text>

@@ -25,7 +25,7 @@
 
 ## 本地设置
 
-1. AppID：开发可用 `touristappid`；燕青 DevTools 涨球工程为 `wx09896b686bc2f565`，须与生产 `WECHAT_MP_APPID` **完全一致**（勿用合拍/voice-diary 的 `wx45ce…`）。
+1. AppID：开发可用 `touristappid`；燕青 DevTools 涨球乐工程为 `wx09896b686bc2f565`，须与生产 `WECHAT_MP_APPID` **完全一致**（勿用合拍/voice-diary 的 `wx45ce…`）。
 2. 详情 → 本地设置 → 勾选「不校验合法域名、web-view（业务域名）、TLS…」。
 3. `config.js` → `apiBase: "https://yqchen.blog/tennis"`。
 4. 正式发布前：公众平台业务域名添加 `https://yqchen.blog`。
