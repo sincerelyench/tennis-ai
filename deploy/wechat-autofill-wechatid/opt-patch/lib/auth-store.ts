@@ -180,10 +180,9 @@ export function sanitizeWechatId(raw: string | null | undefined): string {
 }
 
 /**
- * Official mini-program APIs do not expose the user's real 微信号 string.
- * When wechatId is empty after WeChat login, derive a stable ASCII handle from
- * openid so 「我的」/完善资料/约球 gates see a filled 微信号栏.
- * Typical openid already matches sanitizeWechatId; otherwise hash to 32 chars.
+ * Legacy ZQ-149/151 helper: openid-shaped handle that was wrongly written into
+ * wechatId. Kept only to detect / clear that pollution — never write this into
+ * profile.wechatId again. Official MP APIs cannot return a real 微信号.
  */
 export function wechatIdFromOpenid(openid: string | null | undefined): string {
   const oid = String(openid || "").trim();
@@ -194,24 +193,47 @@ export function wechatIdFromOpenid(openid: string | null | undefined): string {
   return sanitizeWechatId(`w${hex.slice(0, 31)}`);
 }
 
+/** True when stored wechatId is the openid-derived autofill (not a real 微信号). */
+export function isOpenidDerivedWechatId(
+  wechatId: string | null | undefined,
+  openid: string | null | undefined,
+): boolean {
+  const id = sanitizeWechatId(wechatId);
+  if (!id) return false;
+  const derived = wechatIdFromOpenid(openid);
+  return !!derived && id === derived;
+}
+
+/**
+ * User-facing / 约球 微信号: real sanitizeWechatId only.
+ * openid-derived autofills from ZQ-149/151 are treated as empty.
+ */
+export function effectiveWechatId(user: {
+  wechatId?: string | null;
+  openid?: string | null;
+} | null | undefined): string {
+  const id = sanitizeWechatId(user?.wechatId);
+  if (!id) return "";
+  if (isOpenidDerivedWechatId(id, user?.openid)) return "";
+  return id;
+}
+
 /**
  * 约球 / 完善资料 WeChat contact requirement.
- * Satisfied by an explicit wechatId, or by a bound mini-program openid
- * (WeChat login) — product treats openid-bound accounts as wechatSatisfied.
+ * Satisfied only by a real user-set wechatId — NOT by openid / openid-derived handles.
+ * WeChat login cannot supply a contactable 微信号; user must fill 「我的」.
  */
 export function wechatContactSatisfied(user: {
   wechatId?: string | null;
   openid?: string | null;
 } | null | undefined): boolean {
-  if (sanitizeWechatId(user?.wechatId)) return true;
-  const oid = String(user?.openid || "").trim();
-  return oid.length >= 8 && oid.length <= 128;
+  return !!effectiveWechatId(user);
 }
 
 /**
  * True when signed-in user still needs 约球-required profile fields.
- * Required: real display name (not blank/placeholder) + WeChat contact
- * (wechatId or openid-bound). City alone must NOT open the gate.
+ * Required: real display name (not blank/placeholder) + real wechatId.
+ * City alone must NOT open the gate. openid binding alone is not enough.
  * Callers open the dialog only after session hydrate.
  */
 export function needsProfileSetup(user: {
@@ -236,8 +258,8 @@ function issueSession(db: Db, user: AuthUser) {
   save(db);
   const displayName = sanitizeDisplayName(user.displayName);
   const cityId = String(user.cityId || "").trim();
-  const wechatId = sanitizeWechatId(user.wechatId);
   const openid = String(user.openid || "").trim() || undefined;
+  const wechatId = effectiveWechatId({ wechatId: user.wechatId, openid });
   return {
     token,
     phone: user.phone,
@@ -406,12 +428,12 @@ export function wechatAccountKey(openid: string) {
 
 /**
  * Bind or create a 涨球 session from WeChat openid.
- * ZQ-153:
+ * ZQ-157 / ZQ-153:
  * - displayName: default to WeChat nickName when empty/missing/placeholder;
  *   never overwrite a real custom 显示名 the user already set.
- * - wechatId: when empty, auto-fill from openid (ZQ-149/151; not nickName —
- *   official API cannot return a contactable 微信号 string). Prefer keeping a
- *   user-set wechatId. User may later replace the openid-derived handle in 「我的」.
+ * - wechatId: leave empty — MP API cannot return a real 微信号. Do NOT write
+ *   openid / openid-derived handles into 微信号 (ZQ-149/151 mistake). Keep a
+ *   real user-set wechatId; clear openid-derived pollution lazily.
  */
 export function loginWithWeChat(opts: {
   openid: string;
@@ -436,6 +458,7 @@ export function loginWithWeChat(opts: {
       displayName: nick,
       openid,
       unionid: opts.unionid ? String(opts.unionid).trim() : undefined,
+      // wechatId intentionally unset — user fills real 微信号 in 「我的」.
     };
   } else {
     db.users[phone].openid = openid;
@@ -446,10 +469,12 @@ export function loginWithWeChat(opts: {
     }
     if (!db.users[phone].role) db.users[phone].role = role;
   }
-  // ZQ-149/151/153: auto-fill 微信号 when missing (never overwrite a user-set wechatId).
-  if (!sanitizeWechatId(db.users[phone].wechatId)) {
-    const autoWechatId = wechatIdFromOpenid(openid);
-    if (autoWechatId) db.users[phone].wechatId = autoWechatId;
+  // ZQ-157: never autofill wechatId from openid. Clear prior openid-derived
+  // pollution only — never wipe a custom 微信号 the user typed.
+  if (
+    isOpenidDerivedWechatId(db.users[phone].wechatId, openid)
+  ) {
+    delete db.users[phone].wechatId;
   }
   const issued = issueSession(db, db.users[phone]);
   return {
@@ -520,19 +545,14 @@ export function getSession(
   const role = session.role || user?.role || roleForPhone(session.phone);
   const displayName = sanitizeDisplayName(user?.displayName);
   const cityId = user?.cityId || "";
-  let wechatId = sanitizeWechatId(user?.wechatId);
   const openid = String(user?.openid || "").trim() || undefined;
-  // Lazy backfill for WeChat-bound accounts that logged in before autofill shipped,
-  // so 「我的」微信号栏 fills without forcing a re-login.
-  if (!wechatId && openid && user) {
-    const auto = wechatIdFromOpenid(openid);
-    if (auto) {
-      user.wechatId = auto;
-      db.users[session.phone] = user;
-      save(db);
-      wechatId = auto;
-    }
+  // ZQ-157: clear openid-derived wechatId pollution (do not autofill; keep custom).
+  if (user && isOpenidDerivedWechatId(user.wechatId, openid)) {
+    delete user.wechatId;
+    db.users[session.phone] = user;
+    save(db);
   }
+  const wechatId = effectiveWechatId({ wechatId: user?.wechatId, openid });
   return {
     phone: session.phone,
     createdAt: session.createdAt,
@@ -562,6 +582,7 @@ export function updateProfile(phone: string, patch: ProfilePatch) {
   const db = load();
   const user = db.users[phone];
   if (!user) return { error: "Please sign in" as const };
+  const openid = String(user.openid || "").trim() || undefined;
   if (patch.displayName !== undefined) {
     user.displayName = sanitizeDisplayName(patch.displayName);
   }
@@ -570,7 +591,16 @@ export function updateProfile(phone: string, patch: ProfilePatch) {
     user.cityId = city;
   }
   if (patch.wechatId !== undefined) {
-    user.wechatId = sanitizeWechatId(patch.wechatId);
+    const next = sanitizeWechatId(patch.wechatId);
+    // Refuse openid / openid-derived handles as 微信号 (not a contactable ID).
+    if (!next || isOpenidDerivedWechatId(next, openid)) {
+      delete user.wechatId;
+    } else {
+      user.wechatId = next;
+    }
+  } else if (isOpenidDerivedWechatId(user.wechatId, openid)) {
+    // Lazy clear of ZQ-149/151 pollution without wiping custom wechatIds.
+    delete user.wechatId;
   }
   if (patch.level !== undefined) {
     const n = Number(patch.level);
@@ -599,8 +629,7 @@ export function updateProfile(phone: string, patch: ProfilePatch) {
   save(db);
   const displayName = sanitizeDisplayName(user.displayName);
   const cityId = user.cityId || "";
-  const wechatId = sanitizeWechatId(user.wechatId);
-  const openid = String(user.openid || "").trim() || undefined;
+  const wechatId = effectiveWechatId({ wechatId: user.wechatId, openid });
   return {
     phone: user.phone,
     role: user.role,
@@ -618,10 +647,8 @@ export function updateProfile(phone: string, patch: ProfilePatch) {
 export function getWechatIdForPhone(phone: string | null | undefined): string {
   if (!phone) return "";
   const user = getUser(phone);
-  const explicit = sanitizeWechatId(user?.wechatId);
-  if (explicit) return explicit;
-  // WeChat-bound: openid-derived handle so 约球 create gate passes without re-prompt.
-  return wechatIdFromOpenid(user?.openid);
+  // Real 微信号 only — never fall back to openid (not contactable for 约球).
+  return effectiveWechatId(user);
 }
 
 /** Resolve WeChat ID by phone or display name (for post-accept reveal only). */
@@ -641,9 +668,7 @@ export function getWechatIdForPlayer(opts: {
   // Prefer real CN mobile accounts when duplicate displayNames exist.
   const phoneLike = hits.find((u) => /^1\d{10}$/.test(String(u.phone || "")));
   const pick = phoneLike || hits[0];
-  const explicit = sanitizeWechatId(pick?.wechatId);
-  if (explicit) return explicit;
-  return wechatIdFromOpenid(pick?.openid);
+  return effectiveWechatId(pick);
 }
 
 export type DirectoryUser = {
