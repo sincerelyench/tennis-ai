@@ -210,8 +210,8 @@ export function wechatContactSatisfied(user: {
 
 /**
  * True when signed-in user still needs 约球-required profile fields.
- * Required: display name + WeChat contact (wechatId or openid-bound).
- * City alone must NOT open the gate.
+ * Required: real display name (not blank/placeholder) + WeChat contact
+ * (wechatId or openid-bound). City alone must NOT open the gate.
  * Callers open the dialog only after session hydrate.
  */
 export function needsProfileSetup(user: {
@@ -220,7 +220,10 @@ export function needsProfileSetup(user: {
   wechatId?: string | null;
   openid?: string | null;
 } | null | undefined) {
-  return !sanitizeDisplayName(user?.displayName) || !wechatContactSatisfied(user);
+  return (
+    isBlankOrPlaceholderDisplayName(user?.displayName) ||
+    !wechatContactSatisfied(user)
+  );
 }
 
 function issueSession(db: Db, user: AuthUser) {
@@ -343,6 +346,23 @@ export function sanitizeDisplayName(raw: string | null | undefined): string {
   return name;
 }
 
+/**
+ * ZQ-153: true when displayName is missing or a WeChat/system placeholder.
+ * Used so login can default 显示名 to WeChat nickName without clobbering a
+ * real custom name the user already set.
+ */
+export function isBlankOrPlaceholderDisplayName(
+  raw: string | null | undefined,
+): boolean {
+  const name = sanitizeDisplayName(raw);
+  if (!name) return true;
+  // Common WeChat defaults / stubs — not a real custom 显示名.
+  if (/^(微信用户|微信昵称|wechat\s*user|wx\s*user|user)$/i.test(name)) {
+    return true;
+  }
+  return false;
+}
+
 function hashCode(phone: string, code: string) {
   return createHash("sha256").update(`${phone}:${code}`).digest("hex");
 }
@@ -386,10 +406,12 @@ export function wechatAccountKey(openid: string) {
 
 /**
  * Bind or create a 涨球 session from WeChat openid.
- * displayName: prefer an existing real login name; fill from WeChat nick only when empty.
- * wechatId: when empty, auto-fill from openid (not nickName — nick is display only).
- * Official API cannot return the user's real 微信号; openid-derived handle satisfies
- * 完善资料 / 约球 and shows in 「我的」; user may replace it with a real ID later.
+ * ZQ-153:
+ * - displayName: default to WeChat nickName when empty/missing/placeholder;
+ *   never overwrite a real custom 显示名 the user already set.
+ * - wechatId: when empty, auto-fill from openid (ZQ-149/151; not nickName —
+ *   official API cannot return a contactable 微信号 string). Prefer keeping a
+ *   user-set wechatId. User may later replace the openid-derived handle in 「我的」.
  */
 export function loginWithWeChat(opts: {
   openid: string;
@@ -410,6 +432,7 @@ export function loginWithWeChat(opts: {
       phone,
       createdAt: new Date().toISOString(),
       role,
+      // New WeChat account: 显示名默认用微信名（may be "" if nick omitted).
       displayName: nick,
       openid,
       unionid: opts.unionid ? String(opts.unionid).trim() : undefined,
@@ -417,12 +440,13 @@ export function loginWithWeChat(opts: {
   } else {
     db.users[phone].openid = openid;
     if (opts.unionid) db.users[phone].unionid = String(opts.unionid).trim();
-    if (!sanitizeDisplayName(db.users[phone].displayName) && nick) {
+    // Fill 显示名 from WeChat nick only when blank/placeholder — keep custom names.
+    if (isBlankOrPlaceholderDisplayName(db.users[phone].displayName) && nick) {
       db.users[phone].displayName = nick;
     }
     if (!db.users[phone].role) db.users[phone].role = role;
   }
-  // ZQ-149: auto-fill 微信号 when missing (never overwrite a user-set wechatId).
+  // ZQ-149/151/153: auto-fill 微信号 when missing (never overwrite a user-set wechatId).
   if (!sanitizeWechatId(db.users[phone].wechatId)) {
     const autoWechatId = wechatIdFromOpenid(openid);
     if (autoWechatId) db.users[phone].wechatId = autoWechatId;

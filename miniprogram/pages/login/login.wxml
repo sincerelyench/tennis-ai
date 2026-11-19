@@ -26,19 +26,20 @@
   </view>
 
   <view class="card" wx:if="{{mode === 'wechat'}}">
-    <text class="label">怎么称呼你（可选）</text>
+    <text class="label">显示名（默认用微信名）</text>
     <input
       class="field"
       type="nickname"
       maxlength="40"
-      placeholder="优先用真实名字；可从微信昵称带入"
+      placeholder="点选可带入微信名；也可自己改"
       value="{{nickName}}"
       bindinput="onNick"
+      bindnicknamereview="onNick"
     />
     <button class="primary" loading="{{loading}}" disabled="{{loading}}" bindtap="onWechatLogin">
       {{loading ? "正在登录…" : "微信登录"}}
     </button>
-    <text class="hint">首次微信登录会自动创建账号；网页 / APK 不提供此入口。</text>
+    <text class="hint">登录后微信号自动写入「我的」；显示名默认用微信名（已有自定义不覆盖）。网页 / APK 无此入口。</text>
   </view>
 
   <view class="card" wx:if="{{mode === 'password'}}">

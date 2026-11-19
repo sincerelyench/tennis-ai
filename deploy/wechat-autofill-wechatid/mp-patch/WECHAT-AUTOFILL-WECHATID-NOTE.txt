@@ -1,28 +1,28 @@
-ZQ-149 · WeChat login auto-fills 微信号 (wechatId)
+ZQ-153 · WeChat login → 微信号 + 显示名（微信名）
 
-What is written into 微信号
----------------------------
-On POST /api/auth/wechat success, if profile.wechatId is empty:
+微信号 wechatId
+--------------
+On POST /api/auth/wechat, if profile.wechatId is empty:
   wechatId = sanitizeWechatId(openid)
-  (typical WeChat openid already matches ^[A-Za-z0-9_-]{3,32}$)
-  If openid fails sanitize (charset/length), wechatId = "w" + sha256("wxid:"+openid)[:31]
+  (typical openid already matches ^[A-Za-z0-9_-]{3,32}$)
+  else wechatId = "w" + sha256("wxid:"+openid)[:31]
+Never overwrite a user-set wechatId.
+nickName is NEVER used as wechatId.
 
-nickName is NEVER used as wechatId (displayName only).
-
-Why openid
-----------
-WeChat mini-program official APIs do not return the user's real 微信号 string.
-Product preference: after WeChat login, 完善资料 must not force re-entry of 微信号;
-「我的」微信号栏 should show a value. openid-derived handle satisfies gates;
-users can replace it with a real contact WeChat ID in 「我的」 anytime.
+显示名 displayName
+-----------------
+Default to WeChat nickName from login body / type=nickname input.
+Fill only when empty, missing, or placeholder (e.g. 微信用户).
+Never overwrite a real custom displayName.
 
 Also
 ----
 - wechatContactSatisfied: explicit wechatId OR bound openid
 - getSession lazy-backfills wechatId for already-bound accounts
-- MP shell stores wechatId from login response (miniprogram/utils/session.js)
+- needsProfileSetup treats placeholder display names as incomplete
+- MP shell caches wechatId + displayName (miniprogram/utils/session.js)
 
 Surfaces
 --------
 Web /opt/tennis-ai (WebView-same for APK/IPA/MP). Rebuild Next after apply.
-MP native shell: sync repo miniprogram/ (or Mac ~/Downloads/mp-weixin (2)).
+MP: sync miniprogram/ or Mac ~/Downloads/mp-weixin (2). Do not invent AppSecret.
