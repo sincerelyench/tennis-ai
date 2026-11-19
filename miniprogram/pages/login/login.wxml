@@ -5,7 +5,6 @@
   </view>
 
   <text class="h1">登录</text>
-  <text class="lead">登录后进入与网页同源的涨球乐（约球 · 排行榜 · 教练 · 我的）。小程序可用微信登录。</text>
 
   <view class="mode-row">
     <view
@@ -26,7 +25,7 @@
   </view>
 
   <view class="card" wx:if="{{mode === 'wechat'}}">
-    <text class="label">显示名（默认用微信名）</text>
+    <text class="label">显示名</text>
     <!--
       type="nickname"：点选「可选入微信名」写入本框。
       注意：bindnicknamereview 只有 {pass,timeout}，没有 value；
@@ -46,7 +45,6 @@
     <button class="primary" loading="{{loading}}" disabled="{{loading}}" bindtap="onWechatLogin">
       {{loading ? "正在登录…" : "微信登录"}}
     </button>
-    <text class="hint">登录后微信号自动写入「我的」；显示名默认用微信名（已有自定义不覆盖）。网页 / APK 无此入口。</text>
   </view>
 
   <view class="card" wx:if="{{mode === 'password'}}">
