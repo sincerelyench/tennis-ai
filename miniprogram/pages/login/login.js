@@ -2,37 +2,16 @@ const api = require("../../utils/api")
 const session = require("../../utils/session")
 const errors = require("../../utils/errors")
 
-const ONBOARD_KEY = "tennis-onboarded"
-
-const ONBOARD_POINTS = [
-  {
-    title: "一起涨球",
-    desc: "多打球、多比赛，在实战中打磨技术，大家一起涨球乐。",
-  },
-  {
-    title: "约到水平相当的球友",
-    desc: "轻松找到本地水平相当（或上下）的球友来挑战。",
-  },
-  {
-    title: "赛后看排名变化",
-    desc: "排名不随意，按与对手水平相近程度计算，打完就能看到升降。",
-  },
-  {
-    title: "AI 教练与真实网络教练",
-    desc: "日常训练有疑问或拍下动作，可获 AI 教练与真实网络教练指导。",
-  },
-]
-
 function enterApp(token) {
-  let url = "/pages/web/web?token=" + encodeURIComponent(token)
-  try {
-    if (wx.getStorageSync(ONBOARD_KEY) === "1") {
-      url += "&onboarded=1"
-    }
-  } catch (e) {
-    /* ignore */
-  }
-  wx.redirectTo({ url })
+  wx.redirectTo({
+    url: "/pages/web/web?token=" + encodeURIComponent(token),
+  })
+}
+
+function enterProfileSetup() {
+  wx.redirectTo({
+    url: "/pages/profile-setup/profile-setup",
+  })
 }
 
 /** User-facing login error — never show opaque codes like "server". */
@@ -58,23 +37,23 @@ Page({
     codeLoading: false,
     error: "",
     notice: "",
-    showOnboard: false,
-    onboardPoints: ONBOARD_POINTS,
-  },
-  onLoad() {
-    this.maybeShowOnboard()
   },
   onShow() {
     // Drop sticky errors from a previous failed attempt (e.g. raw "server" from 5xx).
     this.setData({ error: "" })
-    this.maybeShowOnboard()
     const auth = session.auth()
     if (!auth || !auth.token) return
     // Validate before skipping native login; stale/mock tokens otherwise land in
     // web-view /login (no 微信登录) and look like WeChat login is missing.
     api
       .session(auth.token)
-      .then(() => enterApp(auth.token))
+      .then((body) => {
+        if (body && body.needsProfileSetup) {
+          enterProfileSetup()
+          return
+        }
+        enterApp(auth.token)
+      })
       .catch(() => {
         session.clearAuth()
         this.setData({
@@ -83,24 +62,6 @@ Page({
         })
       })
   },
-  maybeShowOnboard() {
-    let seen = false
-    try {
-      seen = wx.getStorageSync(ONBOARD_KEY) === "1"
-    } catch (e) {
-      seen = true
-    }
-    this.setData({ showOnboard: !seen })
-  },
-  dismissOnboard() {
-    try {
-      wx.setStorageSync(ONBOARD_KEY, "1")
-    } catch (e) {
-      /* ignore */
-    }
-    this.setData({ showOnboard: false })
-  },
-  noop() {},
   onMode(e) {
     const mode = (e.currentTarget.dataset && e.currentTarget.dataset.mode) || "wechat"
     this.setData({ mode, error: "", notice: "" })
@@ -117,25 +78,27 @@ Page({
   onSmsCode(e) {
     this.setData({ smsCode: e.detail.value || "" })
   },
+  /**
+   * After auth: incomplete 约球 profile → native profile-setup (nick picker + 微信号).
+   * Complete → web-view. ZQ-158: displayName / nick never collected on WeChat login tab.
+   */
   finishLogin(body, notice) {
     if (!body || !body.token) {
       this.setData({ loading: false, error: "登录失败，请重试" })
       return
     }
     session.saveAuth(body)
-    // Do not leave a sticky "error-looking" banner on the login page after success.
-    // Mock / AppID-mismatch sessions still get a short toast, then enter the app.
     this.setData({ loading: false, error: "", notice: "" })
     if (notice) {
       wx.showToast({ title: notice, icon: "none", duration: 2500 })
     }
+    if (body.needsProfileSetup) {
+      enterProfileSetup()
+      return
+    }
     enterApp(body.token)
   },
-  /**
-   * ZQ-158: one-tap WeChat login — no displayName on this tab.
-   * Server defaults displayName from WeChat nick when blank; user can change later in 我的.
-   * Never send openid as wechatId (ZQ-157).
-   */
+  /** ZQ-158: one tap — wx.login → /api/auth/wechat; no displayName / nickName on this page. */
   onWechatLogin() {
     if (this.data.loading) return
     this.setData({ loading: true, error: "", notice: "" })
@@ -208,7 +171,7 @@ Page({
       .catch((err) => {
         this.setData({
           codeLoading: false,
-          error: loginErrorText(err, "发送失败，请重试"),
+          error: loginErrorText(err, "发送失败"),
         })
       })
   },

@@ -1,4 +1,4 @@
-"""ZQ-157: WeChat login must NOT put openid into wechatId; displayName←nickName."""
+"""ZQ-157/158: wechatId ≠ openid; WeChat login is one-tap (no displayName on login)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,12 @@ ROOT = Path(__file__).resolve().parents[1]
 AUTH_STORE = ROOT / "deploy/wechat-autofill-wechatid/opt-patch/lib/auth-store.ts"
 WECHAT_ROUTE = ROOT / "deploy/wechat-autofill-wechatid/opt-patch/app/api/auth/wechat/route.ts"
 SESSION_JS = ROOT / "miniprogram/utils/session.js"
+API_JS = ROOT / "miniprogram/utils/api.js"
 LOGIN_WXML = ROOT / "miniprogram/pages/login/login.wxml"
+LOGIN_JS = ROOT / "miniprogram/pages/login/login.js"
+PROFILE_WXML = ROOT / "miniprogram/pages/profile-setup/profile-setup.wxml"
+PROFILE_JS = ROOT / "miniprogram/pages/profile-setup/profile-setup.js"
+APP_JSON = ROOT / "miniprogram/app.json"
 
 
 def sanitize_wechat_id(raw: str | None) -> str:
@@ -114,24 +119,10 @@ class WechatIdNotOpenidTests(unittest.TestCase):
         self.assertIn("ZQ-157", text)
         self.assertNotIn("autofills wechatId from openid", text)
 
-    def test_mp_wechat_login_is_one_tap_without_displayname(self):
-        """ZQ-158: WeChat tab is one-tap; no displayName / nickname field on login."""
-        wxml = LOGIN_WXML.read_text(encoding="utf-8")
-        login_js = (ROOT / "miniprogram/pages/login/login.js").read_text(encoding="utf-8")
-        self.assertIn("微信登录", wxml)
-        self.assertNotIn('type="nickname"', wxml)
-        self.assertNotIn("显示名", wxml)
-        self.assertNotIn("onNickInput", login_js)
-        self.assertNotIn("onNickReview", login_js)
-        self.assertIn("wechatLogin({ code })", login_js)
-        self.assertNotIn("nickName", login_js)
-
     def test_openid_must_not_count_as_wechat_id(self):
         openid = "oUpF8uMuAJO_M2pxb1Q9zNjWeS6o"
-        # Legacy derivation still detects pollution…
         self.assertEqual(wechat_id_from_openid(openid), openid)
         self.assertTrue(is_openid_derived(openid, openid))
-        # …but product surface treats it as empty.
         self.assertEqual(effective_wechat_id(openid, openid), "")
         self.assertFalse(wechat_contact_satisfied(openid, openid))
         self.assertFalse(wechat_contact_satisfied("", openid))
@@ -161,6 +152,87 @@ class WechatIdNotOpenidTests(unittest.TestCase):
         self.assertTrue(is_blank_or_placeholder_display_name("WeChat User"))
         self.assertFalse(is_blank_or_placeholder_display_name("陈燕青"))
         self.assertFalse(is_blank_or_placeholder_display_name("Ivy"))
+
+
+class WechatOneTapLoginTests(unittest.TestCase):
+    """ZQ-158: WeChat tab = one tap; nick picker on profile-setup."""
+
+    def test_login_brand_is_zhangqiule(self):
+        wxml = LOGIN_WXML.read_text(encoding="utf-8")
+        self.assertIn("涨球乐", wxml)
+        self.assertNotIn(">涨球<", wxml)
+
+    def test_login_strips_inline_intro_copy(self):
+        wxml = LOGIN_WXML.read_text(encoding="utf-8")
+        self.assertNotIn('class="lead"', wxml)
+        self.assertNotIn("登录后进入与网页同源", wxml)
+        self.assertNotIn("登录后微信号自动写入", wxml)
+        # ZQ-159 owns product intro modal — this PR must not invent one.
+        self.assertNotIn("一起涨球", wxml)
+        self.assertNotIn("data-onboarding", wxml)
+
+    def test_wechat_tab_has_no_displayname_field(self):
+        wxml = LOGIN_WXML.read_text(encoding="utf-8")
+        login_js = LOGIN_JS.read_text(encoding="utf-8")
+        self.assertIn("微信登录", wxml)
+        # WeChat card must be button-only (no nickname / display-name input).
+        m = re.search(
+            r"wx:if=\"\{\{mode === 'wechat'\}\}\">([\s\S]*?)</view>\s*"
+            r"<view class=\"card\" wx:if=\"\{\{mode === 'password'\}\}\"",
+            wxml,
+        )
+        self.assertIsNotNone(m, "wechat card block not found")
+        wechat_card = m.group(1)
+        self.assertIn("onWechatLogin", wechat_card)
+        self.assertNotIn("显示名", wechat_card)
+        self.assertNotIn('type="nickname"', wechat_card)
+        self.assertNotIn("<input", wechat_card)
+        self.assertNotIn("onNickInput", login_js)
+        self.assertNotIn("nickName:", login_js)
+        # One-tap: wechatLogin({ code }) only
+        self.assertIn("wechatLogin({ code })", login_js)
+        self.assertIn("needsProfileSetup", login_js)
+        self.assertIn("profile-setup", login_js)
+
+    def test_password_and_phone_tabs_keep_fields(self):
+        wxml = LOGIN_WXML.read_text(encoding="utf-8")
+        self.assertIn("账号密码", wxml)
+        self.assertIn("手机验证码", wxml)
+        self.assertIn("用户名或手机号", wxml)
+        self.assertIn("获取验证码", wxml)
+
+    def test_profile_setup_has_nick_picker_and_wechat_id(self):
+        self.assertTrue(PROFILE_WXML.is_file(), PROFILE_WXML)
+        self.assertTrue(PROFILE_JS.is_file(), PROFILE_JS)
+        wxml = PROFILE_WXML.read_text(encoding="utf-8")
+        js = PROFILE_JS.read_text(encoding="utf-8")
+        self.assertIn("完善资料", wxml)
+        self.assertIn("显示名", wxml)
+        self.assertIn("微信号", wxml)
+        self.assertIn('type="nickname"', wxml)
+        self.assertIn("可选入微信名", wxml)
+        self.assertIn('bindnicknamereview="onNickReview"', wxml)
+        self.assertNotIn('bindnicknamereview="onNick"', wxml)
+        self.assertIn("applyNickValue", js)
+        self.assertIn("onNickReview", js)
+        # Refuse openid as wechatId on client
+        self.assertIn("不要填 openid", js)
+        app = APP_JSON.read_text(encoding="utf-8")
+        self.assertIn("pages/profile-setup/profile-setup", app)
+        self.assertIn("涨球乐", app)
+
+    def test_profile_nick_review_does_not_clear(self):
+        js = PROFILE_JS.read_text(encoding="utf-8")
+        self.assertNotRegex(
+            js,
+            r"onNickReview\([\s\S]*?setData\(\{\s*displayName:\s*e\.detail\.value\s*\|\|\s*\"\"",
+        )
+
+    def test_api_friendly_errors_and_optional_nick(self):
+        text = API_JS.read_text(encoding="utf-8")
+        self.assertIn("FRIENDLY_ZH", text)
+        self.assertIn("服务器繁忙，请稍后重试", text)
+        self.assertIn("nickName: nickName || \"\"", text)
 
 
 if __name__ == "__main__":

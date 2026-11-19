@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/login/login",
+    "pages/profile-setup/profile-setup",
     "pages/web/web"
   ],
   "window": {

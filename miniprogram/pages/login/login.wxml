@@ -5,6 +5,7 @@
   </view>
 
   <text class="h1">登录</text>
+  <!-- Product intro modal (webpage 四卖点) owned by ZQ-159 — do not re-add inline lead/hint copy here. -->
 
   <view class="mode-row">
     <view
@@ -24,7 +25,7 @@
     >手机验证码</view>
   </view>
 
-  <!-- ZQ-158: WeChat tab = one tap; no displayName on login. Nick after login. -->
+  <!-- ZQ-158: WeChat path = one tap only; nick / display name live on profile-setup. -->
   <view class="card" wx:if="{{mode === 'wechat'}}">
     <button class="primary" loading="{{loading}}" disabled="{{loading}}" bindtap="onWechatLogin">
       {{loading ? "正在登录…" : "微信登录"}}
@@ -86,29 +87,4 @@
 
   <text class="hint" wx:if="{{notice}}">{{notice}}</text>
   <text class="error" wx:if="{{error}}">{{error}}</text>
-
-  <!-- ZQ-159: product intro on login (before WeChat / account sign-in) -->
-  <view class="onboard-mask" wx:if="{{showOnboard}}" catchtouchmove="noop">
-    <view class="onboard-sheet">
-      <view class="brand-row onboard-brand">
-        <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
-        <text class="brand-name">涨球乐</text>
-      </view>
-      <text class="onboard-title">欢迎来到涨球乐</text>
-      <text class="onboard-lead">多打球、约对手、看排名、找教练——让我们大家一起涨球乐。</text>
-      <view class="onboard-list">
-        <view class="onboard-item" wx:for="{{onboardPoints}}" wx:key="title">
-          <view class="onboard-num">{{index + 1}}</view>
-          <view class="onboard-copy">
-            <text class="onboard-item-title">{{item.title}}</text>
-            <text class="onboard-item-desc">{{item.desc}}</text>
-          </view>
-        </view>
-      </view>
-      <view class="onboard-actions">
-        <button class="btn-ghost onboard-btn" bindtap="dismissOnboard">跳过</button>
-        <button class="primary onboard-btn" bindtap="dismissOnboard">开始</button>
-      </view>
-    </view>
-  </view>
 </view>

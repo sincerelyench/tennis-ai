@@ -16,7 +16,8 @@ function saveAuth(payload) {
     token: payload.token,
     phone: payload.phone || "",
     openid: payload.openid || "",
-    // Server defaults displayName from WeChat nickName when empty/placeholder (ZQ-153).
+    // ZQ-158: login no longer sends nickName; profile-setup may set displayName via nick picker.
+    // Server still accepts nickName on /api/auth/wechat if provided (ZQ-153).
     displayName: payload.displayName || "",
     // Real wechatId only (ZQ-157). Server leaves empty after WeChat login — never openid.
     wechatId: payload.wechatId || "",

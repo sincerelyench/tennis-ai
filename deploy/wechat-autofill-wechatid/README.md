@@ -58,8 +58,13 @@ python3 -m unittest tests.test_wechat_autofill_wechatid -v
 
 ## Local MP sync (Mac)
 
-Copy from repo:
+Copy from repo → `~/Downloads/mp-weixin (2)/`:
 
-- `miniprogram/utils/session.js`
-- `miniprogram/pages/login/login.wxml` / `login.js`（显示名文案）
+- `miniprogram/utils/session.js`（ZQ-157 wechatId 注释）
+- `miniprogram/utils/api.js`（友好错误；微信登录可不带 nickName）
+- `miniprogram/pages/login/login.wxml` / `login.js` / `login.json`（ZQ-158 一键微信登录，无显示名）
+- `miniprogram/pages/profile-setup/*`（ZQ-158：可选入微信名 + 自填微信号）
+- `miniprogram/app.json`
+
+产品介绍弹窗（登录页）属 ZQ-159，勿与本 kit 抢改。
 - Keep `project.config.json` appid `wx09896b686bc2f565`

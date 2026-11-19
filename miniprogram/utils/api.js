@@ -31,7 +31,7 @@ function fail(body, status) {
     (body && typeof body.error === "string" && body.error) ||
     (body && typeof body.errmsg === "string" && body.errmsg) ||
     ""
-  // ZQ-149: never surface raw "server" / "network" as the red login error text.
+  // ZQ-149 / #151: never surface raw "server" / "network" as the red login error text.
   if (FRIENDLY_ZH[code]) {
     detailRaw = FRIENDLY_ZH[code]
   }
@@ -69,6 +69,7 @@ function request({ path, method, data, token }) {
 }
 
 function wechatLogin({ code, nickName }) {
+  // ZQ-158: login page no longer sends nickName; profile-setup may still pass it later via updateProfile.
   return request({
     path: "/api/auth/wechat",
     method: "POST",

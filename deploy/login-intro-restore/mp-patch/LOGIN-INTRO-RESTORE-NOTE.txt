@@ -1,20 +1,8 @@
-ZQ-159 / ZQ-158 — login intro + WeChat one-tap
+ZQ-159 — repo mirror of Mac prod hotpatch (bc-b415e8ef)
 
 Product brand: 涨球乐
+Web onboard.* = webpage 四卖点 (not 动作). Prod already live.
 
-Intro (native login page, before sign-in):
-- 欢迎来到涨球乐
-- 多打球、约对手、看排名、找教练——让我们大家一起涨球乐。
-1. 一起涨球
-2. 约到水平相当的球友
-3. 赛后看排名变化
-4. AI 教练与真实网络教练
-
-WeChat tab (ZQ-158):
-- One-tap 「微信登录」only — no displayName / nickname field on login
-- Nick pick / displayName after login in 完善资料 / 我的
-- wechatId must never be openid (ZQ-157)
-
-Sync local DevTools project:
-  ~/Downloads/mp-weixin (2)/pages/login/{login.js,login.wxml,login.wxss}
-  ~/Downloads/mp-weixin (2)/pages/web/web.js
+Local MP /Users/yanqing/Downloads/mp-weixin (2)/:
+- Intro polish already done under ZQ-158 lock — do NOT overwrite from this kit.
+- WeChat one-tap owned by ZQ-158 / PR #153.
