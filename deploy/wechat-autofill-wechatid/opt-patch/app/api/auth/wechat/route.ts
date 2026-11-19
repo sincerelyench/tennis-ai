@@ -88,6 +88,10 @@ async function exchangeMpCode(code: string): Promise<
  * POST /api/auth/wechat
  * Body: { code, nickName?, client?: "mp"|"android"|"ios"|"web" }
  *
+ * ZQ-153 on success:
+ * - profile.wechatId filled from openid when empty (keep user-set)
+ * - profile.displayName defaults to nickName when empty/placeholder (keep custom)
+ *
  * - Mini-program / default: jscode2session when WECHAT_MP_* set.
  * - APK/iOS shell fallback codes (`apk_` / `ios_` prefix): deterministic mock
  *   openid (used when Open Platform 移动应用 AppID is not registered yet).
