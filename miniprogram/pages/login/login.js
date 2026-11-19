@@ -34,6 +34,8 @@ Page({
     notice: "",
   },
   onShow() {
+    // Drop sticky errors from a previous failed attempt (e.g. raw "server" from 5xx).
+    this.setData({ error: "" })
     const auth = session.auth()
     if (!auth || !auth.token) return
     // Validate before skipping native login; stale/mock tokens otherwise land in
