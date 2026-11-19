@@ -24,24 +24,8 @@
     >手机验证码</view>
   </view>
 
+  <!-- ZQ-158: WeChat tab = one tap; no displayName on login. Nick after login. -->
   <view class="card" wx:if="{{mode === 'wechat'}}">
-    <text class="label">显示名</text>
-    <!--
-      type="nickname"：点选「可选入微信名」写入本框。
-      注意：bindnicknamereview 只有 {pass,timeout}，没有 value；
-      若绑到 onNick 会把刚写入的显示名清掉（ZQ-154）。
-    -->
-    <input
-      class="field"
-      type="nickname"
-      maxlength="40"
-      placeholder="点选可带入微信名；也可自己改"
-      value="{{nickName}}"
-      bindinput="onNickInput"
-      bindblur="onNickBlur"
-      bindchange="onNickInput"
-      bindnicknamereview="onNickReview"
-    />
     <button class="primary" loading="{{loading}}" disabled="{{loading}}" bindtap="onWechatLogin">
       {{loading ? "正在登录…" : "微信登录"}}
     </button>
@@ -102,4 +86,29 @@
 
   <text class="hint" wx:if="{{notice}}">{{notice}}</text>
   <text class="error" wx:if="{{error}}">{{error}}</text>
+
+  <!-- ZQ-159: product intro on login (before WeChat / account sign-in) -->
+  <view class="onboard-mask" wx:if="{{showOnboard}}" catchtouchmove="noop">
+    <view class="onboard-sheet">
+      <view class="brand-row onboard-brand">
+        <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
+        <text class="brand-name">涨球乐</text>
+      </view>
+      <text class="onboard-title">欢迎来到涨球乐</text>
+      <text class="onboard-lead">多打球、约对手、看排名、找教练——让我们大家一起涨球乐。</text>
+      <view class="onboard-list">
+        <view class="onboard-item" wx:for="{{onboardPoints}}" wx:key="title">
+          <view class="onboard-num">{{index + 1}}</view>
+          <view class="onboard-copy">
+            <text class="onboard-item-title">{{item.title}}</text>
+            <text class="onboard-item-desc">{{item.desc}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="onboard-actions">
+        <button class="btn-ghost onboard-btn" bindtap="dismissOnboard">跳过</button>
+        <button class="primary onboard-btn" bindtap="dismissOnboard">开始</button>
+      </view>
+    </view>
+  </view>
 </view>

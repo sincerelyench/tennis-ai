@@ -5,9 +5,13 @@ function apiBase() {
   return String(config.apiBase || "").replace(/\/$/, "")
 }
 
-function buildUrl(token, nextPath) {
+function buildUrl(token, nextPath, onboarded) {
   const base = apiBase()
-  const next = nextPath && String(nextPath).startsWith("/") ? String(nextPath) : "/"
+  let next = nextPath && String(nextPath).startsWith("/") ? String(nextPath) : "/"
+  // ZQ-159: if native login already showed the product intro, tell web Onboarding to skip.
+  if (onboarded) {
+    next += (next.indexOf("?") >= 0 ? "&" : "?") + "zq_onboarded=1"
+  }
   if (token) {
     return (
       base +
@@ -28,11 +32,20 @@ Page({
     const auth = session.auth()
     const token = (query && query.token) || (auth && auth.token) || ""
     const next = (query && query.next) || "/"
+    const onboarded =
+      (query && (query.onboarded === "1" || query.onboarded === 1)) ||
+      (() => {
+        try {
+          return wx.getStorageSync("tennis-onboarded") === "1"
+        } catch (e) {
+          return false
+        }
+      })()
     if (!token) {
       wx.redirectTo({ url: "/pages/login/login" })
       return
     }
-    this.setData({ url: buildUrl(token, next) })
+    this.setData({ url: buildUrl(token, next, onboarded) })
   },
   onShow() {
     // If storage was cleared (logout from web), bounce back to native login.

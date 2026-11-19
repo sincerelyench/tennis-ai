@@ -114,25 +114,17 @@ class WechatIdNotOpenidTests(unittest.TestCase):
         self.assertIn("ZQ-157", text)
         self.assertNotIn("autofills wechatId from openid", text)
 
-    def test_mp_login_copy_mentions_wechat_display_name(self):
-        text = LOGIN_WXML.read_text(encoding="utf-8")
-        self.assertIn("显示名（默认用微信名）", text)
-        self.assertIn('type="nickname"', text)
-
-    def test_mp_login_nickname_picker_does_not_clear_displayname(self):
-        """ZQ-154: nicknamereview must not bind to the value writer (no detail.value)."""
+    def test_mp_wechat_login_is_one_tap_without_displayname(self):
+        """ZQ-158: WeChat tab is one-tap; no displayName / nickname field on login."""
         wxml = LOGIN_WXML.read_text(encoding="utf-8")
         login_js = (ROOT / "miniprogram/pages/login/login.js").read_text(encoding="utf-8")
-        self.assertIn('bindinput="onNickInput"', wxml)
-        self.assertIn('bindblur="onNickBlur"', wxml)
-        self.assertIn('bindnicknamereview="onNickReview"', wxml)
-        self.assertNotIn('bindnicknamereview="onNick"', wxml)
-        self.assertIn("onNickReview(e)", login_js)
-        self.assertIn("applyNickValue", login_js)
-        self.assertNotRegex(
-            login_js,
-            r"onNickReview\([\s\S]*?setData\(\{\s*nickName:\s*e\.detail\.value\s*\|\|\s*\"\"",
-        )
+        self.assertIn("微信登录", wxml)
+        self.assertNotIn('type="nickname"', wxml)
+        self.assertNotIn("显示名", wxml)
+        self.assertNotIn("onNickInput", login_js)
+        self.assertNotIn("onNickReview", login_js)
+        self.assertIn("wechatLogin({ code })", login_js)
+        self.assertNotIn("nickName", login_js)
 
     def test_openid_must_not_count_as_wechat_id(self):
         openid = "oUpF8uMuAJO_M2pxb1Q9zNjWeS6o"

@@ -776,7 +776,7 @@ export const messages = {
     onboard: {
       title: "欢迎来到涨球乐",
       lead: "多打球、约对手、看排名、找教练——让我们大家一起涨球乐。",
-      level: "一起涨球乐",
+      level: "一起涨球",
       levelDesc: "多打球、多比赛，在实战中打磨技术，大家一起涨球乐。",
       score: "约到水平相当的球友",
       scoreDesc: "轻松找到本地水平相当（或上下）的球友来挑战。",

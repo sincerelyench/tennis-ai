@@ -2,10 +2,37 @@ const api = require("../../utils/api")
 const session = require("../../utils/session")
 const errors = require("../../utils/errors")
 
+const ONBOARD_KEY = "tennis-onboarded"
+
+const ONBOARD_POINTS = [
+  {
+    title: "一起涨球",
+    desc: "多打球、多比赛，在实战中打磨技术，大家一起涨球乐。",
+  },
+  {
+    title: "约到水平相当的球友",
+    desc: "轻松找到本地水平相当（或上下）的球友来挑战。",
+  },
+  {
+    title: "赛后看排名变化",
+    desc: "排名不随意，按与对手水平相近程度计算，打完就能看到升降。",
+  },
+  {
+    title: "AI 教练与真实网络教练",
+    desc: "日常训练有疑问或拍下动作，可获 AI 教练与真实网络教练指导。",
+  },
+]
+
 function enterApp(token) {
-  wx.redirectTo({
-    url: "/pages/web/web?token=" + encodeURIComponent(token),
-  })
+  let url = "/pages/web/web?token=" + encodeURIComponent(token)
+  try {
+    if (wx.getStorageSync(ONBOARD_KEY) === "1") {
+      url += "&onboarded=1"
+    }
+  } catch (e) {
+    /* ignore */
+  }
+  wx.redirectTo({ url })
 }
 
 /** User-facing login error — never show opaque codes like "server". */
@@ -22,7 +49,6 @@ function loginErrorText(err, fallback) {
 Page({
   data: {
     mode: "wechat",
-    nickName: "",
     username: "",
     password: "",
     phone: "",
@@ -32,10 +58,16 @@ Page({
     codeLoading: false,
     error: "",
     notice: "",
+    showOnboard: false,
+    onboardPoints: ONBOARD_POINTS,
+  },
+  onLoad() {
+    this.maybeShowOnboard()
   },
   onShow() {
     // Drop sticky errors from a previous failed attempt (e.g. raw "server" from 5xx).
     this.setData({ error: "" })
+    this.maybeShowOnboard()
     const auth = session.auth()
     if (!auth || !auth.token) return
     // Validate before skipping native login; stale/mock tokens otherwise land in
@@ -51,39 +83,27 @@ Page({
         })
       })
   },
+  maybeShowOnboard() {
+    let seen = false
+    try {
+      seen = wx.getStorageSync(ONBOARD_KEY) === "1"
+    } catch (e) {
+      seen = true
+    }
+    this.setData({ showOnboard: !seen })
+  },
+  dismissOnboard() {
+    try {
+      wx.setStorageSync(ONBOARD_KEY, "1")
+    } catch (e) {
+      /* ignore */
+    }
+    this.setData({ showOnboard: false })
+  },
+  noop() {},
   onMode(e) {
     const mode = (e.currentTarget.dataset && e.currentTarget.dataset.mode) || "wechat"
     this.setData({ mode, error: "", notice: "" })
-  },
-  /**
-   * Write selected / typed WeChat nick into the display-name field (page data nickName).
-   * Only update when detail.value is a string — nicknamereview has no value.
-   */
-  applyNickValue(raw) {
-    if (typeof raw !== "string") return
-    const nickName = raw.trim().slice(0, 40)
-    if (nickName === this.data.nickName) return
-    this.setData({ nickName })
-  },
-  onNickInput(e) {
-    const detail = (e && e.detail) || {}
-    this.applyNickValue(detail.value)
-  },
-  onNickBlur(e) {
-    const detail = (e && e.detail) || {}
-    // Native nickname picker often commits on blur; keep displayName in sync.
-    this.applyNickValue(detail.value)
-  },
-  onNickReview(e) {
-    // WeChat fires { pass, timeout } only — never clear nickName here (ZQ-154).
-    const detail = (e && e.detail) || {}
-    if (detail.pass === false) {
-      this.setData({
-        notice: "微信名未通过内容审核，请改一个显示名或手动填写",
-      })
-      return
-    }
-    // pass/timeout: value already applied via input/blur; keep existing nickName.
   },
   onUsername(e) {
     this.setData({ username: e.detail.value || "" })
@@ -111,41 +131,26 @@ Page({
     }
     enterApp(body.token)
   },
+  /**
+   * ZQ-158: one-tap WeChat login — no displayName on this tab.
+   * Server defaults displayName from WeChat nick when blank; user can change later in 我的.
+   * Never send openid as wechatId (ZQ-157).
+   */
   onWechatLogin() {
     if (this.data.loading) return
     this.setData({ loading: true, error: "", notice: "" })
-    const nickName = String(this.data.nickName || "").trim()
     const finish = (code) => {
       api
-        .wechatLogin({ code, nickName })
+        .wechatLogin({ code })
         .then((body) => {
           if (!body || !body.token) {
             this.setData({ loading: false, error: "登录失败，请重试" })
-            return null
+            return
           }
-          session.saveAuth(body)
-          if (body.displayName) return body
-          if (!nickName) return body
-          return api
-            .updateProfile(body.token, { displayName: nickName })
-            .then((profile) => {
-              session.patchAuth({
-                displayName: (profile && profile.displayName) || nickName,
-              })
-              return body
-            })
-            .catch(() => body)
-        })
-        .then((body) => {
-          if (!body) return
-          // Prod WECHAT_MP_APPID must match project.config.json appid, otherwise
-          // jscode2session falls back to wechat-mock (looks like a post-login error).
           const notice =
             body.loginMode === "wechat-mock"
               ? "已进入演示会话（服务端 AppID 未与本小程序对齐时）"
               : ""
-          // Enter web-view immediately. Subscribe (ZQ-150) stays optional via
-          // pages/subscribe — do not block login success with template errors.
           this.finishLogin(body, notice)
         })
         .catch((err) => {
