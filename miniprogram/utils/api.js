@@ -1,23 +1,42 @@
 const config = require("../config")
 
+/** Opaque fail() codes — never show the raw English token in the UI. */
+const FRIENDLY_ZH = {
+  server: "服务器繁忙，请稍后重试",
+  network: "网络异常，请检查网络后重试",
+  generic: "操作失败，请稍后重试",
+  auth_invalid: "登录已失效，请重新登录",
+}
+
 function base() {
   return String(config.apiBase || "").replace(/\/$/, "")
 }
 
 function fail(body, status) {
   let code = body && (body.code || body.error)
-  if (typeof code !== "string") {
+  if (typeof code !== "string" || !String(code).trim()) {
     if (status === 401) code = "auth_invalid"
     else if (status >= 500) code = "server"
+    else if (!status) code = "network"
     else code = "generic"
+  } else {
+    code = String(code).trim()
   }
-  const err = new Error(typeof code === "string" ? code : "generic")
-  err.code = typeof code === "string" ? code : "generic"
-  const detailRaw =
+  // Gateway / HTML 5xx bodies often parse as {} — force opaque server code.
+  if (status >= 500 && !FRIENDLY_ZH[code]) {
+    code = "server"
+  }
+  let detailRaw =
     (body && typeof body.detail === "string" && body.detail) ||
     (body && typeof body.error === "string" && body.error) ||
     (body && typeof body.errmsg === "string" && body.errmsg) ||
     ""
+  // ZQ-149: never surface raw "server" / "network" as the red login error text.
+  if (FRIENDLY_ZH[code]) {
+    detailRaw = FRIENDLY_ZH[code]
+  }
+  const err = new Error(detailRaw || FRIENDLY_ZH.generic)
+  err.code = FRIENDLY_ZH[code] ? code : code
   err.detail = detailRaw
   if (body && body.errcode != null) err.errcode = body.errcode
   return err
