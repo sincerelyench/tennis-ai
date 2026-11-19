@@ -1,5 +1,5 @@
 module.exports = {
-  "appTitle": "涨球",
+  "appTitle": "涨球乐",
   "lang": {
     "zh": "中文",
     "en": "EN"

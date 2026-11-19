@@ -621,7 +621,7 @@
     body.append("client", clientName());
     body.append("sample", "0");
     body.append("level", "3.0");
-    body.append("title", "涨球挥拍分析");
+    body.append("title", "涨球乐挥拍分析");
     body.append("guide_completed", guideDone() ? "1" : "0");
     body.append("guide_checks", JSON.stringify(state.guide));
     try {

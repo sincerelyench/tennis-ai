@@ -1,0 +1,57 @@
+{
+  "brand": "涨球乐",
+  "defaultCoach": "AI 教练",
+  "note": "Platform default = famous stars (HD). Coach demos only when selected published coach has library video.",
+  "prefer": "bilibili",
+  "strokes": {
+    "fh-topspin": {
+      "star": "阿里娜·萨巴伦卡",
+      "starEn": "Aryna Sabalenka",
+      "bilibili": "BV1knqeB4EpG",
+      "youtube": "BZEAu4L3WzQ"
+    },
+    "bh-topspin": {
+      "star": "诺瓦克·德约科维奇",
+      "starEn": "Novak Djokovic",
+      "bilibili": "BV1Gy4y1a7zj",
+      "youtube": "6WyMFz4ynl4"
+    },
+    "serve": {
+      "star": "皮特·桑普拉斯",
+      "starEn": "Pete Sampras",
+      "bilibili": "BV13t411K7Kw",
+      "youtube": "L_FCXLtUgI8",
+      "quality": "fullhd"
+    },
+    "smash": {
+      "star": "小威廉姆斯",
+      "starEn": "Serena Williams",
+      "bilibili": "BV1gF411o7tU",
+      "youtube": "fpxXcyjEUok"
+    },
+    "fh-volley": {
+      "star": "罗杰·费德勒",
+      "starEn": "Roger Federer",
+      "youtube": "b2mHhUeeSvc",
+      "note": "YouTube-only; credit matches title"
+    },
+    "bh-volley": {
+      "star": "罗杰·费德勒",
+      "starEn": "Roger Federer",
+      "youtube": "oOfUMrsXgjA",
+      "note": "YouTube-only; credit matches title"
+    },
+    "fh-slice": {
+      "star": "罗杰·费德勒",
+      "starEn": "Roger Federer",
+      "youtube": "rykbKkywHLw",
+      "note": "YouTube-only; credit matches title"
+    },
+    "bh-slice": {
+      "star": "罗杰·费德勒",
+      "starEn": "Roger Federer",
+      "youtube": "sXXM3I9E4E8",
+      "note": "YouTube-only; credit matches title"
+    }
+  }
+}

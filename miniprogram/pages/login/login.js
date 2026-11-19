@@ -1,10 +1,22 @@
 const api = require("../../utils/api")
 const session = require("../../utils/session")
+const errors = require("../../utils/errors")
 
 function enterApp(token) {
   wx.redirectTo({
     url: "/pages/web/web?token=" + encodeURIComponent(token),
   })
+}
+
+/** User-facing login error — never show opaque codes like "server". */
+function loginErrorText(err, fallback) {
+  const localized = errors.message("zh-CN", err)
+  if (localized) return localized
+  const detail = err && typeof err.detail === "string" ? err.detail.trim() : ""
+  if (detail && !/^(server|network|generic|auth_invalid)$/i.test(detail)) {
+    return detail
+  }
+  return fallback || "登录失败，请重试"
 }
 
 Page({
@@ -22,6 +34,8 @@ Page({
     notice: "",
   },
   onShow() {
+    // Drop sticky errors from a previous failed attempt (e.g. raw "server" from 5xx).
+    this.setData({ error: "" })
     const auth = session.auth()
     if (!auth || !auth.token) return
     // Validate before skipping native login; stale/mock tokens otherwise land in
@@ -137,7 +151,7 @@ Page({
         .catch((err) => {
           this.setData({
             loading: false,
-            error: (err && (err.detail || err.message)) || "登录失败",
+            error: loginErrorText(err, "登录失败，请重试"),
           })
         })
     }
@@ -164,7 +178,7 @@ Page({
       .catch((err) => {
         this.setData({
           loading: false,
-          error: (err && (err.detail || err.message)) || "登录失败",
+          error: loginErrorText(err, "登录失败，请重试"),
         })
       })
   },
@@ -189,7 +203,7 @@ Page({
       .catch((err) => {
         this.setData({
           codeLoading: false,
-          error: (err && (err.detail || err.message)) || "发送失败",
+          error: loginErrorText(err, "发送失败，请重试"),
         })
       })
   },
@@ -208,7 +222,7 @@ Page({
       .catch((err) => {
         this.setData({
           loading: false,
-          error: (err && (err.detail || err.message)) || "登录失败",
+          error: loginErrorText(err, "登录失败，请重试"),
         })
       })
   },

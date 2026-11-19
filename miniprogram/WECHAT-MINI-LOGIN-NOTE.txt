@@ -8,8 +8,8 @@
   详见 deploy/wechat-autofill-wechatid/
 
 AppID 对齐（登录后「演示/错误」文案的根因）
-- 本工程 project.config.json appid = wx09896b686bc2f565（涨球）
+- 本工程 project.config.json appid = wx09896b686bc2f565（涨球乐）
 - 现网 systemd WECHAT_MP_APPID 曾为 wx45ce1339ec73aa2b（合拍实验室 / voice-diary）
 - 不一致时 jscode2session 失败 → loginMode=wechat-mock → 客户端提示演示会话
 - 正式微信会话：把生产 WECHAT_MP_APPID/SECRET 换成 wx09896… 的 AppSecret（公众平台）
-- 切勿把合拍/voice-diary 的 SECRET 配到涨球 AppID 上
+- 切勿把合拍/voice-diary 的 SECRET 配到涨球乐 AppID 上
