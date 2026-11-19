@@ -1,0 +1,7 @@
+ZQ-160 · 排行榜 Tab（2026-11-20）
+
+排行榜不是原生页：底栏「排行榜」在 web-view 内打开 https://yqchen.blog/tennis/ladder
+（与网页同源 FriendsView surface=ladder → GET /api/friends/ladder）。
+
+本工程无需改 pages/；config.apiBase 保持 https://yqchen.blog/tennis。
+若仍见红色错误页，先编译重载；根因是现网 .next 半次构建 ChunkLoadError，已在服务器修好。
