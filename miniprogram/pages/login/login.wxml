@@ -27,14 +27,21 @@
 
   <view class="card" wx:if="{{mode === 'wechat'}}">
     <text class="label">显示名（默认用微信名）</text>
+    <!--
+      type="nickname"：点选「可选入微信名」写入本框。
+      注意：bindnicknamereview 只有 {pass,timeout}，没有 value；
+      若绑到 onNick 会把刚写入的显示名清掉（ZQ-154）。
+    -->
     <input
       class="field"
       type="nickname"
       maxlength="40"
       placeholder="点选可带入微信名；也可自己改"
       value="{{nickName}}"
-      bindinput="onNick"
-      bindnicknamereview="onNick"
+      bindinput="onNickInput"
+      bindblur="onNickBlur"
+      bindchange="onNickInput"
+      bindnicknamereview="onNickReview"
     />
     <button class="primary" loading="{{loading}}" disabled="{{loading}}" bindtap="onWechatLogin">
       {{loading ? "正在登录…" : "微信登录"}}
