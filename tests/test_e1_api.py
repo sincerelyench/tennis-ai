@@ -189,7 +189,7 @@ class E1ApiTests(unittest.TestCase):
     def test_e1_page_and_catalogs(self):
         page = self.client.get("/e1")
         self.assertEqual(page.status_code, 200)
-        self.assertIn("涨球", page.text)
+        self.assertIn("涨球乐", page.text)
         self.assertIn("/e1/e1.js", page.text)
         script = self.client.get("/e1/e1.js")
         self.assertEqual(script.status_code, 200)
@@ -199,7 +199,7 @@ class E1ApiTests(unittest.TestCase):
         en = self.client.get("/i18n/en.json")
         self.assertEqual(zh.status_code, 200)
         self.assertEqual(en.status_code, 200)
-        self.assertEqual(zh.json()["appTitle"], "涨球")
+        self.assertEqual(zh.json()["appTitle"], "涨球乐")
         self.assertEqual(en.json()["guide"]["items"][0]["key"], "side")
         missing = self.client.get("/i18n/fr.json")
         self.assertEqual(missing.status_code, 404)

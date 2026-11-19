@@ -54,7 +54,7 @@ class IosShellTests(unittest.TestCase):
     def test_info_plist_name_url_and_upload_prompts(self):
         with (APP / "Info.plist").open("rb") as handle:
             info = plistlib.load(handle)
-        self.assertEqual(info["CFBundleDisplayName"], "涨球")
+        self.assertEqual(info["CFBundleDisplayName"], "涨球乐")
         self.assertEqual(info["ZQStartURL"], "$(ZQ_START_URL)")
         self.assertTrue(info["NSAppTransportSecurity"]["NSAllowsArbitraryLoads"])
         for key in (
