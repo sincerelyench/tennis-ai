@@ -36,3 +36,24 @@ bash deploy/ladder-city-ready-unblock/scripts/apply-on-server.sh /opt/tennis-ai
 - HTML `/tennis/ladder`：**无**长期 `data-city-detecting`（首屏即可拉榜）
 - Authed `?cityId=wuxi&format=singles` UI 有 ≈20+ 人
 - 约球成功列表对有 replied intros 的账号非空
+
+## ZQ-164b follow-up (auth-empty guard)
+
+Prod retest after cityReady still reported empty for Yanqing, but:
+
+- Process `DATABASE_URL` == disk `.env` → `tennis_ai`
+- `user-db-io ping` users/scores/intros present
+- Authed API `wuxi`≈21–22 / unscoped≈27; Yanqing session intros success=13
+- Playwright with her `tennis_session` on current BUILD renders full Wuxi ladder + 约球列表
+
+So DB was never empty. Misleading「暂无球员(0)」can appear when ladder APIs **401/fail** while the page shell still renders (soft-nav / stale cookie). Guard:
+
+```bash
+bash deploy/ladder-city-ready-unblock/scripts/apply-auth-empty-guard.sh /opt/tennis-ai
+```
+
+- Distinguish auth/fetch errors from true empty city
+- Refetch on `visibilitychange` / `focus`
+- `data-ladder-count` / `data-ladder-from-api` for support
+
+Prod after 164b: `BUILD_ID=gD2PWLlQ9w51JattK6YK2`.

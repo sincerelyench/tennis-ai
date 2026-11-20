@@ -24,3 +24,12 @@ class Kit(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AuthEmptyGuardKit(unittest.TestCase):
+    def test_auth_guard_script_exists(self) -> None:
+        path = ROOT / "deploy/ladder-city-ready-unblock/scripts/apply-auth-empty-guard.sh"
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("ZQ-164b", text)
+        self.assertIn("ladderAuthError", text)
+        self.assertIn("visibilitychange", text)
