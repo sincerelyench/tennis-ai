@@ -1,0 +1,3 @@
+ZQ-163 ladder empty-city fallback (H5 friends-view refreshLadder).
+Mini Program uses web-view → same /tennis/ladder fix; no native page change.
+After server apply + rebuild, DevTools recompile / hard refresh if soft-nav still blank.
