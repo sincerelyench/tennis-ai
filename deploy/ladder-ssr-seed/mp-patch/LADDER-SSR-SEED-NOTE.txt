@@ -1,0 +1,3 @@
+ZQ-164d — server SSR seed only; mini-program pages/web unchanged.
+After prod rebuild, force-kill MP / DevTools and open 排行榜:
+expect list populated on first paint (no wait for /api/friends/ladder).
