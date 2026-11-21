@@ -7,14 +7,8 @@
   <text class="h1">登录</text>
   <!-- Product intro modal (webpage 四卖点) owned by ZQ-159 — do not re-add inline lead/hint copy here. -->
 
-  <!-- ZQ-166: temporarily hide 微信登录 on mini-program (restore: enableWechatLogin=true). -->
-  <view class="mode-row" data-mp-wechat-login="{{enableWechatLogin ? 'on' : 'off'}}">
-    <view
-      wx:if="{{enableWechatLogin}}"
-      class="mode-chip {{mode === 'wechat' ? 'mode-chip-on' : ''}}"
-      data-mode="wechat"
-      bindtap="onMode"
-    >微信登录</view>
+  <!-- ZQ-166b: WeChat login removed from mini-program UI (password / phone only). -->
+  <view class="mode-row" data-mp-wechat-login="off">
     <view
       class="mode-chip {{mode === 'password' ? 'mode-chip-on' : ''}}"
       data-mode="password"
@@ -25,14 +19,6 @@
       data-mode="phone"
       bindtap="onMode"
     >手机验证码</view>
-  </view>
-
-  <!-- ZQ-158: WeChat path = one tap only; nick / display name live on profile-setup. -->
-  <!-- ZQ-166: card gated off while WeChat login is temporarily removed. -->
-  <view class="card" wx:if="{{enableWechatLogin && mode === 'wechat'}}">
-    <button class="primary" loading="{{loading}}" disabled="{{loading}}" bindtap="onWechatLogin">
-      {{loading ? "正在登录…" : "微信登录"}}
-    </button>
   </view>
 
   <view class="card" wx:if="{{mode === 'password'}}">

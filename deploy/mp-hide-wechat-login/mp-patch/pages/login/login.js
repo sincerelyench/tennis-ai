@@ -65,8 +65,7 @@ function writeIntroSeen() {
 
 Page({
   data: {
-    // ZQ-166: temporarily hide WeChat login on MP. Flip to true to restore.
-    enableWechatLogin: false,
+    // ZQ-166b: WeChat login removed from MP UI — password / phone only.
     mode: "password",
     username: "",
     password: "",
@@ -88,8 +87,7 @@ Page({
     this.setData({ error: "" })
     const auth = session.auth()
     if (!auth || !auth.token) return
-    // Validate before skipping native login; stale/mock tokens otherwise land in
-    // web-view /login (no 微信登录) and look like WeChat login is missing.
+    // Validate before skipping native login; stale tokens land in web-view /login.
     api
       .session(auth.token)
       .then((body) => {
@@ -103,7 +101,6 @@ Page({
         session.clearAuth()
         this.setData({
           mode: "password",
-          // ZQ-166: do not push users toward WeChat while it is temporarily hidden.
           notice: "登录已过期，请用账号密码或手机验证码重新登录",
         })
       })
@@ -116,8 +113,8 @@ Page({
   onMode(e) {
     let mode =
       (e.currentTarget.dataset && e.currentTarget.dataset.mode) || "password"
-    // ZQ-166: refuse wechat mode while enableWechatLogin is false.
-    if (mode === "wechat" && !this.data.enableWechatLogin) mode = "password"
+    // ZQ-166b: only password / phone.
+    if (mode !== "password" && mode !== "phone") mode = "password"
     this.setData({ mode, error: "", notice: "" })
   },
   onUsername(e) {
@@ -151,41 +148,6 @@ Page({
       return
     }
     enterApp(body.token)
-  },
-  /** ZQ-158: one tap — wx.login → /api/auth/wechat; no displayName / nickName on this page. */
-  onWechatLogin() {
-    // ZQ-166: keep handler for easy restore; no-op while hidden.
-    if (!this.data.enableWechatLogin) return
-    if (this.data.loading) return
-    this.setData({ loading: true, error: "", notice: "" })
-    const finish = (code) => {
-      api
-        .wechatLogin({ code })
-        .then((body) => {
-          if (!body || !body.token) {
-            this.setData({ loading: false, error: "登录失败，请重试" })
-            return
-          }
-          const notice =
-            body.loginMode === "wechat-mock"
-              ? "已进入演示会话（服务端 AppID 未与本小程序对齐时）"
-              : ""
-          this.finishLogin(body, notice)
-        })
-        .catch((err) => {
-          this.setData({
-            loading: false,
-            error: loginErrorText(err, "登录失败，请重试"),
-          })
-        })
-    }
-    wx.login({
-      success: (res) => {
-        if (res.code) finish(res.code)
-        else finish("dev-" + Date.now())
-      },
-      fail: () => finish("dev-" + Date.now()),
-    })
   },
   onPasswordLogin() {
     if (this.data.loading) return

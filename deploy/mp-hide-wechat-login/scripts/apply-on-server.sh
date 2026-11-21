@@ -34,18 +34,23 @@ cp -a "$PATCH_DIR/mp-patch/pages/login/login.js" "$MP_ROOT/pages/login/login.js"
 cp -a "$PATCH_DIR/mp-patch/pages/login/login.wxml" "$MP_ROOT/pages/login/login.wxml"
 cp -a "$PATCH_DIR/mp-patch/MP-HIDE-WECHAT-LOGIN-NOTE.txt" "$MP_ROOT/MP-HIDE-WECHAT-LOGIN-NOTE.txt"
 
-grep -q 'ZQ-166' "$MP_ROOT/pages/login/login.js" || {
-  echo "ERROR: ZQ-166 marker missing in login.js" >&2
+grep -q 'ZQ-166b' "$MP_ROOT/pages/login/login.js" || {
+  echo "ERROR: ZQ-166b marker missing in login.js" >&2
   exit 1
 }
-grep -q 'enableWechatLogin: false' "$MP_ROOT/pages/login/login.js" || {
-  echo "ERROR: enableWechatLogin not false" >&2
+grep -q 'onWechatLogin' "$MP_ROOT/pages/login/login.js" && {
+  echo "ERROR: onWechatLogin still present" >&2
   exit 1
 }
-grep -q 'data-mp-wechat-login' "$MP_ROOT/pages/login/login.wxml" || {
-  echo "ERROR: data-mp-wechat-login missing in wxml" >&2
+grep -q 'data-mp-wechat-login="off"' "$MP_ROOT/pages/login/login.wxml" || {
+  echo "ERROR: data-mp-wechat-login=off missing in wxml" >&2
   exit 1
 }
+# Chip text must not appear as a live mode option (comments OK).
+if grep -E 'data-mode="wechat"|bindtap="onWechatLogin"' "$MP_ROOT/pages/login/login.wxml"; then
+  echo "ERROR: wechat mode still in wxml" >&2
+  exit 1
+fi
 
 echo "==> Repack $ZIP"
 (
@@ -61,7 +66,9 @@ echo "==> Repack $ZIP"
 chmod 644 "$ZIP"
 
 echo "==> Sanity"
-unzip -p "$ZIP" mp-weixin/pages/login/login.js 2>/dev/null | grep -n 'enableWechatLogin\|ZQ-166' | head -10 \
-  || unzip -p "$ZIP" pages/login/login.js | grep -n 'enableWechatLogin\|ZQ-166' | head -10
+unzip -p "$ZIP" mp-weixin/pages/login/login.js 2>/dev/null | grep -n 'ZQ-166b\|mode: "password"' | head -10 \
+  || unzip -p "$ZIP" pages/login/login.js | grep -n 'ZQ-166b\|mode: "password"' | head -10
+unzip -p "$ZIP" mp-weixin/pages/login/login.wxml 2>/dev/null | grep -n 'data-mp-wechat-login\|账号密码\|微信登录' | head -15 \
+  || true
 ls -la "$ZIP" "$BACKUP"
-echo "DONE ZQ-166 mp-hide-wechat-login"
+echo "DONE ZQ-166b mp-hide-wechat-login"
