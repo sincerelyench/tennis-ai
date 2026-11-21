@@ -1,0 +1,5 @@
+ZQ-166 · 小程序暂时去掉微信登录（2026-11-21 Asia/Shanghai）
+
+- pages/login: enableWechatLogin=false；默认「账号密码」
+- 恢复：把 login.js 里 enableWechatLogin 改回 true 后重新编译
+- 本 NOTE 可拷入 /Users/yanqing/Downloads/mp-weixin (2)/
