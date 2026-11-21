@@ -1,0 +1,104 @@
+<view class="page">
+  <view class="brand-row">
+    <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
+    <text class="brand-name">涨球乐</text>
+  </view>
+
+  <text class="h1">登录</text>
+  <!-- Product intro modal (webpage 四卖点) owned by ZQ-159 — do not re-add inline lead/hint copy here. -->
+
+  <!-- ZQ-166b: WeChat login removed from mini-program UI (password / phone only). -->
+  <view class="mode-row" data-mp-wechat-login="off">
+    <view
+      class="mode-chip {{mode === 'password' ? 'mode-chip-on' : ''}}"
+      data-mode="password"
+      bindtap="onMode"
+    >账号密码</view>
+    <view
+      class="mode-chip {{mode === 'phone' ? 'mode-chip-on' : ''}}"
+      data-mode="phone"
+      bindtap="onMode"
+    >手机验证码</view>
+  </view>
+
+  <view class="card" wx:if="{{mode === 'password'}}">
+    <text class="label">用户名或手机号</text>
+    <input
+      class="field"
+      maxlength="40"
+      placeholder="用户名或手机号"
+      value="{{username}}"
+      bindinput="onUsername"
+    />
+    <text class="label">密码</text>
+    <input
+      class="field"
+      password
+      maxlength="72"
+      placeholder="密码"
+      value="{{password}}"
+      bindinput="onPassword"
+    />
+    <button class="primary" loading="{{loading}}" disabled="{{loading}}" bindtap="onPasswordLogin">
+      {{loading ? "正在登录…" : "登录"}}
+    </button>
+  </view>
+
+  <view class="card" wx:if="{{mode === 'phone'}}">
+    <text class="label">手机号</text>
+    <input
+      class="field"
+      type="number"
+      maxlength="11"
+      placeholder="11 位手机号"
+      value="{{phone}}"
+      bindinput="onPhone"
+    />
+    <text class="label">验证码</text>
+    <view class="code-row">
+      <input
+        class="field code-field"
+        type="number"
+        maxlength="4"
+        placeholder="4 位验证码"
+        value="{{smsCode}}"
+        bindinput="onSmsCode"
+      />
+      <button class="btn-ghost code-btn" loading="{{codeLoading}}" disabled="{{codeLoading}}" bindtap="onSendCode">
+        {{codeLoading ? "发送中…" : "获取验证码"}}
+      </button>
+    </view>
+    <text class="hint" wx:if="{{devCode}}">开发验证码：{{devCode}}</text>
+    <button class="primary" loading="{{loading}}" disabled="{{loading}}" bindtap="onPhoneLogin">
+      {{loading ? "正在登录…" : "登录"}}
+    </button>
+  </view>
+
+  <text class="hint" wx:if="{{notice}}">{{notice}}</text>
+  <text class="error" wx:if="{{error}}">{{error}}</text>
+
+  <!-- ZQ-159: 涨球乐 intro — webpage 四卖点（约球/多打球），非动作分析 -->
+  <view class="intro-mask" wx:if="{{showIntro}}" catchtouchmove="noop">
+    <view class="intro-card">
+      <view class="intro-brand">
+        <image class="intro-logo" src="/images/logo.png" mode="aspectFit" />
+        <text class="intro-brand-name">涨球乐</text>
+      </view>
+      <text class="intro-title">欢迎来到涨球乐</text>
+      <text class="intro-lead">多打球、约对手、看排名、找教练——让我们大家一起涨球乐。</text>
+      <view class="intro-list">
+        <view class="intro-item" wx:for="{{introPoints}}" wx:key="title">
+          <view class="intro-num">{{index + 1}}</view>
+          <view class="intro-body">
+            <text class="intro-item-title">{{item.title}}</text>
+            <text class="intro-item-desc">{{item.desc}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="intro-actions">
+        <button class="btn-ghost intro-btn" bindtap="onIntroDismiss">跳过</button>
+        <button class="primary intro-btn" bindtap="onIntroDismiss">开始</button>
+      </view>
+    </view>
+  </view>
+</view>
