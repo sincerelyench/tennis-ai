@@ -1,0 +1,3 @@
+ZQ-167 — H5 login/register role picker.
+Native MP pages/login currently has no register tab; unchanged.
+When MP gains signup, mirror 学员/教练 at register only.
