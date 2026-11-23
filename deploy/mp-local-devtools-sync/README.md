@@ -32,3 +32,23 @@ bash deploy/mp-local-devtools-sync/scripts/mac-pull-from-prod-zip.sh
 3. **保持运行：** `agent worker start`
 4. 文档：https://cursor.com/docs/cloud-agent/self-hosted/my-machines  
 5. worker 在线后，云端再跑 `bash deploy/mp-local-devtools-sync/scripts/sync-to-local-devtools.sh`
+
+## C. 安装 Mac worker（让云端能直写本机）
+
+**必须在 Mac 终端自己跑**（云端装不了）：
+
+```bash
+bash deploy/mp-local-devtools-sync/scripts/mac-install-worker.sh
+```
+
+或手动：
+
+```bash
+curl https://cursor.com/install -fsS | bash
+export PATH="$HOME/.local/bin:$PATH"
+agent login
+agent worker start --name "yanqing-mac" --worker-dir "$HOME/path/to/tennis-ai"
+```
+
+保持该终端不关。装好后跟我说一声，我再跑同步脚本。
+
