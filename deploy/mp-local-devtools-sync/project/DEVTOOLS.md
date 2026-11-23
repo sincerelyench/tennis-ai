@@ -15,11 +15,9 @@
 
 ## 登录选项
 
-登录页默认 **微信登录**，另可选：
+小程序登录页 **仅账号密码**（已去掉微信登录、手机验证码）：
 
-1. **微信登录** — `wx.login` → `POST /api/auth/wechat` → `web-view` `/api/auth/mp-enter`
-2. **账号密码** — `POST /api/auth/login` `{ username, password }`
-3. **手机验证码** — `POST /api/auth/code` → `POST /api/auth/login` `{ phone, code }`
+1. **账号密码** — `POST /api/auth/login` `{ username, password }`
 
 登录成功后 `pages/web` 打开现网 `https://yqchen.blog/tennis`（约球 · 排行榜 · 教练 · 我的）。
 

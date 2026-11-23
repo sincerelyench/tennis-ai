@@ -5,24 +5,15 @@
   </view>
 
   <text class="h1">登录</text>
-  <text class="lead-mini">请先浏览首页功能介绍；登录为可选。默认可用手机验证码登录，也可切换账号密码。使用手机号前须同意下列协议。学员/教练身份仅在注册时选择。</text>
+  <text class="lead-mini">请先浏览首页功能介绍；登录为可选。小程序仅支持账号密码登录。登录前须阅读并同意下列协议。学员/教练身份仅在注册时选择。</text>
   <button class="btn-ghost back-home" bindtap="onBackHome">返回首页继续浏览</button>
 
-  <!-- ZQ-166b/ZQ-169: WeChat removed; phone first so SMS login is obvious. -->
-  <view class="mode-row" data-mp-wechat-login="off" data-login-mode="true">
-    <view
-      class="mode-chip {{mode === 'phone' ? 'mode-chip-on' : ''}}"
-      data-mode="phone"
-      bindtap="onMode"
-    >手机验证码</view>
-    <view
-      class="mode-chip {{mode === 'password' ? 'mode-chip-on' : ''}}"
-      data-mode="password"
-      bindtap="onMode"
-    >账号密码</view>
+  <!-- ZQ-170: MP password-only — WeChat + phone SMS removed from mini-program UI. -->
+  <view class="mode-row" data-mp-wechat-login="off" data-mp-phone-login="off" data-login-mode="password-only" hidden>
+    <text>账号密码</text>
   </view>
 
-  <!-- ZQ-168: consent before collecting phone / account info -->
+  <!-- ZQ-168: consent before collecting account info -->
   <view class="consent-row" data-legal-consent="true">
     <checkbox-group bindchange="onConsentChange">
       <label class="consent-label">
@@ -32,18 +23,18 @@
           <text class="link" catchtap="onOpenTerms">《用户服务协议》</text>
           和
           <text class="link" catchtap="onOpenPrivacy">《隐私政策》</text>
-          ，知晓手机号等仅用于登录验证与账号服务。
+          ，知晓账号信息仅用于登录验证与账号服务。
         </text>
       </label>
     </checkbox-group>
   </view>
 
-  <view class="card" wx:if="{{mode === 'password'}}">
-    <text class="label">用户名或手机号</text>
+  <view class="card" data-login-password="true">
+    <text class="label">用户名</text>
     <input
       class="field"
       maxlength="40"
-      placeholder="用户名或手机号"
+      placeholder="用户名"
       value="{{username}}"
       bindinput="onUsername"
     />
@@ -61,40 +52,9 @@
     </button>
   </view>
 
-  <view class="card" wx:if="{{mode === 'phone'}}">
-    <text class="label">手机号</text>
-    <input
-      class="field"
-      type="number"
-      maxlength="11"
-      placeholder="11 位手机号"
-      value="{{phone}}"
-      bindinput="onPhone"
-    />
-    <text class="label">验证码</text>
-    <view class="code-row">
-      <input
-        class="field code-field"
-        type="number"
-        maxlength="4"
-        placeholder="4 位验证码"
-        value="{{smsCode}}"
-        bindinput="onSmsCode"
-      />
-      <button class="btn-ghost code-btn" loading="{{codeLoading}}" disabled="{{codeLoading || !agreedLegal}}" bindtap="onSendCode">
-        {{codeLoading ? "发送中…" : "获取验证码"}}
-      </button>
-    </view>
-    <text class="hint" wx:if="{{devCode}}">开发验证码：{{devCode}}</text>
-    <button class="primary" loading="{{loading}}" disabled="{{loading || !agreedLegal}}" bindtap="onPhoneLogin">
-      {{loading ? "正在登录…" : "登录"}}
-    </button>
-  </view>
-
   <text class="hint" wx:if="{{notice}}">{{notice}}</text>
   <text class="error" wx:if="{{error}}">{{error}}</text>
 
-  <!-- ZQ-159: 涨球乐 intro — webpage 四卖点（约球/多打球），非动作分析 -->
   <view class="intro-mask" wx:if="{{showIntro}}" catchtouchmove="noop">
     <view class="intro-card">
       <view class="intro-brand">
