@@ -65,8 +65,8 @@ function writeIntroSeen() {
 
 Page({
   data: {
-    // ZQ-166b: WeChat login removed from MP UI — password / phone only.
-    mode: "password",
+    // ZQ-169: default to phone SMS so login is not mistaken for password-only.
+    mode: "phone",
     username: "",
     password: "",
     phone: "",

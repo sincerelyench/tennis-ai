@@ -5,17 +5,20 @@
 
 .mode-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 12rpx;
   margin-bottom: 20rpx;
 }
 
 .mode-chip {
-  padding: 14rpx 22rpx;
-  border-radius: 999rpx;
-  border: 1rpx solid #cbd5e1;
+  flex: 1;
+  text-align: center;
+  padding: 18rpx 22rpx;
+  border-radius: 16rpx;
+  border: 2rpx solid #cbd5e1;
   background: #ffffff;
-  font-size: 24rpx;
+  font-size: 28rpx;
+  font-weight: 600;
   color: #0f172a;
 }
 

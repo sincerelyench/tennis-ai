@@ -50,7 +50,8 @@ export function LoginView({ nextPath }: { nextPath: string }) {
   const { t } = useI18n();
   // New users land on Register first; Sign in is the secondary tab.
   const [authTab, setAuthTab] = useState<AuthTab>("signup");
-  const [mode, setMode] = useState<LoginMode>("password");
+  // ZQ-169: Sign-in defaults to phone SMS (password is secondary).
+  const [mode, setMode] = useState<LoginMode>("phone");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
@@ -267,6 +268,7 @@ export function LoginView({ nextPath }: { nextPath: string }) {
             )}
             onClick={() => {
               setAuthTab("signin");
+              setMode("phone");
               setError("");
               setHint("");
             }}
@@ -295,9 +297,25 @@ export function LoginView({ nextPath }: { nextPath: string }) {
             <div
               className={cn("flex gap-2", showWechatLogin ? "mt-4" : "mt-6")}
               data-login-mode="true"
+              data-login-default="phone"
               data-apk-no-wechat-login={androidShell ? "true" : undefined}
               data-signin-no-role="true"
             >
+              <button
+                type="button"
+                className={cn(
+                  "flex-1 rounded-md px-3 py-2 text-sm font-semibold",
+                  mode === "phone"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground",
+                )}
+                onClick={() => {
+                  setMode("phone");
+                  setError("");
+                }}
+              >
+                {t("login.modePhone")}
+              </button>
               <button
                 type="button"
                 className={cn(
@@ -313,21 +331,6 @@ export function LoginView({ nextPath }: { nextPath: string }) {
                 }}
               >
                 {t("login.modePassword")}
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  "flex-1 rounded-md px-3 py-2 text-sm font-semibold",
-                  mode === "phone"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground",
-                )}
-                onClick={() => {
-                  setMode("phone");
-                  setError("");
-                }}
-              >
-                {t("login.modePhone")}
               </button>
             </div>
 
