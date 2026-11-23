@@ -14,10 +14,12 @@ echo "==> Backup app -> $BACKUP_APP"
 mkdir -p "$BACKUP_APP/components" "$BACKUP_APP/app/guest" "$BACKUP_APP/app/privacy" "$BACKUP_APP/app/terms"
 cp -a "$ROOT/middleware.ts" "$BACKUP_APP/" 2>/dev/null || true
 cp -a "$ROOT/components/coach-view.tsx" "$BACKUP_APP/components/" 2>/dev/null || true
+cp -a "$ROOT/components/login-view.tsx" "$BACKUP_APP/components/" 2>/dev/null || true
 
-echo "==> Patch H5 (guest/legal/middleware/coach AI notice)"
+echo "==> Patch H5 (guest/legal/middleware/coach AI notice + password-only login)"
 cp -a "$PATCH_DIR/opt-patch/middleware.ts" "$ROOT/middleware.ts"
 cp -a "$PATCH_DIR/opt-patch/components/coach-view.tsx" "$ROOT/components/coach-view.tsx"
+cp -a "$PATCH_DIR/opt-patch/components/login-view.tsx" "$ROOT/components/login-view.tsx"
 mkdir -p "$ROOT/app/guest" "$ROOT/app/privacy" "$ROOT/app/terms"
 cp -a "$PATCH_DIR/opt-patch/app/guest/page.tsx" "$ROOT/app/guest/page.tsx"
 cp -a "$PATCH_DIR/opt-patch/app/privacy/page.tsx" "$ROOT/app/privacy/page.tsx"
@@ -26,6 +28,13 @@ cp -a "$PATCH_DIR/opt-patch/app/terms/page.tsx" "$ROOT/app/terms/page.tsx"
 grep -q 'ZQ-168' "$ROOT/middleware.ts"
 grep -q 'data-ai-generated-notice' "$ROOT/components/coach-view.tsx"
 grep -q 'data-guest-browse' "$ROOT/app/guest/page.tsx"
+grep -q 'data-signin-no-phone' "$ROOT/components/login-view.tsx"
+grep -q 'password-only' "$ROOT/components/login-view.tsx"
+if grep -q 'modePhone\|function sendCode' "$ROOT/components/login-view.tsx"; then
+  echo "ERROR: login-view still contains phone SMS UI" >&2
+  exit 1
+fi
+echo "H5_LOGIN_PASSWORD_ONLY_OK"
 
 echo "==> Rebuild Next"
 cd "$ROOT"
