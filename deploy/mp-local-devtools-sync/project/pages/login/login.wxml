@@ -5,7 +5,7 @@
   </view>
 
   <text class="h1">登录</text>
-  <text class="lead-mini">请先浏览首页功能介绍；登录为可选。小程序仅支持账号密码登录。登录前须阅读并同意下列协议。学员/教练身份仅在注册时选择。</text>
+  <text class="lead-mini">请先浏览首页功能介绍；登录为可选。小程序仅支持账号密码登录。登录前须阅读并同意下列协议。</text>
   <button class="btn-ghost back-home" bindtap="onBackHome">返回首页继续浏览</button>
 
   <!-- ZQ-170: MP password-only — WeChat + phone SMS removed from mini-program UI. -->
