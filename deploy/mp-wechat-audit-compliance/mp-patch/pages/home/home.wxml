@@ -1,4 +1,4 @@
-<!-- ZQ-168: browse-first home — no phone/avatar/nick auth on entry (WeChat 审核). -->
+<!-- ZQ-168/173: browse-first home — simple; AI labels live on coach tab only. -->
 <view class="page" data-mp-home="true" data-mp-browse-first="true">
   <view class="brand-row">
     <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
@@ -7,7 +7,7 @@
 
   <text class="h1">先逛逛，再登录</text>
   <text class="lead">
-    可先了解约球、排行榜与 AI 教练等功能。需要账号能力时，再自行选择登录；进入本页不会索要手机号、头像或昵称授权。
+    可先了解约球、排行榜与教练等功能。进入本页不会索要手机号、头像或昵称；需要时再自行登录。
   </text>
 
   <view class="card feature" wx:for="{{features}}" wx:key="title">
@@ -15,14 +15,8 @@
     <text class="feature-desc">{{item.desc}}</text>
   </view>
 
-  <view class="card ai-note" data-ai-generated-notice="true">
-    <text class="ai-badge">AI生成</text>
-    <text class="ai-badge ai-badge-sub">人工智能生成</text>
-    <text class="feature-desc">「AI 教练」对话与点评由人工智能生成，仅供训练参考，不构成专业医疗或竞技承诺。使用相关功能时页面会持续展示本说明。</text>
-  </view>
-
   <button class="primary" bindtap="onBrowseGuest">浏览功能介绍</button>
   <button class="btn-ghost" bindtap="onOpenTerms">《用户服务协议》</button>
   <button class="btn-ghost" bindtap="onOpenPrivacy">《隐私政策》</button>
-  <button class="primary login-cta" bindtap="onGoLogin">登录 / 注册后使用完整功能</button>
+  <button class="primary login-cta" bindtap="onGoLogin">登录 / 注册</button>
 </view>

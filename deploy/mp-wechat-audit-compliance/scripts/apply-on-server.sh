@@ -93,7 +93,9 @@ assert "data-auth-tab" in wxml
 assert "onPasswordLogin" in login
 home = (root/"pages/home/home.wxml").read_text()
 assert "data-mp-browse-first" in home
-assert "AI生成" in home
+assert "AI生成" not in home  # ZQ-173: AI labels only on coach tab
+coach = Path("$ROOT/components/coach-view.tsx").read_text()
+assert "data-ai-generated-notice" in coach and "AI生成" in coach
 web = (root/"pages/web/web.js").read_text()
 assert "guest" in web
 print("MP_SANITY_OK")

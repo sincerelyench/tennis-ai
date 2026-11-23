@@ -1,4 +1,4 @@
-/** ZQ-168: WeChat 审核 — browse features before any login/auth. */
+/** ZQ-168/173: WeChat 审核 — browse features before login; keep home simple. */
 Page({
   data: {
     features: [
@@ -8,20 +8,15 @@ Page({
       },
       {
         title: "城市排行榜",
-        desc: "查看无锡等地单打/女单排名与赛果变化。",
+        desc: "查看本地单打 / 女单排名与赛果变化。",
       },
       {
-        title: "AI 教练问答",
-        desc: "训练疑问可向 AI 教练提问；页面标注「AI生成」。",
-      },
-      {
-        title: "真实网络教练",
-        desc: "可选真人教练留言指导（登录后使用）。",
+        title: "AI 教练与网络教练",
+        desc: "登录后可向 AI 教练提问，或向真人教练留言。",
       },
     ],
   },
   onBrowseGuest() {
-    // Public H5 guest page — no session / no phone auth.
     wx.navigateTo({ url: "/pages/web/web?guest=1&next=/guest" })
   },
   onOpenTerms() {
