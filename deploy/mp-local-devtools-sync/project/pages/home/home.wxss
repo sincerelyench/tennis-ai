@@ -1,0 +1,99 @@
+.page {
+  padding: 48rpx 32rpx 80rpx;
+  box-sizing: border-box;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 28rpx;
+}
+
+.brand-logo {
+  width: 64rpx;
+  height: 64rpx;
+}
+
+.brand-name {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.h1 {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 12rpx;
+}
+
+.lead {
+  display: block;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: #475569;
+  margin-bottom: 28rpx;
+}
+
+.card {
+  background: #fff;
+  border: 1rpx solid #e2e8f0;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.feature-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8rpx;
+}
+
+.feature-desc {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: #64748b;
+}
+
+.ai-note {
+  border-color: #99f6e4;
+  background: #f0fdfa;
+}
+
+.ai-badge {
+  display: inline-block;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #0f766e;
+  background: #ccfbf1;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  margin-bottom: 10rpx;
+}
+
+.primary {
+  margin-top: 20rpx;
+  background: #0d9488 !important;
+  color: #fff !important;
+  border-radius: 16rpx !important;
+  font-weight: 700;
+}
+
+.btn-ghost {
+  margin-top: 12rpx;
+  background: #fff !important;
+  color: #0f172a !important;
+  border: 1rpx solid #cbd5e1 !important;
+  border-radius: 16rpx !important;
+}
+
+.login-cta {
+  margin-top: 28rpx;
+}

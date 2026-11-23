@@ -1,0 +1,4 @@
+ZQ-166b · 小程序去掉微信登录（2026-11-22 Asia/Shanghai）
+
+- pages/login: 仅「账号密码」「手机验证码」；无微信登录入口
+- 本 NOTE 可拷入 /Users/yanqing/Downloads/mp-weixin (2)/

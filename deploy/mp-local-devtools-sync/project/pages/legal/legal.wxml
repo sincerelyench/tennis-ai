@@ -1,0 +1,8 @@
+<view class="page" data-legal-kind="{{kind}}">
+  <text class="h1">{{title}}</text>
+  <text class="updated">更新日期：{{updated}}</text>
+  <view class="block" wx:for="{{sections}}" wx:key="heading">
+    <text class="heading">{{item.heading}}</text>
+    <text class="body" wx:for="{{item.paras}}" wx:for-item="para" wx:key="*this">{{para}}</text>
+  </view>
+</view>

@@ -1,0 +1,14 @@
+ZQ-168 · 微信小程序审核整改（2026-11-23 Asia/Shanghai）
+
+代码侧已完成：
+1) 首屏改为 pages/home（先浏览功能，不索要手机号/头像/昵称）
+2) 登录页须勾选《用户服务协议》《隐私政策》后才能获取验证码/登录
+3) AI 教练页与首页显著标注「AI生成 · 人工智能生成」
+4) 游客可打开 /tennis/guest（无需登录）
+
+微信公众平台需人工勾选（代码无法代操作）：
+- 类目：补充选择「深度合成 - AI问答」
+- 如后台有「用户隐私保护指引」，同步填写手机号用途：登录验证码与账号安全
+- 重新提交审核前：开发者工具清缓存并编译，或重下 /var/www/apk/mp-weixin.zip
+  本机路径偏好：/Users/yanqing/Downloads/mp-weixin (2)/
+Default sync path: /Users/yanqing/Downloads/mp-weixin (2)

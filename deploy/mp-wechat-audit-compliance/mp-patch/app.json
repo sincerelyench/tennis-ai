@@ -1,0 +1,19 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/login/login",
+    "pages/legal/legal",
+    "pages/profile-setup/profile-setup",
+    "pages/web/web",
+    "pages/subscribe/subscribe"
+  ],
+  "window": {
+    "navigationBarTitleText": "涨球乐",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#ffffff",
+    "backgroundTextStyle": "dark"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
