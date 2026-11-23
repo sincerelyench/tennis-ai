@@ -5,21 +5,21 @@
   </view>
 
   <text class="h1">登录</text>
-  <text class="lead-mini">请先浏览首页功能介绍；登录为可选。使用手机号登录前须阅读并同意下列协议。</text>
+  <text class="lead-mini">请先浏览首页功能介绍；登录为可选。默认可用手机验证码登录，也可切换账号密码。使用手机号前须同意下列协议。学员/教练身份仅在注册时选择。</text>
   <button class="btn-ghost back-home" bindtap="onBackHome">返回首页继续浏览</button>
 
-  <!-- ZQ-166b: WeChat login removed from mini-program UI (password / phone only). -->
-  <view class="mode-row" data-mp-wechat-login="off">
-    <view
-      class="mode-chip {{mode === 'password' ? 'mode-chip-on' : ''}}"
-      data-mode="password"
-      bindtap="onMode"
-    >账号密码</view>
+  <!-- ZQ-166b/ZQ-169: WeChat removed; phone first so SMS login is obvious. -->
+  <view class="mode-row" data-mp-wechat-login="off" data-login-mode="true">
     <view
       class="mode-chip {{mode === 'phone' ? 'mode-chip-on' : ''}}"
       data-mode="phone"
       bindtap="onMode"
     >手机验证码</view>
+    <view
+      class="mode-chip {{mode === 'password' ? 'mode-chip-on' : ''}}"
+      data-mode="password"
+      bindtap="onMode"
+    >账号密码</view>
   </view>
 
   <!-- ZQ-168: consent before collecting phone / account info -->
