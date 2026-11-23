@@ -91,3 +91,16 @@ PY
 chmod 644 "$ZIP"
 ls -la "$ZIP" "$BACKUP_ZIP"
 echo "DONE ZQ-168 mp-wechat-audit-compliance"
+
+# Prefer syncing DevTools project mirror when kit is co-located
+SYNC_KIT="$(cd "$(dirname "$0")/../../mp-local-devtools-sync" 2>/dev/null && pwd || true)"
+if [[ -n "${SYNC_KIT:-}" && -x "$SYNC_KIT/scripts/sync-to-local-devtools.sh" ]]; then
+  # Refresh mirror from just-built zip
+  TMP=$(mktemp -d)
+  unzip -qo "$ZIP" -d "$TMP"
+  rm -rf "$SYNC_KIT/project"
+  if [[ -d "$TMP/mp-weixin" ]]; then cp -a "$TMP/mp-weixin" "$SYNC_KIT/project"
+  else mkdir -p "$SYNC_KIT/project"; cp -a "$TMP"/. "$SYNC_KIT/project"/; fi
+  rm -rf "$TMP"
+  bash "$SYNC_KIT/scripts/sync-to-local-devtools.sh" || echo "NOTE: local DevTools path not on this host — pull branch and sync on Mac"
+fi

@@ -1,0 +1,27 @@
+ZQ-157 · WeChat login → 微信号留空（勿写 openid）+ 显示名默认微信名
+
+微信号 wechatId
+--------------
+Official mini-program APIs do NOT return a real 微信号 string.
+Do NOT write openid / unionid / nickName into profile.wechatId.
+Leave wechatId empty for the user to fill in 「我的」 (约球 contact).
+Keep a real user-set wechatId; never overwrite custom values.
+If wechatId equals the openid-derived ZQ-149/151 autofill, clear it lazily
+on login / getSession (pollution only — not a mass wipe of custom IDs).
+
+显示名 displayName
+-----------------
+Default to WeChat nickName from login body / type=nickname input.
+Fill only when empty, missing, or placeholder (e.g. 微信用户).
+Never overwrite a real custom displayName.
+
+Also
+----
+- wechatContactSatisfied: explicit real wechatId only (NOT openid-bound)
+- needsProfileSetup treats placeholder display names / missing wechatId as incomplete
+- MP shell caches wechatId + displayName (miniprogram/utils/session.js)
+
+Surfaces
+--------
+Web /opt/tennis-ai (WebView-same for APK/IPA/MP). Rebuild Next after apply.
+MP: sync miniprogram/ or Mac ~/Downloads/mp-weixin (2). Do not invent AppSecret.

@@ -1,0 +1,8 @@
+涨球乐 miniprogram（微信开发者工具工程 · ZQ-149 / ZQ-158 / ZQ-159）
+- 主交付：本机 `/Users/yanqing/Downloads/mp-weixin (2)`；对齐 tennis-ai PR #153 @ afb4657
+- 登录：微信（一键，无显示名）| 账号密码 | 手机验证码
+- 缺显示名/微信号 → pages/profile-setup（可选入微信名 + 自填真实微信号；勿填 openid）
+- 登录页介绍弹窗：涨球乐 + 网页四卖点（约球/多打球），非动作分析（ZQ-159）
+- 登录后 web-view → https://yqchen.blog/tennis；订阅页 pages/subscribe 保留
+- AppID：wx09896b686bc2f565
+- ZQ-157：wechatId 勿写 openid

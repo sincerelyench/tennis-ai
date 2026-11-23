@@ -11,3 +11,4 @@ ZQ-168 · 微信小程序审核整改（2026-11-23 Asia/Shanghai）
 - 如后台有「用户隐私保护指引」，同步填写手机号用途：登录验证码与账号安全
 - 重新提交审核前：开发者工具清缓存并编译，或重下 /var/www/apk/mp-weixin.zip
   本机路径偏好：/Users/yanqing/Downloads/mp-weixin (2)/
+Default sync path: /Users/yanqing/Downloads/mp-weixin (2)
