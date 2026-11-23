@@ -32,4 +32,6 @@ assert pages[0]=="pages/home/home"
 assert "微信登录" not in w
 print("OK", root)
 PY
+echo "NOTE: prod zip 可能仍含旧登录页。若仍见微信/手机登录，改跑："
+echo "  bash deploy/mp-local-devtools-sync/scripts/mac-sync-password-only-from-git.sh"
 echo "DONE — open WeChat DevTools → 清缓存并编译 → project: $DEST"
