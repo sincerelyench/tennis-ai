@@ -18,7 +18,7 @@ export default function TermsPage() {
         <section>
           <h2 className="font-bold text-slate-900">2. 账号与注册</h2>
           <p>
-            可通过用户名密码或手机验证码注册/登录；注册时选择学员或教练身份。请妥善保管账号。
+            可通过用户名密码注册/登录。请妥善保管账号。
           </p>
         </section>
         <section>

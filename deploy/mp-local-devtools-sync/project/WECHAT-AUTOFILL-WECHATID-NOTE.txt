@@ -24,4 +24,4 @@ Also
 Surfaces
 --------
 Web /opt/tennis-ai (WebView-same for APK/IPA/MP). Rebuild Next after apply.
-MP: sync miniprogram/ or Mac ~/Downloads/mp-weixin (2). Do not invent AppSecret.
+MP: sync miniprogram/ or Mac ~/Downloads/mp-weixin. Do not invent AppSecret.

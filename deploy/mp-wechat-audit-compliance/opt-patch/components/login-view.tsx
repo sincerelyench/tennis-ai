@@ -12,7 +12,7 @@ import { LanguageSwitch } from "@/components/language-switch";
 import { Onboarding } from "@/components/onboarding";
 import { useI18n } from "@/components/i18n-provider";
 import { destForRole } from "@/lib/coach-home";
-import { DEMO_COACH_PHONE, type UserRole } from "@/lib/role";
+import { type UserRole } from "@/lib/role";
 import { cn } from "@/lib/utils";
 
 const basePath = "/tennis";
@@ -29,13 +29,6 @@ declare global {
   }
 }
 
-function isZhangqiuShell() {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent || "";
-  // APK / IPA WebView only — browser web must not show WeChat login.
-  return /ZhangqiuAndroid|ZhangqiuIOS/i.test(ua);
-}
-
 function isZhangqiuAndroid() {
   if (typeof navigator === "undefined") return false;
   // ZQ-129: Android APK must not offer WeChat login (web already hides it).
@@ -43,34 +36,24 @@ function isZhangqiuAndroid() {
 }
 
 type AuthTab = "signin" | "signup";
-type LoginMode = "password" | "phone";
 
 export function LoginView({ nextPath }: { nextPath: string }) {
   const router = useRouter();
   const { t } = useI18n();
   // New users land on Register first; Sign in is the secondary tab.
   const [authTab, setAuthTab] = useState<AuthTab>("signup");
-  // ZQ-169: Sign-in defaults to phone SMS (password is secondary).
-  const [mode, setMode] = useState<LoginMode>("phone");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [hint, setHint] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-  const [sending, setSending] = useState(false);
   const [wechatPending, setWechatPending] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-  const [role, setRole] = useState<UserRole>("player");
-  const [shell, setShell] = useState(false);
+  // ZQ-171: no 学员/教练 picker — new accounts default to player.
+  // ZQ-172: password-only sign-in (no phone SMS / WeChat UI).
   const [androidShell, setAndroidShell] = useState(false);
-  // ZQ-169: temporarily remove WeChat login everywhere (MP + IPA shell + web).
   const showWechatLogin = false;
 
   useEffect(() => {
-    setShell(isZhangqiuShell());
     setAndroidShell(isZhangqiuAndroid());
   }, []);
 
@@ -139,52 +122,6 @@ export function LoginView({ nextPath }: { nextPath: string }) {
     };
   }, [nextPath, router, t]);
 
-  async function sendCode() {
-    if (countdown > 0 || sending) return;
-    const number =
-      phone.trim().toLowerCase() === "coach" || phone.trim().toLowerCase() === "coach@"
-        ? DEMO_COACH_PHONE
-        : phone.trim();
-    if (!/^1\d{10}$/.test(number)) {
-      setError(t("login.badPhone"));
-      return;
-    }
-    if (number !== phone) setPhone(number);
-    setError("");
-    setSending(true);
-    try {
-      const response = await fetch(`${basePath}/api/auth/code`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: number }),
-      });
-      const data = (await response.json()) as { code?: string; error?: string };
-      if (!response.ok || !data.code) {
-        setError(
-          data.error && !/[\u4e00-\u9fff]/.test(data.error)
-            ? data.error
-            : t("login.sendFail"),
-        );
-        return;
-      }
-      setHint(t("login.hint", { code: data.code }));
-      setCountdown(60);
-      const timer = window.setInterval(() => {
-        setCountdown((current) => {
-          if (current <= 1) {
-            window.clearInterval(timer);
-            return 0;
-          }
-          return current - 1;
-        });
-      }, 1000);
-    } catch {
-      setError(t("login.sendFail"));
-    } finally {
-      setSending(false);
-    }
-  }
-
   function startWechatLogin() {
     // Web + Android APK never expose this button; IPA shell may still use it.
     if (!showWechatLogin || wechatPending || pending) return;
@@ -250,9 +187,7 @@ export function LoginView({ nextPath }: { nextPath: string }) {
             )}
             onClick={() => {
               setAuthTab("signup");
-              setMode("password");
               setError("");
-              setHint("");
             }}
           >
             {t("login.tabSignUp")}
@@ -268,9 +203,7 @@ export function LoginView({ nextPath }: { nextPath: string }) {
             )}
             onClick={() => {
               setAuthTab("signin");
-              setMode("phone");
               setError("");
-              setHint("");
             }}
           >
             {t("login.tabSignIn")}
@@ -279,7 +212,7 @@ export function LoginView({ nextPath }: { nextPath: string }) {
 
         {authTab === "signin" ? (
           <>
-            {/* ZQ-167: role (学员/教练) is chosen at signup only — not on login. */}
+            {/* ZQ-171/172: password-only — no role / phone / WeChat picker. */}
             {showWechatLogin ? (
               <div className="mt-6 space-y-3" data-wechat-login="true">
                 <Button
@@ -294,239 +227,95 @@ export function LoginView({ nextPath }: { nextPath: string }) {
               </div>
             ) : null}
 
-            <div
-              className={cn("flex gap-2", showWechatLogin ? "mt-4" : "mt-6")}
-              data-login-mode="true"
-              data-login-default="phone"
+            <form
+              className={cn("space-y-4", showWechatLogin ? "mt-4" : "mt-6")}
+              data-login-password="true"
+              data-login-mode="password-only"
               data-apk-no-wechat-login={androidShell ? "true" : undefined}
               data-signin-no-role="true"
+              data-signin-no-phone="true"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                const name = username.trim();
+                if (name.length < 3) {
+                  setError(t("login.badUsername"));
+                  return;
+                }
+                if (password.length < 4) {
+                  setError(t("login.badPassword"));
+                  return;
+                }
+                setError("");
+                setPending(true);
+                try {
+                  const response = await fetch(`${basePath}/api/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ username: name, password }),
+                  });
+                  const data = (await response.json()) as {
+                    error?: string;
+                    role?: UserRole;
+                  };
+                  if (!response.ok) {
+                    setError(
+                      data.error && !/[\u4e00-\u9fff]/.test(data.error)
+                        ? data.error
+                        : t("login.signFail"),
+                    );
+                    setPending(false);
+                    return;
+                  }
+                  await finishLogin(data);
+                  return;
+                } catch {
+                  setError(t("login.signFail"));
+                  setPending(false);
+                }
+              }}
             >
-              <button
-                type="button"
-                className={cn(
-                  "flex-1 rounded-md px-3 py-2 text-sm font-semibold",
-                  mode === "phone"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground",
-                )}
-                onClick={() => {
-                  setMode("phone");
-                  setError("");
-                }}
-              >
-                {t("login.modePhone")}
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  "flex-1 rounded-md px-3 py-2 text-sm font-semibold",
-                  mode === "password"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground",
-                )}
-                onClick={() => {
-                  setMode("password");
-                  setError("");
-                  setHint("");
-                }}
-              >
-                {t("login.modePassword")}
-              </button>
-            </div>
-
-            {mode === "password" ? (
-              <form
-                className="mt-4 space-y-4"
-                onSubmit={async (event) => {
-                  event.preventDefault();
-                  const name = username.trim();
-                  if (name.length < 3) {
-                    setError(t("login.badUsername"));
-                    return;
-                  }
-                  if (password.length < 4) {
-                    setError(t("login.badPassword"));
-                    return;
-                  }
-                  setError("");
-                  setPending(true);
-                  try {
-                    const response = await fetch(`${basePath}/api/auth/login`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      credentials: "include",
-                      body: JSON.stringify({ username: name, password }),
-                    });
-                    const data = (await response.json()) as {
-                      error?: string;
-                      role?: UserRole;
-                    };
-                    if (!response.ok) {
-                      setError(
-                        data.error && !/[\u4e00-\u9fff]/.test(data.error)
-                          ? data.error
-                          : t("login.signFail"),
-                      );
-                      setPending(false);
-                      return;
-                    }
-                    await finishLogin(data);
-                    return;
-                  } catch {
-                    setError(t("login.signFail"));
-                    setPending(false);
-                  }
-                }}
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="username">{t("login.username")}</Label>
-                  <Input
-                    id="username"
-                    autoComplete="username"
-                    placeholder={t("login.usernamePh")}
-                    value={username}
-                    onChange={(event) => {
-                      setUsername(event.target.value);
-                      if (error) setError("");
-                    }}
-                    aria-invalid={Boolean(error)}
-                    className="h-10 bg-background"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">{t("login.password")}</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder={t("login.passwordPh")}
-                    value={password}
-                    onChange={(event) => {
-                      setPassword(event.target.value);
-                      if (error) setError("");
-                    }}
-                    className="h-10 bg-background"
-                  />
-                  <p className="text-xs text-muted-foreground">{t("login.passwordHint")}</p>
-                </div>
-                {error ? (
-                  <Alert variant="destructive">
-                    <AlertTitle>{t("login.errorTitle")}</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                ) : null}
-                <Button type="submit" className="h-10 w-full" disabled={pending || wechatPending}>
-                  {pending ? t("login.submitting") : t("login.submit")}
-                </Button>
-              </form>
-            ) : (
-              <form
-                className="mt-4 space-y-4"
-                onSubmit={async (event) => {
-                  event.preventDefault();
-                  const number =
-                    phone.trim().toLowerCase() === "coach" ||
-                    phone.trim().toLowerCase() === "coach@"
-                      ? DEMO_COACH_PHONE
-                      : phone.trim();
-                  if (!/^1\d{10}$/.test(number)) {
-                    setError(t("login.badPhone"));
-                    return;
-                  }
-                  if (!/^\d{4}$/.test(code.trim())) {
-                    setError(t("login.badCode"));
-                    return;
-                  }
-                  setError("");
-                  setPending(true);
-                  try {
-                    const response = await fetch(`${basePath}/api/auth/login`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      credentials: "include",
-                      body: JSON.stringify({ phone: number, code: code.trim() }),
-                    });
-                    const data = (await response.json()) as {
-                      error?: string;
-                      role?: UserRole;
-                    };
-                    if (!response.ok) {
-                      setError(
-                        data.error && !/[\u4e00-\u9fff]/.test(data.error)
-                          ? data.error
-                          : t("login.signFail"),
-                      );
-                      setPending(false);
-                      return;
-                    }
-                    await finishLogin(data);
-                    return;
-                  } catch {
-                    setError(t("login.signFail"));
-                    setPending(false);
-                    return;
-                  }
-                }}
-              >
-                <div className="space-y-2">
-                  <Label htmlFor="phone">{t("login.phone")}</Label>
-                  <Input
-                    id="phone"
-                    inputMode="numeric"
-                    autoComplete="tel"
-                    placeholder={t("login.phonePh")}
-                    value={phone}
-                    onChange={(event) => {
-                      setPhone(event.target.value);
-                      if (error) setError("");
-                    }}
-                    aria-invalid={Boolean(error)}
-                    className="h-10 bg-background"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="code">{t("login.code")}</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="code"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      placeholder={t("login.codePh")}
-                      value={code}
-                      maxLength={4}
-                      onChange={(event) => {
-                        setCode(event.target.value);
-                        if (error) setError("");
-                      }}
-                      className="h-10 bg-background"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-10 shrink-0"
-                      disabled={sending || countdown > 0}
-                      onClick={sendCode}
-                    >
-                      {countdown > 0 ? `${countdown}s` : t("login.getCode")}
-                    </Button>
-                  </div>
-                  {hint ? (
-                    <p className="text-xs text-muted-foreground">
-                      {hint}. {t("login.noText")}
-                    </p>
-                  ) : null}
-                </div>
-                {error ? (
-                  <Alert variant="destructive">
-                    <AlertTitle>{t("login.errorTitle")}</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                ) : null}
-                <Button type="submit" className="h-10 w-full" disabled={pending || wechatPending}>
-                  {pending ? t("login.submitting") : t("login.submit")}
-                </Button>
-              </form>
-            )}
+              <div className="space-y-2">
+                <Label htmlFor="username">{t("login.username")}</Label>
+                <Input
+                  id="username"
+                  autoComplete="username"
+                  placeholder={t("login.usernamePh")}
+                  value={username}
+                  onChange={(event) => {
+                    setUsername(event.target.value);
+                    if (error) setError("");
+                  }}
+                  aria-invalid={Boolean(error)}
+                  className="h-10 bg-background"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">{t("login.password")}</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder={t("login.passwordPh")}
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    if (error) setError("");
+                  }}
+                  className="h-10 bg-background"
+                />
+                <p className="text-xs text-muted-foreground">{t("login.passwordHint")}</p>
+              </div>
+              {error ? (
+                <Alert variant="destructive">
+                  <AlertTitle>{t("login.errorTitle")}</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              ) : null}
+              <Button type="submit" className="h-10 w-full" disabled={pending || wechatPending}>
+                {pending ? t("login.submitting") : t("login.submit")}
+              </Button>
+            </form>
           </>
         ) : (
           <form
@@ -554,7 +343,7 @@ export function LoginView({ nextPath }: { nextPath: string }) {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   credentials: "include",
-                  body: JSON.stringify({ username: name, password, role }),
+                  body: JSON.stringify({ username: name, password, role: "player" }),
                 });
                 const data = (await response.json()) as {
                   error?: string;
@@ -577,40 +366,8 @@ export function LoginView({ nextPath }: { nextPath: string }) {
               }
             }}
           >
-            {/* ZQ-167: pick 学员/教练 at registration */}
-            <div className="space-y-2" data-role-switch="true" data-signup-role="true">
-              <Label>{t("login.signupRoleLabel")}</Label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className={cn(
-                    "flex-1 rounded-lg px-3 py-2 text-sm font-semibold",
-                    role === "player"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground",
-                  )}
-                  data-signup-role-player="true"
-                  onClick={() => setRole("player")}
-                >
-                  {t("common.player")}
-                </button>
-                <button
-                  type="button"
-                  className={cn(
-                    "flex-1 rounded-lg px-3 py-2 text-sm font-semibold",
-                    role === "coach"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground",
-                  )}
-                  data-signup-role-coach="true"
-                  onClick={() => setRole("coach")}
-                >
-                  {t("common.coach")}
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground">{t("login.signupRoleHint")}</p>
-            </div>
-            <div className="space-y-2">
+            {/* ZQ-171: role picker removed — register as player by default. */}
+            <div className="space-y-2" data-signup-no-role="true">
               <Label htmlFor="signup-username">{t("login.username")}</Label>
               <Input
                 id="signup-username"

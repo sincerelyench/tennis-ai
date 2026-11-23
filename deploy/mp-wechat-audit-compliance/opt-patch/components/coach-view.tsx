@@ -580,23 +580,24 @@ export function CoachView() {
       data-coach-header-compact="true"
       data-coach-dialog-video-tabs="true"
     >
-      {/* ZQ-168: WeChat 深度合成审核 — prominent AI-generated notice */}
-      {chattingBuiltIn ? (
-        <div
-          className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2"
-          data-ai-generated-notice="true"
-          role="note"
-        >
-          <p className="text-xs font-bold tracking-wide text-teal-800">
-            {zh ? "AI生成 · 人工智能生成" : "AI-generated content"}
-          </p>
-          <p className="mt-0.5 text-[11px] leading-4 text-teal-900/80">
-            {zh
-              ? "本页 AI 教练回复由人工智能生成，仅供训练参考。"
-              : "Replies from the AI coach are machine-generated for training reference only."}
-          </p>
-        </div>
-      ) : null}
+      {/* ZQ-168: WeChat 深度合成审核 — always-visible prominent AI-generated notice */}
+      <div
+        className="rounded-lg border-2 border-teal-600 bg-teal-50 px-3 py-3"
+        data-ai-generated-notice="true"
+        role="note"
+      >
+        <p className="text-center text-sm font-extrabold tracking-wide text-teal-900">
+          {zh ? "AI生成" : "AI-generated"}
+        </p>
+        <p className="mt-1 text-center text-sm font-bold tracking-wide text-teal-800">
+          {zh ? "人工智能生成" : "Machine-generated content"}
+        </p>
+        <p className="mt-1 text-center text-[11px] leading-4 text-teal-900/80">
+          {zh
+            ? "本页 AI 教练回复由人工智能生成，仅供训练参考，不构成专业意见。"
+            : "Replies from the AI coach are machine-generated for training reference only."}
+        </p>
+      </div>
       {/* Compact header: AI 教练 + 真实网络教练（可选）— no instructional clutter */}
       <section className="space-y-2" data-coach-pick-section="true" data-coach-pick-before-tabs="true">
         <CoachChatPersonas

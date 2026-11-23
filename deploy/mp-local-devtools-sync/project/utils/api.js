@@ -85,11 +85,11 @@ function accountLogin(payload) {
   })
 }
 
-function sendPhoneCode({ phone }) {
+function accountRegister(payload) {
   return request({
-    path: "/api/auth/code",
+    path: "/api/auth/register",
     method: "POST",
-    data: { phone: phone || "" },
+    data: payload || {},
   })
 }
 
@@ -109,7 +109,7 @@ function updateProfile(token, patch) {
 module.exports = {
   wechatLogin,
   accountLogin,
-  sendPhoneCode,
+  accountRegister,
   session,
   updateProfile,
 }

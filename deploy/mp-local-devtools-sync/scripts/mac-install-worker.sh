@@ -21,7 +21,7 @@ echo "==> agent version: $(agent --version)"
 echo "==> 2) Login (browser will open — use the SAME Cursor account as cloud agents)"
 agent login
 
-REPO_DIR="${WORKER_DIR:-$HOME/Downloads/mp-weixin (2)}"
+REPO_DIR="${WORKER_DIR:-$HOME/Downloads/mp-weixin}"
 # Prefer tennis-ai checkout if present
 for c in \
   "$HOME/repos/tennis-ai" \

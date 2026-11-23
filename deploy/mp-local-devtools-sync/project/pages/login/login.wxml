@@ -4,16 +4,24 @@
     <text class="brand-name">涨球乐</text>
   </view>
 
-  <text class="h1">登录</text>
-  <text class="lead-mini">请先浏览首页功能介绍；登录为可选。小程序仅支持账号密码登录。登录前须阅读并同意下列协议。学员/教练身份仅在注册时选择。</text>
+  <text class="h1">{{authTab === 'signup' ? '注册' : '登录'}}</text>
+  <text class="lead-mini">请先浏览首页功能介绍。仅支持账号密码注册与登录。登录前须同意协议。</text>
   <button class="btn-ghost back-home" bindtap="onBackHome">返回首页继续浏览</button>
 
-  <!-- ZQ-170: MP password-only — WeChat + phone SMS removed from mini-program UI. -->
-  <view class="mode-row" data-mp-wechat-login="off" data-mp-phone-login="off" data-login-mode="password-only" hidden>
-    <text>账号密码</text>
+  <!-- ZQ-172: only 注册 / 登录 — no WeChat, no phone SMS, no 学员/教练 -->
+  <view class="mode-row" data-auth-tab="true" data-mp-wechat-login="off" data-mp-phone-login="off">
+    <view
+      class="mode-chip {{authTab === 'signup' ? 'mode-chip-on' : ''}}"
+      data-tab="signup"
+      bindtap="onAuthTab"
+    >注册</view>
+    <view
+      class="mode-chip {{authTab === 'signin' ? 'mode-chip-on' : ''}}"
+      data-tab="signin"
+      bindtap="onAuthTab"
+    >登录</view>
   </view>
 
-  <!-- ZQ-168: consent before collecting account info -->
   <view class="consent-row" data-legal-consent="true">
     <checkbox-group bindchange="onConsentChange">
       <label class="consent-label">
@@ -29,7 +37,7 @@
     </checkbox-group>
   </view>
 
-  <view class="card" data-login-password="true">
+  <view class="card" wx:if="{{authTab === 'signin'}}" data-login-password="true" data-login-mode="password-only">
     <text class="label">用户名</text>
     <input
       class="field"
@@ -52,30 +60,38 @@
     </button>
   </view>
 
+  <view class="card" wx:if="{{authTab === 'signup'}}" data-signup-form="true" data-signup-no-role="true">
+    <text class="label">用户名</text>
+    <input
+      class="field"
+      maxlength="32"
+      placeholder="字母、数字、_ 或 -（3–32 位）"
+      value="{{username}}"
+      bindinput="onUsername"
+    />
+    <text class="label">密码</text>
+    <input
+      class="field"
+      password
+      maxlength="72"
+      placeholder="至少 4 位"
+      value="{{password}}"
+      bindinput="onPassword"
+    />
+    <text class="label">确认密码</text>
+    <input
+      class="field"
+      password
+      maxlength="72"
+      placeholder="再输入一次密码"
+      value="{{password2}}"
+      bindinput="onPassword2"
+    />
+    <button class="primary" loading="{{loading}}" disabled="{{loading || !agreedLegal}}" bindtap="onRegister">
+      {{loading ? "正在注册…" : "注册"}}
+    </button>
+  </view>
+
   <text class="hint" wx:if="{{notice}}">{{notice}}</text>
   <text class="error" wx:if="{{error}}">{{error}}</text>
-
-  <view class="intro-mask" wx:if="{{showIntro}}" catchtouchmove="noop">
-    <view class="intro-card">
-      <view class="intro-brand">
-        <image class="intro-logo" src="/images/logo.png" mode="aspectFit" />
-        <text class="intro-brand-name">涨球乐</text>
-      </view>
-      <text class="intro-title">欢迎来到涨球乐</text>
-      <text class="intro-lead">多打球、约对手、看排名、找教练——让我们大家一起涨球乐。</text>
-      <view class="intro-list">
-        <view class="intro-item" wx:for="{{introPoints}}" wx:key="title">
-          <view class="intro-num">{{index + 1}}</view>
-          <view class="intro-body">
-            <text class="intro-item-title">{{item.title}}</text>
-            <text class="intro-item-desc">{{item.desc}}</text>
-          </view>
-        </view>
-      </view>
-      <view class="intro-actions">
-        <button class="btn-ghost intro-btn" bindtap="onIntroDismiss">跳过</button>
-        <button class="primary intro-btn" bindtap="onIntroDismiss">开始</button>
-      </view>
-    </view>
-  </view>
 </view>
