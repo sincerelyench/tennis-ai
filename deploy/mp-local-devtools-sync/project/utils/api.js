@@ -85,6 +85,14 @@ function accountLogin(payload) {
   })
 }
 
+function accountRegister(payload) {
+  return request({
+    path: "/api/auth/register",
+    method: "POST",
+    data: payload || {},
+  })
+}
+
 function session(token) {
   return request({ path: "/api/auth/session", token })
 }
@@ -101,6 +109,7 @@ function updateProfile(token, patch) {
 module.exports = {
   wechatLogin,
   accountLogin,
+  accountRegister,
   session,
   updateProfile,
 }

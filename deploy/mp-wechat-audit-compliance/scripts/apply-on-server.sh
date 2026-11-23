@@ -67,6 +67,7 @@ cp -a "$PATCH_DIR/mp-patch/pages/legal/." "$MP_ROOT/pages/legal/"
 cp -a "$PATCH_DIR/mp-patch/pages/login/login.js" "$MP_ROOT/pages/login/login.js"
 cp -a "$PATCH_DIR/mp-patch/pages/login/login.wxml" "$MP_ROOT/pages/login/login.wxml"
 cp -a "$PATCH_DIR/mp-patch/pages/login/login.wxss" "$MP_ROOT/pages/login/login.wxss"
+cp -a "$PATCH_DIR/mp-patch/utils/api.js" "$MP_ROOT/utils/api.js" 2>/dev/null || true
 cp -a "$PATCH_DIR/mp-patch/pages/web/web.js" "$MP_ROOT/pages/web/web.js"
 cp -a "$PATCH_DIR/mp-patch/WECHAT-AUDIT-NOTE.txt" "$MP_ROOT/WECHAT-AUDIT-NOTE.txt" 2>/dev/null || true
 
@@ -82,11 +83,13 @@ login = (root/"pages/login/login.js").read_text()
 assert "agreedLegal" in login and "requireConsent" in login
 assert "onWechatLogin" not in login
 assert "onPhoneLogin" not in login and "sendPhoneCode" not in login
+assert "onRegister" in login and 'role: "player"' in login
 wxml = (root/"pages/login/login.wxml").read_text()
 assert "data-legal-consent" in wxml
-assert 'data-mp-phone-login="off"' in wxml
-assert 'data-login-mode="password-only"' in wxml
-assert "bindtap=\"onPhoneLogin\"" not in wxml and "data-mode=\"phone\"" not in wxml
+assert 'data-mp-phone-login="off"' in wxml or 'data-auth-tab' in wxml
+assert "微信登录" not in wxml
+assert "手机验证码" not in wxml
+assert "data-auth-tab" in wxml
 assert "onPasswordLogin" in login
 home = (root/"pages/home/home.wxml").read_text()
 assert "data-mp-browse-first" in home

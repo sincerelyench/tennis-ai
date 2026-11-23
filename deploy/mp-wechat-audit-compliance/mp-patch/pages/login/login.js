@@ -4,26 +4,6 @@ const errors = require("../../utils/errors")
 
 const INTRO_STORAGE_KEY = "zq_mp_onboarded_v1"
 
-/** Webpage 四卖点（约球/多打球）— not 动作/视频分析 (ZQ-159). */
-const INTRO_POINTS = [
-  {
-    title: "一起涨球乐",
-    desc: "多打球、多比赛，在实战中打磨技术，大家一起涨球乐。",
-  },
-  {
-    title: "约到水平相当的球友",
-    desc: "轻松找到本地水平相当（或上下）的球友来挑战。",
-  },
-  {
-    title: "赛后看排名变化",
-    desc: "排名不随意，按与对手水平相近程度计算，打完就能看到升降。",
-  },
-  {
-    title: "AI 教练与真实网络教练",
-    desc: "日常训练有疑问或拍下动作，可获 AI 教练与真实网络教练指导。",
-  },
-]
-
 function enterApp(token) {
   wx.redirectTo({
     url: "/pages/web/web?token=" + encodeURIComponent(token),
@@ -36,7 +16,6 @@ function enterProfileSetup() {
   })
 }
 
-/** User-facing login error — never show opaque codes like "server". */
 function loginErrorText(err, fallback) {
   const localized = errors.message("zh-CN", err)
   if (localized) return localized
@@ -65,28 +44,23 @@ function writeIntroSeen() {
 
 Page({
   data: {
-    // ZQ-170: MP password-only (no WeChat, no phone SMS).
+    // ZQ-172: only signup / signin (password). No WeChat, phone, or role.
+    authTab: "signup",
     username: "",
     password: "",
+    password2: "",
     loading: false,
     error: "",
     notice: "",
-    // ZQ-168: must agree legal before collecting account info.
     agreedLegal: false,
-    showIntro: false,
-    introPoints: INTRO_POINTS,
   },
   onLoad() {
-    // Intro moved to home browse-first; keep flag for returning users.
     if (!readIntroSeen()) writeIntroSeen()
-    this.setData({ showIntro: false })
   },
   onShow() {
-    // Drop sticky errors from a previous failed attempt (e.g. raw "server" from 5xx).
     this.setData({ error: "" })
     const auth = session.auth()
     if (!auth || !auth.token) return
-    // Validate before skipping native login; stale tokens land in web-view /login.
     api
       .session(auth.token)
       .then((body) => {
@@ -102,11 +76,6 @@ Page({
           notice: "登录已过期，请用账号密码重新登录",
         })
       })
-  },
-  noop() {},
-  onIntroDismiss() {
-    writeIntroSeen()
-    this.setData({ showIntro: false })
   },
   onBackHome() {
     wx.navigateBack({ fail: () => wx.reLaunch({ url: "/pages/home/home" }) })
@@ -128,26 +97,30 @@ Page({
     })
     return false
   },
+  onAuthTab(e) {
+    const tab = (e.currentTarget.dataset && e.currentTarget.dataset.tab) || "signup"
+    this.setData({
+      authTab: tab === "signin" ? "signin" : "signup",
+      error: "",
+      notice: "",
+    })
+  },
   onUsername(e) {
     this.setData({ username: e.detail.value || "" })
   },
   onPassword(e) {
     this.setData({ password: e.detail.value || "" })
   },
-  /**
-   * After auth: incomplete 约球 profile → native profile-setup (nick picker + 微信号).
-   * Complete → web-view.
-   */
-  finishLogin(body, notice) {
+  onPassword2(e) {
+    this.setData({ password2: e.detail.value || "" })
+  },
+  finishLogin(body) {
     if (!body || !body.token) {
       this.setData({ loading: false, error: "登录失败，请重试" })
       return
     }
     session.saveAuth(body)
     this.setData({ loading: false, error: "", notice: "" })
-    if (notice) {
-      wx.showToast({ title: notice, icon: "none", duration: 2500 })
-    }
     if (body.needsProfileSetup) {
       enterProfileSetup()
       return
@@ -171,6 +144,36 @@ Page({
         this.setData({
           loading: false,
           error: loginErrorText(err, "登录失败，请重试"),
+        })
+      })
+  },
+  onRegister() {
+    if (this.data.loading) return
+    if (!this.requireConsent()) return
+    const username = String(this.data.username || "").trim()
+    const password = String(this.data.password || "")
+    const password2 = String(this.data.password2 || "")
+    if (!/^[a-zA-Z0-9_\-]{3,32}$/.test(username)) {
+      this.setData({ error: "用户名需 3–32 位字母、数字、_ 或 -" })
+      return
+    }
+    if (password.length < 4) {
+      this.setData({ error: "密码至少 4 位" })
+      return
+    }
+    if (password !== password2) {
+      this.setData({ error: "两次密码不一致" })
+      return
+    }
+    this.setData({ loading: true, error: "", notice: "" })
+    // ZQ-172: no role UI — always register as player.
+    api
+      .accountRegister({ username, password, role: "player" })
+      .then((body) => this.finishLogin(body))
+      .catch((err) => {
+        this.setData({
+          loading: false,
+          error: loginErrorText(err, "注册失败，请重试"),
         })
       })
   },
