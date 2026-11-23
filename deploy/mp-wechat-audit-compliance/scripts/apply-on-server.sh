@@ -72,8 +72,12 @@ assert "pages/legal/legal" in app["pages"]
 login = (root/"pages/login/login.js").read_text()
 assert "agreedLegal" in login and "requireConsent" in login
 assert "onWechatLogin" not in login
+assert "onPhoneLogin" not in login and "sendPhoneCode" not in login
 wxml = (root/"pages/login/login.wxml").read_text()
 assert "data-legal-consent" in wxml
+assert "data-mp-phone-login=\"off\"" in wxml or 'data-mp-phone-login="off"' in wxml
+assert "手机验证码" not in wxml
+assert "onPasswordLogin" in login
 home = (root/"pages/home/home.wxml").read_text()
 assert "data-mp-browse-first" in home
 assert "AI生成" in home

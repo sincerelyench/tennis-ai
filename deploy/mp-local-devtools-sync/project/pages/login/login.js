@@ -65,18 +65,13 @@ function writeIntroSeen() {
 
 Page({
   data: {
-    // ZQ-169: default to phone SMS so login is not mistaken for password-only.
-    mode: "phone",
+    // ZQ-170: MP password-only (no WeChat, no phone SMS).
     username: "",
     password: "",
-    phone: "",
-    smsCode: "",
-    devCode: "",
     loading: false,
-    codeLoading: false,
     error: "",
     notice: "",
-    // ZQ-168: must agree legal before collecting phone / account info.
+    // ZQ-168: must agree legal before collecting account info.
     agreedLegal: false,
     showIntro: false,
     introPoints: INTRO_POINTS,
@@ -104,8 +99,7 @@ Page({
       .catch(() => {
         session.clearAuth()
         this.setData({
-          mode: "password",
-          notice: "登录已过期，请用账号密码或手机验证码重新登录",
+          notice: "登录已过期，请用账号密码重新登录",
         })
       })
   },
@@ -134,28 +128,15 @@ Page({
     })
     return false
   },
-  onMode(e) {
-    let mode =
-      (e.currentTarget.dataset && e.currentTarget.dataset.mode) || "password"
-    // ZQ-166b: only password / phone.
-    if (mode !== "password" && mode !== "phone") mode = "password"
-    this.setData({ mode, error: "", notice: "" })
-  },
   onUsername(e) {
     this.setData({ username: e.detail.value || "" })
   },
   onPassword(e) {
     this.setData({ password: e.detail.value || "" })
   },
-  onPhone(e) {
-    this.setData({ phone: e.detail.value || "" })
-  },
-  onSmsCode(e) {
-    this.setData({ smsCode: e.detail.value || "" })
-  },
   /**
    * After auth: incomplete 约球 profile → native profile-setup (nick picker + 微信号).
-   * Complete → web-view. ZQ-158: displayName / nick never collected on WeChat login tab.
+   * Complete → web-view.
    */
   finishLogin(body, notice) {
     if (!body || !body.token) {
@@ -179,58 +160,12 @@ Page({
     const username = String(this.data.username || "").trim()
     const password = String(this.data.password || "")
     if (!username || password.length < 4) {
-      this.setData({ error: "请填写用户名（或手机号）和密码" })
+      this.setData({ error: "请填写用户名和密码" })
       return
     }
     this.setData({ loading: true, error: "", notice: "" })
     api
       .accountLogin({ username, password })
-      .then((body) => this.finishLogin(body))
-      .catch((err) => {
-        this.setData({
-          loading: false,
-          error: loginErrorText(err, "登录失败，请重试"),
-        })
-      })
-  },
-  onSendCode() {
-    if (this.data.codeLoading) return
-    if (!this.requireConsent()) return
-    const phone = String(this.data.phone || "").trim()
-    if (!/^\d{11}$/.test(phone)) {
-      this.setData({ error: "请输入 11 位手机号" })
-      return
-    }
-    this.setData({ codeLoading: true, error: "", notice: "", devCode: "" })
-    api
-      .sendPhoneCode({ phone })
-      .then((body) => {
-        this.setData({
-          codeLoading: false,
-          notice: "验证码已发送（开发环境可能直接显示在下方）",
-          devCode: (body && body.code) || "",
-          smsCode: (body && body.code) || this.data.smsCode,
-        })
-      })
-      .catch((err) => {
-        this.setData({
-          codeLoading: false,
-          error: loginErrorText(err, "发送失败"),
-        })
-      })
-  },
-  onPhoneLogin() {
-    if (this.data.loading) return
-    if (!this.requireConsent()) return
-    const phone = String(this.data.phone || "").trim()
-    const code = String(this.data.smsCode || "").trim()
-    if (!/^\d{11}$/.test(phone) || !code) {
-      this.setData({ error: "请填写手机号和验证码" })
-      return
-    }
-    this.setData({ loading: true, error: "", notice: "" })
-    api
-      .accountLogin({ phone, code })
       .then((body) => this.finishLogin(body))
       .catch((err) => {
         this.setData({
