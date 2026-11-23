@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run ON Yanqing's Mac — fills local WeChat DevTools project from prod zip.
 set -euo pipefail
-DEST="${LOCAL_MP_DIR:-$HOME/Downloads/mp-weixin (2)}"
+DEST="${LOCAL_MP_DIR:-$HOME/Downloads/mp-weixin}"
 ZIP_URL="${ZIP_URL:-https://yqchen.blog/mp-weixin.zip}"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT

@@ -11,4 +11,4 @@ H5 login-view（web-view / APK / IPA 共用）：
 
 本机同步：
   bash deploy/mp-local-devtools-sync/scripts/mac-sync-password-only-from-git.sh
-目标：/Users/yanqing/Downloads/mp-weixin (2)/
+目标：/Users/yanqing/Downloads/mp-weixin/

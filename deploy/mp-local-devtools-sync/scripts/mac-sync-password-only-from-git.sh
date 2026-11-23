@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run ON Yanqing's Mac — overwrite local DevTools with password-only MP (no WeChat / phone).
 set -euo pipefail
-DEST="${LOCAL_MP_DIR:-$HOME/Downloads/mp-weixin (2)}"
+DEST="${LOCAL_MP_DIR:-$HOME/Downloads/mp-weixin}"
 BRANCH="${BRANCH:-cursor/mp-remove-signup-role-7086}"
 REPO_URL="${REPO_URL:-https://github.com/sincerelyench/tennis-ai.git}"
 TMP="$(mktemp -d)"

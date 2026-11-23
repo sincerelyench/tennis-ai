@@ -1,6 +1,6 @@
 # 小程序交付默认：本地微信开发者工具目录
 
-**默认目标：** `/Users/yanqing/Downloads/mp-weixin (2)`（或 `$HOME/Downloads/mp-weixin (2)`）
+**默认目标：** `/Users/yanqing/Downloads/mp-weixin`（或 `$HOME/Downloads/mp-weixin`）
 
 云端 Linux 虚拟机**没有**你的 Mac 磁盘。只有下面两种方式能写进本机目录：
 
@@ -10,11 +10,11 @@
 
 ```bash
 curl -fsSL https://yqchen.blog/mp-weixin.zip -o /tmp/mp-weixin.zip
-mkdir -p "$HOME/Downloads/mp-weixin (2)"
+mkdir -p "$HOME/Downloads/mp-weixin"
 TMP=$(mktemp -d) && unzip -qo /tmp/mp-weixin.zip -d "$TMP"
 SRC="$TMP/mp-weixin"; [[ -d "$SRC" ]] || SRC="$TMP"
-rsync -a --exclude 'project.private.config.json' --exclude '.zq-sync-backup-*' "$SRC"/ "$HOME/Downloads/mp-weixin (2)"/
-echo DONE; ls "$HOME/Downloads/mp-weixin (2)/app.json"
+rsync -a --exclude 'project.private.config.json' --exclude '.zq-sync-backup-*' "$SRC"/ "$HOME/Downloads/mp-weixin"/
+echo DONE; ls "$HOME/Downloads/mp-weixin/app.json"
 ```
 
 或拉仓库后：

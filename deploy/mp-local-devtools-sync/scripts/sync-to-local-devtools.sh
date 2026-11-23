@@ -3,7 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="${SRC:-$ROOT/project}"
-DEST="${LOCAL_MP_DIR:-/Users/yanqing/Downloads/mp-weixin (2)}"
+DEST="${LOCAL_MP_DIR:-/Users/yanqing/Downloads/mp-weixin}"
 
 if [[ ! -d "$SRC" ]]; then
   echo "ERROR: missing project mirror at $SRC" >&2

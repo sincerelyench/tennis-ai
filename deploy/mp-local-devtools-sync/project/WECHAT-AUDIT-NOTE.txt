@@ -19,5 +19,5 @@ ZQ-168 · 微信小程序审核三条整改（代码已进小程序工程）
    → H5 AI 教练页同样标注（web-view）
    → 【人工】公众平台类目勾选「深度合成 - AI问答」（代码无法代操作）
 
-本机路径：/Users/yanqing/Downloads/mp-weixin (2)/
+本机路径：/Users/yanqing/Downloads/mp-weixin/
 重新提交前：开发者工具清缓存并编译。
