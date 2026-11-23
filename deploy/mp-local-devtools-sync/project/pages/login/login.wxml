@@ -23,7 +23,7 @@
           <text class="link" catchtap="onOpenTerms">《用户服务协议》</text>
           和
           <text class="link" catchtap="onOpenPrivacy">《隐私政策》</text>
-          ，知晓账号信息仅用于登录验证与账号服务。
+          ，知晓我们将收集并使用账号（用户名与密码）用于登录验证、账号安全与约球等账号服务；不会在未同意前索要手机号、头像或昵称授权。
         </text>
       </label>
     </checkbox-group>

@@ -16,8 +16,9 @@
   </view>
 
   <view class="card ai-note" data-ai-generated-notice="true">
-    <text class="ai-badge">AI生成 · 人工智能生成</text>
-    <text class="feature-desc">「AI 教练」对话与点评由人工智能生成，仅供训练参考，不构成专业医疗或竞技承诺。</text>
+    <text class="ai-badge">AI生成</text>
+    <text class="ai-badge ai-badge-sub">人工智能生成</text>
+    <text class="feature-desc">「AI 教练」对话与点评由人工智能生成，仅供训练参考，不构成专业医疗或竞技承诺。使用相关功能时页面会持续展示本说明。</text>
   </view>
 
   <button class="primary" bindtap="onBrowseGuest">浏览功能介绍</button>
