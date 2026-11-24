@@ -7,7 +7,7 @@ function apiBase() {
 
 function buildUrl(token, nextPath) {
   const base = apiBase()
-  const next = nextPath && String(nextPath).startsWith("/") ? String(nextPath) : "/"
+  const next = nextPath && String(nextPath).startsWith("/") ? String(nextPath) : "/ladder"
   if (token) {
     return (
       base +
@@ -17,8 +17,19 @@ function buildUrl(token, nextPath) {
       encodeURIComponent(next)
     )
   }
-  // ZQ-168: guest browse — public H5 paths only (no session).
+  // ZQ-175: guest — public H5 paths (/ladder, /coach); gated tabs redirect to login in H5.
   return base + next
+}
+
+function openGuestLadder() {
+  wx.redirectTo({ url: "/pages/web/web?guest=1&next=/ladder" })
+}
+
+function openNativeLogin(nextPath) {
+  const next = nextPath && String(nextPath).startsWith("/") ? String(nextPath) : "/friends"
+  wx.redirectTo({
+    url: "/pages/login/login?next=" + encodeURIComponent(next),
+  })
 }
 
 Page({
@@ -30,9 +41,9 @@ Page({
     const guest = String((query && query.guest) || "") === "1"
     const auth = session.auth()
     const token = (query && query.token) || (auth && auth.token) || ""
-    const next = (query && query.next) || (guest ? "/guest" : "/")
+    const next = (query && query.next) || (guest ? "/ladder" : "/ladder")
     if (!token && !guest) {
-      wx.redirectTo({ url: "/pages/home/home" })
+      openGuestLadder()
       return
     }
     this.setData({
@@ -45,7 +56,7 @@ Page({
     const auth = session.auth()
     if (!auth || !auth.token) {
       if (this.data.url) {
-        wx.redirectTo({ url: "/pages/home/home" })
+        openGuestLadder()
       }
     }
   },
@@ -55,7 +66,11 @@ Page({
     if (!last || !last.type) return
     if (last.type === "logout") {
       session.clearAuth()
-      wx.redirectTo({ url: "/pages/home/home" })
+      openGuestLadder()
+      return
+    }
+    if (last.type === "needLogin") {
+      openNativeLogin(last.next || "/friends")
       return
     }
     if (last.type === "subscribe") {

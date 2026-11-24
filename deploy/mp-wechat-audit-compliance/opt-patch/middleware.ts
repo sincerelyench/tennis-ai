@@ -5,7 +5,10 @@ const sessionCookie = "tennis_session";
 const publicPaths = [
   "/login",
   "/share",
-  // ZQ-168: WeChat 审核 — guest browse + legal pages (no session)
+  // ZQ-175: guests may open 排行榜 + 教练; 约球/我的 still require login
+  "/ladder",
+  "/coach",
+  // ZQ-168 leftovers (legal); /guest kept as redirect stub
   "/guest",
   "/privacy",
   "/terms",
@@ -18,6 +21,8 @@ const publicPaths = [
   "/api/auth/logout",
   "/api/auth/session",
   "/api/geo/city",
+  // Guest-readable ladder data (GET); writes still need session via route handlers
+  "/api/friends/ladder",
   "/examples",
   "/icon.png",
   "/apple-icon.png",

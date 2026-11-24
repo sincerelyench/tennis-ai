@@ -5,8 +5,8 @@
   </view>
 
   <text class="h1">{{authTab === 'signup' ? '注册' : '登录'}}</text>
-  <text class="lead-mini">请先浏览首页功能介绍。仅支持账号密码注册与登录。登录前须同意协议。</text>
-  <button class="btn-ghost back-home" bindtap="onBackHome">返回首页继续浏览</button>
+  <text class="lead-mini">仅支持账号密码。未登录可浏览排行榜与教练；约球与「我的」需登录。</text>
+  <button class="btn-ghost back-home" bindtap="onBackHome">返回排行榜</button>
 
   <!-- ZQ-172: only 注册 / 登录 — no WeChat, no phone SMS, no 学员/教练 -->
   <view class="mode-row" data-auth-tab="true" data-mp-wechat-login="off" data-mp-phone-login="off">
@@ -22,7 +22,8 @@
     >登录</view>
   </view>
 
-  <view class="consent-row" data-legal-consent="true">
+  <!-- ZQ-175: legal consent only on 注册 -->
+  <view class="consent-row" wx:if="{{authTab === 'signup'}}" data-legal-consent="true" data-consent-signup-only="true">
     <checkbox-group bindchange="onConsentChange">
       <label class="consent-label">
         <checkbox value="agree" checked="{{agreedLegal}}" color="#0d9488" />
@@ -55,7 +56,7 @@
       value="{{password}}"
       bindinput="onPassword"
     />
-    <button class="primary" loading="{{loading}}" disabled="{{loading || !agreedLegal}}" bindtap="onPasswordLogin">
+    <button class="primary" loading="{{loading}}" disabled="{{loading}}" bindtap="onPasswordLogin">
       {{loading ? "正在登录…" : "登录"}}
     </button>
   </view>

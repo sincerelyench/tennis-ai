@@ -1,32 +1,8 @@
-<!-- ZQ-174: browse-first home — one calm composition; AI labels only on coach tab. -->
-<view class="page" data-mp-home="true" data-mp-browse-first="true">
-  <view class="hero">
-    <view class="hero-glow" />
-    <view class="brand">
-      <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
-      <text class="brand-name">涨球乐</text>
-    </view>
-    <text class="hero-title">先逛逛，再登录</text>
-    <text class="hero-lead">约球、看排名、找教练——先看功能介绍，需要时再自行登录。进入本页不索要手机号、头像或昵称。</text>
-  </view>
-
-  <view class="features">
-    <view class="feature" wx:for="{{features}}" wx:key="title">
-      <text class="feature-index">{{index + 1}}</text>
-      <view class="feature-copy">
-        <text class="feature-title">{{item.title}}</text>
-        <text class="feature-desc">{{item.desc}}</text>
-      </view>
-    </view>
-  </view>
-
-  <view class="actions">
-    <button class="btn-primary" bindtap="onBrowseGuest">浏览功能介绍</button>
-    <button class="btn-secondary" bindtap="onGoLogin">登录 / 注册</button>
-    <view class="legal-row">
-      <text class="legal-link" bindtap="onOpenTerms">《用户服务协议》</text>
-      <text class="legal-sep">·</text>
-      <text class="legal-link" bindtap="onOpenPrivacy">《隐私政策》</text>
-    </view>
+<!-- ZQ-175: thin launcher — no browse-features marketing. -->
+<view class="page" data-mp-home="true" data-mp-guest-entry="ladder">
+  <view class="splash">
+    <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
+    <text class="brand-name">涨球乐</text>
+    <text class="status">{{status}}</text>
   </view>
 </view>
