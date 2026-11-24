@@ -1,0 +1,200 @@
+/* inherits app.wxss light theme */
+.page {
+  padding-top: 48rpx;
+}
+
+.mode-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.mode-chip {
+  flex: 1;
+  text-align: center;
+  padding: 18rpx 22rpx;
+  border-radius: 16rpx;
+  border: 2rpx solid #cbd5e1;
+  background: #ffffff;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.mode-chip-on {
+  background: #0d9488;
+  border-color: #0d9488;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.code-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+}
+
+.code-field {
+  flex: 1;
+}
+
+.code-btn {
+  margin-top: 0 !important;
+  flex-shrink: 0;
+  height: 80rpx;
+  line-height: 80rpx;
+  padding: 0 22rpx !important;
+  font-size: 24rpx !important;
+}
+
+/* Intro popup (webpage 四卖点 · 约球/多打球) */
+.intro-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 32rpx;
+  box-sizing: border-box;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.intro-card {
+  width: 100%;
+  max-width: 680rpx;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 36rpx 32rpx 28rpx;
+  box-sizing: border-box;
+  box-shadow: 0 18rpx 48rpx rgba(15, 23, 42, 0.18);
+}
+
+.intro-brand {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.intro-logo {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+}
+
+.intro-brand-name {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.intro-title {
+  display: block;
+  margin-top: 28rpx;
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.intro-lead {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  line-height: 1.55;
+  color: #64748b;
+}
+
+.intro-list {
+  margin-top: 28rpx;
+}
+
+.intro-item {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 22rpx;
+}
+
+.intro-num {
+  flex-shrink: 0;
+  width: 44rpx;
+  height: 44rpx;
+  margin-top: 4rpx;
+  border-radius: 999rpx;
+  background: #0d9488;
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 700;
+  line-height: 44rpx;
+  text-align: center;
+}
+
+.intro-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.intro-item-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.intro-item-desc {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.intro-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 12rpx;
+}
+
+.intro-btn {
+  flex: 1;
+  margin-top: 0 !important;
+}
+
+/* ZQ-168 consent + browse-back */
+.lead-mini {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: #64748b;
+  margin-bottom: 16rpx;
+}
+.back-home {
+  margin-bottom: 20rpx !important;
+}
+.consent-row {
+  margin: 8rpx 0 20rpx;
+  padding: 16rpx;
+  background: #f8fafc;
+  border-radius: 16rpx;
+  border: 1rpx solid #e2e8f0;
+}
+.consent-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8rpx;
+}
+.consent-text {
+  flex: 1;
+  font-size: 22rpx;
+  line-height: 1.55;
+  color: #475569;
+}
+.link {
+  color: #0d9488;
+  font-weight: 600;
+}

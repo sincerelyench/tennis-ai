@@ -1,0 +1,5 @@
+ZQ-150 微信订阅消息
+- 登录成功后进入 pages/subscribe
+- 用户点击「开启订阅」才调 wx.requestSubscribeMessage（满足手势）
+- 模板 ID：config.subscribeTemplates 或服务端 WECHAT_MP_TMPL_*
+- 详见 deploy/wechat-subscribe-notify/WECHAT-CONSOLE-TEMPLATES.md

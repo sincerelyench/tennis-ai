@@ -1,0 +1,4 @@
+ZQ-164c: H5 (main)/error.tsx — 「再试一次」改为整页 reload；微信 UA 底栏 Tab 硬跳转。
+排行榜/约球仍是 web-view → 同源 H5，无原生页改动。
+本机：强制关掉小程序 → 清缓存并编译 → 重新登录进 pages/web。
+路径偏好：/Users/yanqing/Downloads/mp-weixin/（Mac sync 时把本 NOTE 拷入工程根即可）。

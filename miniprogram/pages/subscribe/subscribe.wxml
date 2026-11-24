@@ -1,0 +1,9 @@
+<view class="page">
+  <view class="card">
+    <view class="title">微信订阅消息</view>
+    <view class="status">{{status}}</view>
+    <view class="detail" wx:if="{{detail}}">{{detail}}</view>
+    <button class="primary" bindtap="onEnable">{{done ? "返回应用" : "开启订阅"}}</button>
+    <button class="ghost" bindtap="onSkip" wx:if="{{!done}}">暂时跳过</button>
+  </view>
+</view>

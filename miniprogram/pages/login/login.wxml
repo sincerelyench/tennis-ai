@@ -1,0 +1,97 @@
+<view class="page">
+  <view class="brand-row">
+    <image class="brand-logo" src="/images/logo.png" mode="aspectFit" />
+    <text class="brand-name">涨球乐</text>
+  </view>
+
+  <text class="h1">{{authTab === 'signup' ? '注册' : '登录'}}</text>
+  <text class="lead-mini">请先浏览首页功能介绍。仅支持账号密码注册与登录。登录前须同意协议。</text>
+  <button class="btn-ghost back-home" bindtap="onBackHome">返回首页继续浏览</button>
+
+  <!-- ZQ-172: only 注册 / 登录 — no WeChat, no phone SMS, no 学员/教练 -->
+  <view class="mode-row" data-auth-tab="true" data-mp-wechat-login="off" data-mp-phone-login="off">
+    <view
+      class="mode-chip {{authTab === 'signup' ? 'mode-chip-on' : ''}}"
+      data-tab="signup"
+      bindtap="onAuthTab"
+    >注册</view>
+    <view
+      class="mode-chip {{authTab === 'signin' ? 'mode-chip-on' : ''}}"
+      data-tab="signin"
+      bindtap="onAuthTab"
+    >登录</view>
+  </view>
+
+  <view class="consent-row" data-legal-consent="true">
+    <checkbox-group bindchange="onConsentChange">
+      <label class="consent-label">
+        <checkbox value="agree" checked="{{agreedLegal}}" color="#0d9488" />
+        <text class="consent-text">
+          我已阅读并同意
+          <text class="link" catchtap="onOpenTerms">《用户服务协议》</text>
+          和
+          <text class="link" catchtap="onOpenPrivacy">《隐私政策》</text>
+          ，知晓账号信息仅用于登录验证与账号服务。
+        </text>
+      </label>
+    </checkbox-group>
+  </view>
+
+  <view class="card" wx:if="{{authTab === 'signin'}}" data-login-password="true" data-login-mode="password-only">
+    <text class="label">用户名</text>
+    <input
+      class="field"
+      maxlength="40"
+      placeholder="用户名"
+      value="{{username}}"
+      bindinput="onUsername"
+    />
+    <text class="label">密码</text>
+    <input
+      class="field"
+      password
+      maxlength="72"
+      placeholder="密码"
+      value="{{password}}"
+      bindinput="onPassword"
+    />
+    <button class="primary" loading="{{loading}}" disabled="{{loading || !agreedLegal}}" bindtap="onPasswordLogin">
+      {{loading ? "正在登录…" : "登录"}}
+    </button>
+  </view>
+
+  <view class="card" wx:if="{{authTab === 'signup'}}" data-signup-form="true" data-signup-no-role="true">
+    <text class="label">用户名</text>
+    <input
+      class="field"
+      maxlength="32"
+      placeholder="字母、数字、_ 或 -（3–32 位）"
+      value="{{username}}"
+      bindinput="onUsername"
+    />
+    <text class="label">密码</text>
+    <input
+      class="field"
+      password
+      maxlength="72"
+      placeholder="至少 4 位"
+      value="{{password}}"
+      bindinput="onPassword"
+    />
+    <text class="label">确认密码</text>
+    <input
+      class="field"
+      password
+      maxlength="72"
+      placeholder="再输入一次密码"
+      value="{{password2}}"
+      bindinput="onPassword2"
+    />
+    <button class="primary" loading="{{loading}}" disabled="{{loading || !agreedLegal}}" bindtap="onRegister">
+      {{loading ? "正在注册…" : "注册"}}
+    </button>
+  </view>
+
+  <text class="hint" wx:if="{{notice}}">{{notice}}</text>
+  <text class="error" wx:if="{{error}}">{{error}}</text>
+</view>
