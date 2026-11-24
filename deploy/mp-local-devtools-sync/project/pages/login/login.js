@@ -78,7 +78,10 @@ Page({
       })
   },
   onBackHome() {
-    wx.navigateBack({ fail: () => wx.reLaunch({ url: "/pages/home/home" }) })
+    wx.redirectTo({
+      url: "/pages/web/web?guest=1&next=/ladder",
+      fail: () => wx.reLaunch({ url: "/pages/home/home" }),
+    })
   },
   onOpenTerms() {
     wx.navigateTo({ url: "/pages/legal/legal?kind=terms" })
@@ -129,7 +132,7 @@ Page({
   },
   onPasswordLogin() {
     if (this.data.loading) return
-    if (!this.requireConsent()) return
+    // ZQ-175: consent checkbox only on 注册, not 登录
     const username = String(this.data.username || "").trim()
     const password = String(this.data.password || "")
     if (!username || password.length < 4) {

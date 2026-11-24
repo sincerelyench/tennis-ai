@@ -2,7 +2,7 @@
 # Run ON Yanqing's Mac — overwrite local DevTools with password-only MP (no WeChat / phone).
 set -euo pipefail
 DEST="${LOCAL_MP_DIR:-$HOME/Downloads/mp-weixin}"
-BRANCH="${BRANCH:-cursor/mp-remove-signup-role-7086}"
+BRANCH="${BRANCH:-cursor/mp-guest-public-tabs-7086}"
 REPO_URL="${REPO_URL:-https://github.com/sincerelyench/tennis-ai.git}"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -43,8 +43,14 @@ assert "微信登录" not in w
 assert "手机验证码" not in w
 assert "onWechatLogin" not in js
 assert "onPhoneLogin" not in js
+assert "data-consent-signup-only" in w
+home = (root / "pages/home/home.wxml").read_text()
+assert "浏览功能" not in home
+assert "data-mp-guest-entry" in home
+web = (root / "pages/web/web.js").read_text()
+assert "/ladder" in web
 print("OK", root)
 PY
 
 echo "DONE — 微信开发者工具：打开 $DEST → 清缓存 → 编译"
-echo "登录页应只有：协议勾选 + 用户名 + 密码（无微信、无手机验证码）"
+echo "期望：打开即进排行榜；协议勾选仅注册；约球/我的未登录进登录页"
