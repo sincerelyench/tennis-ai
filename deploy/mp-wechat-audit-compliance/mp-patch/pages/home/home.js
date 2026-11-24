@@ -1,18 +1,18 @@
-/** ZQ-168/173: WeChat 审核 — browse features before login; keep home simple. */
+/** ZQ-174: browse-first home — calm composition; no AI-generated notice here. */
 Page({
   data: {
     features: [
       {
         title: "约球与挑战",
-        desc: "按水平匹配本地球友，发起约球与赛后交流。",
+        desc: "按水平匹配本地球友，轻松约上一场。",
       },
       {
         title: "城市排行榜",
-        desc: "查看本地单打 / 女单排名与赛果变化。",
+        desc: "看本地单打与女单排名，赛后分数有迹可循。",
       },
       {
         title: "AI 教练与网络教练",
-        desc: "登录后可向 AI 教练提问，或向真人教练留言。",
+        desc: "登录后可提问或留言，训练疑问有人答。",
       },
     ],
   },
