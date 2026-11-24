@@ -1,0 +1,4 @@
+ZQ-166b / ZQ-170 · 小程序去掉微信登录（并去掉手机验证码）
+
+- pages/login: 仅「账号密码」；无微信登录、无手机验证码
+- 本 NOTE 可拷入 /Users/yanqing/Downloads/mp-weixin/

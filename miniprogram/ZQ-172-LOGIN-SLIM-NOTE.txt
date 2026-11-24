@@ -1,0 +1,14 @@
+ZQ-172 · 登录注册入口精简（2026-11-24 Asia/Shanghai）
+
+小程序原生 pages/login：
+- 仅「注册 / 登录」两个切换
+- 账号密码；注册默认 role=player（无学员/教练 UI）
+- 无微信登录、无手机验证码
+
+H5 login-view（web-view / APK / IPA 共用）：
+- 同样无角色选择、无手机验证码、无微信按钮
+- 部署须拷贝 login-view.tsx（mac-apply-password-only.sh）
+
+本机同步：
+  bash deploy/mp-local-devtools-sync/scripts/mac-sync-password-only-from-git.sh
+目标：/Users/yanqing/Downloads/mp-weixin/

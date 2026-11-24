@@ -1,21 +1,44 @@
 const config = require("../config")
 
+/** Opaque fail() codes — never show the raw English token in the UI. */
+const FRIENDLY_ZH = {
+  server: "服务器繁忙，请稍后重试",
+  network: "网络异常，请检查网络后重试",
+  generic: "操作失败，请稍后重试",
+  auth_invalid: "登录已失效，请重新登录",
+}
+
 function base() {
   return String(config.apiBase || "").replace(/\/$/, "")
 }
 
 function fail(body, status) {
-  let code = body && body.code
-  if (!code) {
+  let code = body && (body.code || body.error)
+  if (typeof code !== "string" || !String(code).trim()) {
     if (status === 401) code = "auth_invalid"
-    else if (status === 409) code = "busy"
-    else if (status === 413) code = "video_too_large"
     else if (status >= 500) code = "server"
+    else if (!status) code = "network"
     else code = "generic"
+  } else {
+    code = String(code).trim()
   }
-  const err = new Error(code)
-  err.code = code
-  err.detail = body && typeof body.detail === "string" ? body.detail : ""
+  // Gateway / HTML 5xx bodies often parse as {} — force opaque server code.
+  if (status >= 500 && !FRIENDLY_ZH[code]) {
+    code = "server"
+  }
+  let detailRaw =
+    (body && typeof body.detail === "string" && body.detail) ||
+    (body && typeof body.error === "string" && body.error) ||
+    (body && typeof body.errmsg === "string" && body.errmsg) ||
+    ""
+  // ZQ-149 / #151: never surface raw "server" / "network" as the red login error text.
+  if (FRIENDLY_ZH[code]) {
+    detailRaw = FRIENDLY_ZH[code]
+  }
+  const err = new Error(detailRaw || FRIENDLY_ZH.generic)
+  err.code = FRIENDLY_ZH[code] ? code : code
+  err.detail = detailRaw
+  if (body && body.errcode != null) err.errcode = body.errcode
   return err
 }
 
@@ -25,7 +48,10 @@ function request({ path, method, data, token }) {
       url: base() + path,
       method: method || "GET",
       data: data || {},
-      header: token ? { Authorization: "Bearer " + token } : {},
+      header: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: "Bearer " + token } : {}),
+      },
       timeout: 20000,
       success(res) {
         const body = res.data && typeof res.data === "object" ? res.data : {}
@@ -42,66 +68,48 @@ function request({ path, method, data, token }) {
   })
 }
 
-function mockLogin(code) {
-  return request({ path: "/api/auth/mock", method: "POST", data: { code } })
-}
-
-function me(token) {
-  return request({ path: "/api/auth/me", token })
-}
-
-function job(id, token) {
-  return request({ path: "/api/jobs/" + encodeURIComponent(id), token })
-}
-
-function jobResult(id, token) {
-  return request({ path: "/api/jobs/" + encodeURIComponent(id) + "/result", token })
-}
-
-function uploadVideo({ filePath, token, stroke, guideCompleted, guideChecks }) {
-  return new Promise((resolve, reject) => {
-    if (!token) {
-      reject(fail({ code: "auth_required" }, 401))
-      return
-    }
-    wx.uploadFile({
-      url: base() + "/api/analyze",
-      filePath,
-      name: "video",
-      timeout: 120000,
-      header: { Authorization: "Bearer " + token },
-      formData: {
-        stroke: stroke || "forehand",
-        client: "miniprogram",
-        sample: "0",
-        level: "3.0",
-        title: "涨球挥拍分析",
-        guide_completed: guideCompleted ? "1" : "0",
-        guide_checks: JSON.stringify(guideChecks || {}),
-      },
-      success(res) {
-        let body = {}
-        try {
-          body = JSON.parse(res.data || "{}")
-        } catch (e) {
-          reject(fail({ code: "bad_response" }, res.statusCode))
-          return
-        }
-        if (res.statusCode >= 200 && res.statusCode < 300 && body.job_id) {
-          resolve(body)
-          return
-        }
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          reject(fail({ code: "bad_response" }, res.statusCode))
-          return
-        }
-        reject(fail(body, res.statusCode))
-      },
-      fail() {
-        reject(fail({ code: "network" }, 0))
-      },
-    })
+function wechatLogin({ code, nickName }) {
+  // ZQ-158: login page no longer sends nickName; profile-setup may still pass it later via updateProfile.
+  return request({
+    path: "/api/auth/wechat",
+    method: "POST",
+    data: { code, nickName: nickName || "" },
   })
 }
 
-module.exports = { mockLogin, me, job, jobResult, uploadVideo }
+function accountLogin(payload) {
+  return request({
+    path: "/api/auth/login",
+    method: "POST",
+    data: payload || {},
+  })
+}
+
+function accountRegister(payload) {
+  return request({
+    path: "/api/auth/register",
+    method: "POST",
+    data: payload || {},
+  })
+}
+
+function session(token) {
+  return request({ path: "/api/auth/session", token })
+}
+
+function updateProfile(token, patch) {
+  return request({
+    path: "/api/auth/profile",
+    method: "PATCH",
+    token,
+    data: patch || {},
+  })
+}
+
+module.exports = {
+  wechatLogin,
+  accountLogin,
+  accountRegister,
+  session,
+  updateProfile,
+}

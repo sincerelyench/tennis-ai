@@ -1,0 +1,8 @@
+ZQ-172 · 全端登录方式（2026-11-24 Asia/Shanghai）
+
+所有端（小程序 / H5 / APK WebView / IPA WebView）仅：
+
+1. **账号密码** — `POST /api/auth/login` `{ username, password }`
+
+已去掉：微信登录 UI、手机验证码登录 UI。
+注册默认学员（player），不再展示学员/教练选择。

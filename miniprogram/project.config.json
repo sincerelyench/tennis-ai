@@ -1,5 +1,5 @@
 {
-  "description": "涨球 E1 小程序",
+  "description": "涨球乐 · 微信小程序（web-view 对齐网页）",
   "packOptions": {
     "ignore": [],
     "include": []
@@ -42,7 +42,7 @@
   },
   "compileType": "miniprogram",
   "libVersion": "3.5.5",
-  "appid": "touristappid",
+  "appid": "wx09896b686bc2f565",
   "projectname": "zhangqiu",
   "condition": {},
   "editorSetting": {

@@ -22,21 +22,22 @@ cp .env.example .env
 
 ## 小程序、Android 与 iOS 本地运行
 
-网页入口是 `http://127.0.0.1:27116/e1`。小程序、Android 和 iOS 都调用现有的 `POST /api/analyze` 与 `GET /api/jobs/{id}`。分析仍由原来的 pipeline 完成。任务完成后，同一页面打开四维结果：`GET /api/jobs/{id}/result`。iOS 壳的 User-Agent 带 `ZhangqiuIOS`，上传时 `client` 为 `ios`。
+现网产品入口是 `https://yqchen.blog/tennis`（涨球乐）。本地网页入口仍是 `http://127.0.0.1:27116/e1`（早期挥拍分析流）。Android / iOS 壳打开网页；小程序原生登录后用 `web-view` 对齐现网。
 
-登录是开发态模拟：客户端把一段 code 交给 `POST /api/auth/mock`，换回 token。正式微信登录还没接。可选环境变量 `DEV_AUTH_SECRET` 用来签发这个开发 token。
+挥拍分析仍走 `POST /api/analyze` 与 `GET /api/jobs/{id}`（及完成后的 `GET /api/jobs/{id}/result`）。iOS 壳的 User-Agent 带 `ZhangqiuIOS`，上传时 `client` 为 `ios`。
 
-文案在 `i18n/zh-CN.json` 和 `i18n/en.json`。默认中文。网页和小程序右上角可以切到 EN。小程序里的 `miniprogram/i18n/*.js` 与这两份 JSON 内容相同。Android 和 iOS 打开的就是这个网页，地址加 `?lang=en` 会直接用英文。
+文案在 `i18n/zh-CN.json` 和 `i18n/en.json`。默认中文。网页右上角可切到 EN。Android 和 iOS 打开的网页加 `?lang=en` 会直接用英文。
 
 ### 微信开发者工具
 
-1. 按上面的方式启动后端，确认 `http://127.0.0.1:27116/api/health` 能打开。
-2. 开发者工具选择「导入项目」，目录选仓库里的 `miniprogram/`。
-3. AppID 使用测试号，或保持工程里的占位 `touristappid`。正式 AppID 以后再换，改 `miniprogram/project.config.json` 的 `appid`。
-4. 详情 → 本地设置 → 勾选「不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书」。工程里 `urlCheck` 已是 `false`，仍建议在工具里再勾一次。
-5. 后端不在本机 `127.0.0.1:27116` 时，改 `miniprogram/config.js` 的 `apiBase`。
-6. 建议路径：首页看到「涨球」→ 开发态登录 → 拍摄引导里勾选侧面机位、全身入镜、球拍可见（可以不勾完）→ 选择或拍摄视频 → 上传 → 排队页出现任务编号。右上角可切换中文 / EN。
-7. 失败时应看到中文或英文说明，例如未登录、登录失效、视频超过 400MB、网络不通。不要把没有 `job_id` 的响应当成上传成功。
+仓库里的 `miniprogram/` 是「涨球乐」壳：原生登录/注册后，用 `web-view` 打开现网 `https://yqchen.blog/tennis`（与网页同一套产品）。
+
+1. 开发者工具选择「导入项目」，目录选仓库里的 `miniprogram/`。
+2. AppID 使用 `miniprogram/project.config.json` 里的正式号（须与生产 `WECHAT_MP_APPID` 一致）；本地调试也可用测试号。
+3. 详情 → 本地设置 → 勾选「不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书」。工程里 `urlCheck` 已是 `false`，仍建议在工具里再勾一次。
+4. `miniprogram/config.js` 的 `apiBase` 默认是 `https://yqchen.blog/tennis`。改指向其它环境时同步改这里。
+5. 建议路径：首页「涨球乐」→ 注册/登录（账号密码）→ 如需则完善资料 → `web-view` 进入现网（约球、教练、排行榜等）。
+6. 登录走 `POST /api/auth/register`、`POST /api/auth/login`；进站走 `GET /api/auth/mp-enter?token=…&next=…`。失败时应看到中文说明，不要把没有 `token` 的响应当成登录成功。
 
 ### Android
 
